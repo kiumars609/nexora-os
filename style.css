@@ -75,7 +75,7 @@ body {
   padding: 10px 20px;
   display: flex;
   flex-direction: row-reverse;
-  background-color: rgb(11, 82, 205);
+  /* background-color: rgb(11, 82, 205); */
 }
 
 .header-os .right-side .os-info {
@@ -89,11 +89,19 @@ body {
   font-size: 20px;
   font-weight: 500;
   letter-spacing: 0.04em;
-  margin-right: 22px;
+  margin-right: 50px;
+}
+
+.header-os .right-side .os-info .wifi {
+  margin-right: 10px;
 }
 
 .header-os .right-side .os-info .wifi img {
-  width: 25px;
+  width: 35px;
+}
+
+.header-os .right-side .os-info .controller img {
+  width: 45px;
 }
 /* Header - Right Side (End) */
 /* Header (End) */
