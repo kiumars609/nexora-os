@@ -94,3 +94,108 @@ document.addEventListener("keydown", (e) => {
     setActiveScreen(prev); // همون لحظه برو صفحه قبلی
   }
 });
+
+// ---------- Games Grid Navigation (Arrow keys + Enter) ----------
+function focusGameByIndex(index) {
+  const cards = Array.from(
+    document.querySelectorAll(".games-screen .game-card")
+  );
+  if (!cards.length) return;
+
+  // clamp
+  const i = Math.max(0, Math.min(index, cards.length - 1));
+
+  cards.forEach((c) => c.classList.remove("is-focused"));
+  cards[i].classList.add("is-focused");
+  cards[i].focus();
+
+  // ذخیره index روی خود grid برای ادامه حرکت
+  const grid = document.getElementById("gamesGrid");
+  if (grid) grid.dataset.focusIndex = String(i);
+}
+
+function getFocusedGameIndex() {
+  const grid = document.getElementById("gamesGrid");
+  if (!grid) return 0;
+  const v = parseInt(grid.dataset.focusIndex || "0", 10);
+  return Number.isFinite(v) ? v : 0;
+}
+
+// وقتی وارد Games شدی، اولین کارت فوکوس بگیره
+const _setActiveScreenOriginal = setActiveScreen;
+setActiveScreen = function (name, options = { pushHistory: true }) {
+  _setActiveScreenOriginal(name, options);
+
+  if (name === "games") {
+    // یه ذره صبر تا انیمیشن/DOM اوکی باشه
+    setTimeout(() => focusGameByIndex(0), 0);
+  } else {
+    // وقتی از games رفتی بیرون، فوکوس کارت‌ها پاک شه
+    const cards = document.querySelectorAll(".games-screen .game-card");
+    cards.forEach((c) => c.classList.remove("is-focused"));
+  }
+};
+
+// کنترل کیبورد داخل Games
+document.addEventListener("keydown", (e) => {
+  if (currentScreen !== "games") return;
+
+  const cards = Array.from(
+    document.querySelectorAll(".games-screen .game-card")
+  );
+  if (!cards.length) return;
+
+  // فقط وقتی واقعاً روی کارت‌های بازی هستیم، فلش‌ها داخل grid کار کنن
+  const isOnGameCard = document.activeElement?.classList?.contains("game-card");
+  if (!isOnGameCard) return;
+
+  // تعداد ستون‌ها را از CSS می‌گیریم (مثلاً 4)
+  const grid = document.getElementById("gamesGrid");
+  const style = grid ? getComputedStyle(grid) : null;
+  const cols = style ? style.gridTemplateColumns.split(" ").length : 4;
+
+  let index = getFocusedGameIndex();
+
+  if (e.key === "ArrowRight") {
+    e.preventDefault();
+    focusGameByIndex(index + 1);
+  }
+
+  if (e.key === "ArrowLeft") {
+    e.preventDefault();
+    focusGameByIndex(index - 1);
+  }
+
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    focusGameByIndex(index + cols);
+  }
+
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    focusGameByIndex(index - cols);
+  }
+
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const gameName =
+      document.activeElement?.dataset?.game ||
+      document.activeElement?.textContent?.trim();
+    alert(`Open game: ${gameName}`);
+  }
+});
+
+// کلیک روی کارت = فوکوس + “باز کردن”
+document.addEventListener("click", (e) => {
+  const card = e.target.closest(".games-screen .game-card");
+  if (!card) return;
+
+  const cards = Array.from(
+    document.querySelectorAll(".games-screen .game-card")
+  );
+  const index = cards.indexOf(card);
+  if (index >= 0) focusGameByIndex(index);
+
+  const gameName = card.dataset.game || card.textContent.trim();
+  alert(`Open game: ${gameName}`);
+});

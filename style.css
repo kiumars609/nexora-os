@@ -300,7 +300,6 @@ body {
 }
 /* Context Cards Wrapper (End) */
 
-
 /* Screens container */
 .screens {
   position: relative;
@@ -325,4 +324,48 @@ body {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+/* ===== Games Grid ===== */
+.games-title {
+  text-align: center;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  margin-bottom: 18px;
+  color: #e6edf5;
+}
+
+.games-grid {
+  width: 80%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.game-card {
+  height: 90px;
+  border-radius: 16px;
+  border: 1px solid rgba(220, 235, 255, 0.12);
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(230, 237, 245, 0.9);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  outline: none;
+  transition: transform 180ms ease-out, border-color 180ms ease-out,
+    background 180ms ease-out;
+}
+
+.game-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(220, 235, 255, 0.18);
+}
+
+/* وقتی با کیبورد روش هستی */
+.game-card.is-focused {
+  border-color: rgba(184, 220, 255, 0.6);
+  background: rgba(184, 220, 255, 0.08);
+  transform: translateY(-2px) scale(1.01);
 }
