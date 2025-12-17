@@ -18,3 +18,13 @@ navItems.forEach((item) => {
     setActiveScreen(target);
   });
 });
+
+document.addEventListener("click", (e) => {
+  const goEl = e.target.closest("[data-screen]");
+  if (!goEl) return;
+
+  const target = goEl.dataset.screen;
+  if (!target) return;
+
+  setActiveScreen(target);
+});
