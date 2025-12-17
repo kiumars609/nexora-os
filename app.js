@@ -56,7 +56,9 @@ document.addEventListener("keydown", (e) => {
     // Backspace تو inputها اذیت نکنه
     const tag = document.activeElement?.tagName?.toLowerCase();
     const isTyping =
-      tag === "input" || tag === "textarea" || document.activeElement?.isContentEditable;
+      tag === "input" ||
+      tag === "textarea" ||
+      document.activeElement?.isContentEditable;
 
     if (!isTyping) goBack();
   }
@@ -64,3 +66,31 @@ document.addEventListener("keydown", (e) => {
 
 // اگر خواستی مطمئن باشه از ابتدا home فعاله:
 setActiveScreen("home", { pushHistory: false });
+
+document.addEventListener("keydown", (e) => {
+  // اگر تایپ می‌کنه، مزاحم نشیم
+  const tag = document.activeElement?.tagName?.toLowerCase();
+  const isTyping =
+    tag === "input" ||
+    tag === "textarea" ||
+    document.activeElement?.isContentEditable;
+  if (isTyping) return;
+
+  const order = Array.from(document.querySelectorAll(".nav-item"))
+    .map((el) => el.dataset.screen)
+    .filter(Boolean);
+
+  if (!order.length) return;
+
+  const currentIndex = Math.max(0, order.indexOf(currentScreen));
+
+  if (e.key === "ArrowRight") {
+    const next = order[(currentIndex + 1) % order.length];
+    setActiveScreen(next); // همون لحظه برو صفحه بعدی
+  }
+
+  if (e.key === "ArrowLeft") {
+    const prev = order[(currentIndex - 1 + order.length) % order.length];
+    setActiveScreen(prev); // همون لحظه برو صفحه قبلی
+  }
+});
