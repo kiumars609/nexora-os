@@ -397,3 +397,45 @@ document.addEventListener("pointerdown", (e) => {
     }, 700);
   }
 });
+
+// -------------------- Keyboard: Now Playing (Left/Right + Enter) --------------------
+document.addEventListener("keydown", (e) => {
+  if (currentScreen !== "now-playing") return;
+
+  const resumeBtn = document.getElementById("resumeBtn");
+  const quitBtn = document.getElementById("quitBtn");
+  if (!resumeBtn || !quitBtn) return;
+
+  const active = document.activeElement;
+  const isOnNpBtn = active === resumeBtn || active === quitBtn;
+
+  // اگر فوکوس روی هیچکدوم نبود، بذار روی Resume
+  if (!isOnNpBtn) resumeBtn.focus();
+
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (document.activeElement === resumeBtn) quitBtn.focus();
+    else resumeBtn.focus();
+  }
+
+  if (e.key === "Enter") {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const title =
+      document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
+
+    if (document.activeElement === resumeBtn) {
+      showOverlay("Resuming", title);
+      setTimeout(() => hideOverlay(), 500);
+    } else {
+      showOverlay("Quitting", title);
+      setTimeout(() => {
+        hideOverlay();
+        setActiveScreen("games");
+      }, 700);
+    }
+  }
+});
