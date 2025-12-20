@@ -265,3 +265,41 @@ document.addEventListener("keydown", (e) => {
 
 // -------------------- Init --------------------
 setActiveScreen("home", { pushHistory: false });
+
+// -------------------- Keyboard: Game Details (Left/Right + Enter) --------------------
+document.addEventListener("keydown", (e) => {
+  if (currentScreen !== "game-details") return;
+
+  const playBtn = document.getElementById("playBtn");
+  const optionsBtn = document.getElementById("optionsBtn");
+  if (!playBtn || !optionsBtn) return;
+
+  // اگر فوکوس روی هیچکدوم نبود، خودمون می‌ذاریم روی Play
+  const active = document.activeElement;
+  const isOnDetailsBtn = active === playBtn || active === optionsBtn;
+
+  if (!isOnDetailsBtn) {
+    playBtn.focus();
+  }
+
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+    e.preventDefault();
+
+    // اگر روی Play هستیم برو Options، اگر روی Options هستیم برو Play
+    if (document.activeElement === playBtn) optionsBtn.focus();
+    else playBtn.focus();
+  }
+
+  if (e.key === "Enter") {
+    e.preventDefault();
+
+    const title =
+      document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
+
+    if (document.activeElement === playBtn) {
+      alert(`Play: ${title}`);
+    } else {
+      alert(`Options: ${title}`);
+    }
+  }
+});
