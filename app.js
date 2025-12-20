@@ -439,3 +439,186 @@ document.addEventListener("keydown", (e) => {
     }
   }
 });
+
+// ==================== Home Focus Engine (PS-like) ====================
+let homeZone = 0; // 0: Hero buttons | 1: Nav | 2: Context cards
+let heroIndex = 0;
+let homeNavIndex = 0;
+let cardIndex = 0;
+
+function qsAll(sel) {
+  return Array.from(document.querySelectorAll(sel));
+}
+
+function getHomeHeroButtons() {
+  // فقط دکمه‌های داخل home-screen
+  return qsAll(".home-screen .hero-btn");
+}
+
+function getHomeNavItems() {
+  return qsAll(".home-screen .nav-item");
+}
+
+function getHomeCards() {
+  return qsAll(".home-screen .context-card");
+}
+
+function clearHomeCardFocus() {
+  getHomeCards().forEach((c) => c.classList.remove("is-focused"));
+}
+
+function focusHomeHero(i = 0) {
+  const btns = getHomeHeroButtons();
+  if (!btns.length) return;
+  heroIndex = Math.max(0, Math.min(i, btns.length - 1));
+  btns[heroIndex].focus();
+}
+
+function focusHomeNav(i = 0) {
+  const items = getHomeNavItems();
+  if (!items.length) return;
+  homeNavIndex = Math.max(0, Math.min(i, items.length - 1));
+  // nav-item ها focusable نیستن؛ پس active رو مثل فوکوس رفتار می‌دیم
+  updateNavActiveByName(items[homeNavIndex].dataset.screen);
+}
+
+function focusHomeCard(i = 0) {
+  const cards = getHomeCards();
+  if (!cards.length) return;
+  cardIndex = Math.max(0, Math.min(i, cards.length - 1));
+  clearHomeCardFocus();
+  cards[cardIndex].classList.add("is-focused");
+  // برای اسکرین‌ریدر بهتر:
+  cards[cardIndex].setAttribute("aria-selected", "true");
+}
+
+function syncHomeZoneFocus() {
+  clearHomeCardFocus();
+
+  if (homeZone === 0) focusHomeHero(heroIndex);
+  if (homeZone === 1) focusHomeNav(homeNavIndex);
+  if (homeZone === 2) focusHomeCard(cardIndex);
+}
+
+// وقتی وارد Home شدیم، فوکوس رو منطقی تنظیم کن
+function onEnterHome() {
+  homeZone = 0;
+  heroIndex = 0;
+  homeNavIndex = 0;
+  cardIndex = 0;
+  syncHomeZoneFocus();
+}
+
+// patch: هر بار home فعال شد
+// (بدون دست زدن به setActiveScreen، با یک observer ساده)
+const homeScreenEl = document.querySelector(".home-screen");
+const homeObserver = new MutationObserver(() => {
+  if (currentScreen === "home") onEnterHome();
+});
+if (homeScreenEl) homeObserver.observe(homeScreenEl, { attributes: true });
+
+// -------------------- Keyboard: Home PS navigation --------------------
+document.addEventListener("keydown", (e) => {
+  if (currentScreen !== "home") return;
+
+  const tag = document.activeElement?.tagName?.toLowerCase();
+  const isTyping =
+    tag === "input" ||
+    tag === "textarea" ||
+    document.activeElement?.isContentEditable;
+  if (isTyping) return;
+
+  const heroBtns = getHomeHeroButtons();
+  const navs = getHomeNavItems();
+  const cards = getHomeCards();
+
+  // Up/Down: تغییر زون
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    homeZone = Math.min(2, homeZone + 1);
+    syncHomeZoneFocus();
+    return;
+  }
+
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    homeZone = Math.max(0, homeZone - 1);
+    syncHomeZoneFocus();
+    return;
+  }
+
+  // Left/Right: حرکت داخل زون
+  if (e.key === "ArrowRight") {
+    e.preventDefault();
+
+    if (homeZone === 0 && heroBtns.length) {
+      heroIndex = (heroIndex + 1) % heroBtns.length;
+      focusHomeHero(heroIndex);
+    }
+
+    if (homeZone === 1 && navs.length) {
+      homeNavIndex = (homeNavIndex + 1) % navs.length;
+      focusHomeNav(homeNavIndex);
+    }
+
+    if (homeZone === 2 && cards.length) {
+      cardIndex = (cardIndex + 1) % cards.length;
+      focusHomeCard(cardIndex);
+    }
+
+    return;
+  }
+
+  if (e.key === "ArrowLeft") {
+    e.preventDefault();
+
+    if (homeZone === 0 && heroBtns.length) {
+      heroIndex = (heroIndex - 1 + heroBtns.length) % heroBtns.length;
+      focusHomeHero(heroIndex);
+    }
+
+    if (homeZone === 1 && navs.length) {
+      homeNavIndex = (homeNavIndex - 1 + navs.length) % navs.length;
+      focusHomeNav(homeNavIndex);
+    }
+
+    if (homeZone === 2 && cards.length) {
+      cardIndex = (cardIndex - 1 + cards.length) % cards.length;
+      focusHomeCard(cardIndex);
+    }
+
+    return;
+  }
+
+  // Enter: اجرا
+  if (e.key === "Enter") {
+    e.preventDefault();
+
+    if (homeZone === 0) {
+      // Hero buttons کلیک واقعی دارند
+      heroBtns[heroIndex]?.click();
+      return;
+    }
+
+    if (homeZone === 1) {
+      // Nav: برو به صفحه انتخاب‌شده
+      const target = navs[homeNavIndex]?.dataset?.screen;
+      if (target) setActiveScreen(target);
+      return;
+    }
+
+    if (homeZone === 2) {
+      // Context cards: فعلاً یه رفتار نمونه (بعداً می‌تونیم actions واقعی بدیم)
+      const title =
+        cards[cardIndex]
+          ?.querySelector(".context-title")
+          ?.textContent?.trim() || "Card";
+      showOverlay("Opening", title);
+      setTimeout(() => hideOverlay(), 600);
+      return;
+    }
+  }
+});
+
+// Init: اگر صفحه اول home بود
+if (currentScreen === "home") onEnterHome();
