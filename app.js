@@ -1,115 +1,57 @@
 const screens = document.querySelectorAll(".screen");
 const navItems = document.querySelectorAll(".nav-item");
 
-// history
+// -------------------- History --------------------
 let currentScreen = "home";
 const historyStack = [];
 
-function setActiveScreen(name, options = { pushHistory: true }) {
-  if (!name) return;
+// ✅ جلوگیری از click-through بعد از ورود به Games
+let blockGameOpenUntil = 0;
 
-  // history push (برای رفتن‌های معمولی)
-  if (options.pushHistory && name !== currentScreen) {
-    historyStack.push(currentScreen);
-  }
-  currentScreen = name;
+// -------------------- NAV focus (for keyboard) --------------------
+let navFocusIndex = 0;
 
-  // screens
-  screens.forEach((s) => s.classList.remove("is-active"));
-  document.querySelector(`.${name}-screen`)?.classList.add("is-active");
+function getNavOrder() {
+  return Array.from(navItems)
+    .map((el) => el.dataset.screen)
+    .filter(Boolean);
+}
 
-  // nav active state
+function updateNavActiveByName(name) {
   navItems.forEach((i) => i.classList.remove("active"));
   document
     .querySelector(`.nav-item[data-screen="${name}"]`)
     ?.classList.add("active");
 }
 
-function goBack() {
-  const prev = historyStack.pop();
-  if (!prev) return;
-  setActiveScreen(prev, { pushHistory: false });
+function syncNavFocusWithCurrent() {
+  const order = getNavOrder();
+  const i = order.indexOf(currentScreen);
+  navFocusIndex = i >= 0 ? i : 0;
+  updateNavActiveByName(order[navFocusIndex] || "home");
 }
 
-// یک هندلر واحد برای همه‌ی کلیک‌ها (nav + دکمه‌ها + کارت‌ها ...)
-document.addEventListener("click", (e) => {
-  // 1) Back
-  const backEl = e.target.closest('[data-action="back"]');
-  if (backEl) {
-    goBack();
-    return;
-  }
+// -------------------- Games Grid helpers --------------------
+function getGameCards() {
+  return Array.from(document.querySelectorAll(".games-screen .game-card"));
+}
 
-  // 2) Navigate by data-screen
-  const goEl = e.target.closest("[data-screen]");
-  if (!goEl) return;
+function clearGameFocus() {
+  getGameCards().forEach((c) => c.classList.remove("is-focused"));
+  const grid = document.getElementById("gamesGrid");
+  if (grid) grid.dataset.focusIndex = "0";
+}
 
-  const target = goEl.dataset.screen;
-  if (!target) return;
-
-  setActiveScreen(target);
-});
-
-// (اختیاری ولی خیلی خوب) Back با کیبورد: ESC یا Backspace
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" || e.key === "Backspace") {
-    // Backspace تو inputها اذیت نکنه
-    const tag = document.activeElement?.tagName?.toLowerCase();
-    const isTyping =
-      tag === "input" ||
-      tag === "textarea" ||
-      document.activeElement?.isContentEditable;
-
-    if (!isTyping) goBack();
-  }
-});
-
-// اگر خواستی مطمئن باشه از ابتدا home فعاله:
-setActiveScreen("home", { pushHistory: false });
-
-document.addEventListener("keydown", (e) => {
-  // اگر تایپ می‌کنه، مزاحم نشیم
-  const tag = document.activeElement?.tagName?.toLowerCase();
-  const isTyping =
-    tag === "input" ||
-    tag === "textarea" ||
-    document.activeElement?.isContentEditable;
-  if (isTyping) return;
-
-  const order = Array.from(document.querySelectorAll(".nav-item"))
-    .map((el) => el.dataset.screen)
-    .filter(Boolean);
-
-  if (!order.length) return;
-
-  const currentIndex = Math.max(0, order.indexOf(currentScreen));
-
-  if (e.key === "ArrowRight") {
-    const next = order[(currentIndex + 1) % order.length];
-    setActiveScreen(next); // همون لحظه برو صفحه بعدی
-  }
-
-  if (e.key === "ArrowLeft") {
-    const prev = order[(currentIndex - 1 + order.length) % order.length];
-    setActiveScreen(prev); // همون لحظه برو صفحه قبلی
-  }
-});
-
-// ---------- Games Grid Navigation (Arrow keys + Enter) ----------
 function focusGameByIndex(index) {
-  const cards = Array.from(
-    document.querySelectorAll(".games-screen .game-card")
-  );
+  const cards = getGameCards();
   if (!cards.length) return;
 
-  // clamp
   const i = Math.max(0, Math.min(index, cards.length - 1));
 
   cards.forEach((c) => c.classList.remove("is-focused"));
   cards[i].classList.add("is-focused");
   cards[i].focus();
 
-  // ذخیره index روی خود grid برای ادامه حرکت
   const grid = document.getElementById("gamesGrid");
   if (grid) grid.dataset.focusIndex = String(i);
 }
@@ -121,40 +63,157 @@ function getFocusedGameIndex() {
   return Number.isFinite(v) ? v : 0;
 }
 
-// وقتی وارد Games شدی، اولین کارت فوکوس بگیره
-const _setActiveScreenOriginal = setActiveScreen;
-setActiveScreen = function (name, options = { pushHistory: true }) {
-  _setActiveScreenOriginal(name, options);
+function openGameFromElement(el) {
+  const gameName = el?.dataset?.game || el?.textContent?.trim();
+  alert(`Open game: ${gameName}`);
+}
+
+// -------------------- Screen switching --------------------
+function setActiveScreen(name, options = { pushHistory: true }) {
+  if (!name) return;
+
+  if (options.pushHistory && name !== currentScreen) {
+    historyStack.push(currentScreen);
+  }
+  currentScreen = name;
+
+  screens.forEach((s) => s.classList.remove("is-active"));
+  document.querySelector(`.${name}-screen`)?.classList.add("is-active");
+
+  updateNavActiveByName(name);
 
   if (name === "games") {
-    // یه ذره صبر تا انیمیشن/DOM اوکی باشه
+    // ✅ 150ms قفل برای اینکه کلیک قبلی تبدیل به کلیک روی کارت نشه
+    blockGameOpenUntil = performance.now() + 150;
     setTimeout(() => focusGameByIndex(0), 0);
   } else {
-    // وقتی از games رفتی بیرون، فوکوس کارت‌ها پاک شه
-    const cards = document.querySelectorAll(".games-screen .game-card");
-    cards.forEach((c) => c.classList.remove("is-focused"));
+    clearGameFocus();
   }
-};
 
-// کنترل کیبورد داخل Games
+  syncNavFocusWithCurrent();
+}
+
+function goBack() {
+  const prev = historyStack.pop();
+  if (!prev) return;
+  setActiveScreen(prev, { pushHistory: false });
+}
+
+// -------------------- Pointer (Console-like) --------------------
+document.addEventListener("pointerdown", (e) => {
+  // 1) Back
+  const backEl = e.target.closest('[data-action="back"]');
+  if (backEl) {
+    e.preventDefault();
+    e.stopPropagation();
+    goBack();
+    return;
+  }
+
+  // 2) Game card
+  const card = e.target.closest(".games-screen .game-card");
+  if (card && currentScreen === "games") {
+    // ✅ اگر تازه وارد games شدیم، باز کردن کارت ممنوع
+    if (performance.now() < blockGameOpenUntil) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const cards = getGameCards();
+    const index = cards.indexOf(card);
+    if (index >= 0) focusGameByIndex(index);
+
+    openGameFromElement(card);
+    return;
+  }
+
+  // 3) Navigate by data-screen
+  const goEl = e.target.closest("[data-screen]");
+  if (!goEl) return;
+
+  const target = goEl.dataset.screen;
+  if (!target) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+  setActiveScreen(target);
+});
+
+// ✅ خیلی مهم: بعضی مرورگرها click رو بعدش می‌فرستن، اینجا خفه‌ش می‌کنیم
+document.addEventListener(
+  "click",
+  (e) => {
+    if (currentScreen !== "games") return;
+    if (performance.now() < blockGameOpenUntil) {
+      const card = e.target.closest(".games-screen .game-card");
+      if (card) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+    }
+  },
+  true // capture
+);
+
+// -------------------- Keyboard: Back (ESC / Backspace) --------------------
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" && e.key !== "Backspace") return;
+
+  const tag = document.activeElement?.tagName?.toLowerCase();
+  const isTyping =
+    tag === "input" ||
+    tag === "textarea" ||
+    document.activeElement?.isContentEditable;
+
+  if (!isTyping) goBack();
+});
+
+// -------------------- Keyboard: NAV (ArrowLeft/Right = انتخاب، Enter = ورود) --------------------
+document.addEventListener("keydown", (e) => {
+  if (currentScreen === "games") return;
+
+  const tag = document.activeElement?.tagName?.toLowerCase();
+  const isTyping =
+    tag === "input" ||
+    tag === "textarea" ||
+    document.activeElement?.isContentEditable;
+  if (isTyping) return;
+
+  const order = getNavOrder();
+  if (!order.length) return;
+
+  if (e.key === "ArrowRight") {
+    navFocusIndex = (navFocusIndex + 1) % order.length;
+    updateNavActiveByName(order[navFocusIndex]);
+  }
+
+  if (e.key === "ArrowLeft") {
+    navFocusIndex = (navFocusIndex - 1 + order.length) % order.length;
+    updateNavActiveByName(order[navFocusIndex]);
+  }
+
+  if (e.key === "Enter") {
+    const target = order[navFocusIndex];
+    if (target) setActiveScreen(target);
+  }
+});
+
+// -------------------- Keyboard: Games Grid (Arrow = حرکت، Enter = باز کردن) --------------------
 document.addEventListener("keydown", (e) => {
   if (currentScreen !== "games") return;
 
-  const cards = Array.from(
-    document.querySelectorAll(".games-screen .game-card")
-  );
+  const cards = getGameCards();
   if (!cards.length) return;
 
-  // فقط وقتی واقعاً روی کارت‌های بازی هستیم، فلش‌ها داخل grid کار کنن
   const isOnGameCard = document.activeElement?.classList?.contains("game-card");
   if (!isOnGameCard) return;
 
-  // تعداد ستون‌ها را از CSS می‌گیریم (مثلاً 4)
   const grid = document.getElementById("gamesGrid");
   const style = grid ? getComputedStyle(grid) : null;
   const cols = style ? style.gridTemplateColumns.split(" ").length : 4;
 
-  let index = getFocusedGameIndex();
+  const index = getFocusedGameIndex();
 
   if (e.key === "ArrowRight") {
     e.preventDefault();
@@ -177,25 +236,13 @@ document.addEventListener("keydown", (e) => {
   }
 
   if (e.key === "Enter") {
+    // ✅ Enter هم اگر تازه وارد شدیم، باز نکنه
+    if (performance.now() < blockGameOpenUntil) return;
+
     e.preventDefault();
-    const gameName =
-      document.activeElement?.dataset?.game ||
-      document.activeElement?.textContent?.trim();
-    alert(`Open game: ${gameName}`);
+    openGameFromElement(document.activeElement);
   }
 });
 
-// کلیک روی کارت = فوکوس + “باز کردن”
-document.addEventListener("click", (e) => {
-  const card = e.target.closest(".games-screen .game-card");
-  if (!card) return;
-
-  const cards = Array.from(
-    document.querySelectorAll(".games-screen .game-card")
-  );
-  const index = cards.indexOf(card);
-  if (index >= 0) focusGameByIndex(index);
-
-  const gameName = card.dataset.game || card.textContent.trim();
-  alert(`Open game: ${gameName}`);
-});
+// -------------------- Init --------------------
+setActiveScreen("home", { pushHistory: false });
