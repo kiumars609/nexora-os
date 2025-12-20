@@ -8,6 +8,8 @@ const historyStack = [];
 // ✅ جلوگیری از click-through بعد از ورود به Games
 let blockGameOpenUntil = 0;
 
+let lastGamesFocusIndex = 0;
+
 // -------------------- NAV focus (for keyboard) --------------------
 let navFocusIndex = 0;
 
@@ -47,6 +49,8 @@ function focusGameByIndex(index) {
   if (!cards.length) return;
 
   const i = Math.max(0, Math.min(index, cards.length - 1));
+  // ✅ یادمون می‌مونه آخرین کارت کدوم بود
+  lastGamesFocusIndex = i;
 
   cards.forEach((c) => c.classList.remove("is-focused"));
   cards[i].classList.add("is-focused");
@@ -75,6 +79,7 @@ function openGameFromElement(el) {
 
   // برو به صفحه جزئیات
   setActiveScreen("game-details");
+  setTimeout(() => document.getElementById("playBtn")?.focus(), 0);
 }
 
 // -------------------- Screen switching --------------------
@@ -92,11 +97,16 @@ function setActiveScreen(name, options = { pushHistory: true }) {
   updateNavActiveByName(name);
 
   if (name === "games") {
-    // ✅ 150ms قفل برای اینکه کلیک قبلی تبدیل به کلیک روی کارت نشه
     blockGameOpenUntil = performance.now() + 150;
-    setTimeout(() => focusGameByIndex(0), 0);
+
+    // ✅ به جای 0، همون کارت قبلی رو برگردون
+    setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
   } else {
-    clearGameFocus();
+    // ✅ فقط وقتی داریم از games می‌ریم بیرون و مقصد "game-details" نیست، پاک کن
+    if (name !== "game-details") {
+      clearGameFocus();
+      lastGamesFocusIndex = 0;
+    }
   }
 
   syncNavFocusWithCurrent();
