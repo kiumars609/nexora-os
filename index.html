@@ -119,9 +119,30 @@
             <button class="hero-btn" id="optionsBtn">Options</button>
           </div>
         </section>
+        <!-- NOW PLAYING SCREEN -->
+        <section class="screen now-playing-screen">
+          <button class="back-btn" data-action="back">← Back</button>
+
+          <div style="height: 24px"></div>
+
+          <div class="details-title" id="nowPlayingTitle">NOW PLAYING</div>
+          <div class="details-sub" id="nowPlayingSub">...</div>
+
+          <div class="details-actions">
+            <button class="hero-btn primary" id="resumeBtn">Resume</button>
+            <button class="hero-btn" id="quitBtn">Quit</button>
+          </div>
+        </section>
       </section>
     </section>
     <!-- Main of OS -->
+    <!-- LOADING OVERLAY -->
+    <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+      <div class="loading-box">
+        <div class="loading-title" id="loadingTitle">Launching</div>
+        <div class="loading-sub" id="loadingSub">Please wait...</div>
+      </div>
+    </div>
 
     <script src="app.js"></script>
   </body>

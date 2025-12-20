@@ -7,8 +7,44 @@ const historyStack = [];
 
 // ✅ جلوگیری از click-through بعد از ورود به Games
 let blockGameOpenUntil = 0;
-
 let lastGamesFocusIndex = 0;
+
+function showOverlay(title = "Launching", sub = "Please wait...") {
+  const overlay = document.getElementById("loadingOverlay");
+  const titleEl = document.getElementById("loadingTitle");
+  const subEl = document.getElementById("loadingSub");
+
+  if (titleEl) titleEl.textContent = title;
+  if (subEl) subEl.textContent = sub;
+
+  overlay?.classList.add("is-active");
+  overlay?.setAttribute("aria-hidden", "false");
+}
+
+function hideOverlay() {
+  const overlay = document.getElementById("loadingOverlay");
+  overlay?.classList.remove("is-active");
+  overlay?.setAttribute("aria-hidden", "true");
+}
+
+function launchGameFlow() {
+  const gameName =
+    document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
+
+  // متن صفحه Now Playing رو هم پر کن
+  const npTitle = document.getElementById("nowPlayingTitle");
+  const npSub = document.getElementById("nowPlayingSub");
+  if (npTitle) npTitle.textContent = gameName;
+  if (npSub) npSub.textContent = "Running... Press Back to return.";
+
+  showOverlay("Launching", gameName);
+
+  setTimeout(() => {
+    hideOverlay();
+    setActiveScreen("now-playing");
+    setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
+  }, 900);
+}
 
 // -------------------- NAV focus (for keyboard) --------------------
 let navFocusIndex = 0;
@@ -158,8 +194,15 @@ document.addEventListener("pointerdown", (e) => {
       const title =
         document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
 
-      if (playBtn) alert(`Play: ${title}`);
-      else alert(`Options: ${title}`);
+      if (playBtn) {
+        launchGameFlow();
+      } else {
+        showOverlay("Opening Options", title);
+        setTimeout(() => {
+          hideOverlay();
+          alert(`Options: ${title}`);
+        }, 600);
+      }
 
       return;
     }
@@ -318,9 +361,39 @@ document.addEventListener("keydown", (e) => {
       document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
 
     if (document.activeElement === playBtn) {
-      alert(`Play: ${title}`);
+      launchGameFlow();
     } else {
-      alert(`Options: ${title}`);
+      showOverlay("Opening Options", title);
+      setTimeout(() => {
+        hideOverlay();
+        alert(`Options: ${title}`);
+      }, 600);
     }
+  }
+});
+
+document.addEventListener("pointerdown", (e) => {
+  if (currentScreen !== "now-playing") return;
+
+  const resume = e.target.closest("#resumeBtn");
+  const quit = e.target.closest("#quitBtn");
+  if (!resume && !quit) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  const title =
+    document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
+
+  if (resume) {
+    showOverlay("Resuming", title);
+    setTimeout(() => hideOverlay(), 500);
+  } else {
+    showOverlay("Quitting", title);
+    setTimeout(() => {
+      hideOverlay();
+      // برگرد به Games (یا Home، هرچی دوست داری)
+      setActiveScreen("games");
+    }, 700);
   }
 });
