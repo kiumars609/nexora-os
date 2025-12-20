@@ -146,6 +146,25 @@ document.addEventListener("pointerdown", (e) => {
     return;
   }
 
+  // 2.5) Details buttons (Play / Options)
+  if (currentScreen === "game-details") {
+    const playBtn = e.target.closest("#playBtn");
+    const optionsBtn = e.target.closest("#optionsBtn");
+
+    if (playBtn || optionsBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const title =
+        document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
+
+      if (playBtn) alert(`Play: ${title}`);
+      else alert(`Options: ${title}`);
+
+      return;
+    }
+  }
+
   // 3) Navigate by data-screen
   const goEl = e.target.closest("[data-screen]");
   if (!goEl) return;
@@ -190,7 +209,7 @@ document.addEventListener("keydown", (e) => {
 
 // -------------------- Keyboard: NAV (ArrowLeft/Right = انتخاب، Enter = ورود) --------------------
 document.addEventListener("keydown", (e) => {
-  if (currentScreen === "games") return;
+  if (currentScreen === "games" || currentScreen === "game-details") return;
 
   const tag = document.activeElement?.tagName?.toLowerCase();
   const isTyping =
@@ -284,6 +303,7 @@ document.addEventListener("keydown", (e) => {
 
   if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
     e.preventDefault();
+    e.stopPropagation();
 
     // اگر روی Play هستیم برو Options، اگر روی Options هستیم برو Play
     if (document.activeElement === playBtn) optionsBtn.focus();
@@ -292,6 +312,7 @@ document.addEventListener("keydown", (e) => {
 
   if (e.key === "Enter") {
     e.preventDefault();
+    e.stopPropagation();
 
     const title =
       document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
