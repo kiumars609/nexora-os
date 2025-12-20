@@ -64,8 +64,17 @@ function getFocusedGameIndex() {
 }
 
 function openGameFromElement(el) {
-  const gameName = el?.dataset?.game || el?.textContent?.trim();
-  alert(`Open game: ${gameName}`);
+  const gameName = el?.dataset?.game || el?.textContent?.trim() || "Game";
+
+  // متن‌های صفحه details رو پر کن
+  const titleEl = document.getElementById("detailsTitle");
+  const subEl = document.getElementById("detailsSub");
+
+  if (titleEl) titleEl.textContent = gameName;
+  if (subEl) subEl.textContent = "Press Play to start, or Back to return.";
+
+  // برو به صفحه جزئیات
+  setActiveScreen("game-details");
 }
 
 // -------------------- Screen switching --------------------

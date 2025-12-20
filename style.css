@@ -369,3 +369,28 @@ body {
   background: rgba(184, 220, 255, 0.08);
   transform: translateY(-2px) scale(1.01);
 }
+
+/* ===== Game Details ===== */
+.details-title{
+  text-align:center;
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b8dcff;
+  margin-top: 20px;
+}
+
+.details-sub{
+  text-align:center;
+  margin-top: 14px;
+  color: rgba(230, 237, 245, 0.65);
+  letter-spacing: 0.06em;
+}
+
+.details-actions{
+  margin-top: 28px;
+  display:flex;
+  justify-content:center;
+  gap: 18px;
+}
