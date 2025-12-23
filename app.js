@@ -651,3 +651,68 @@ document.addEventListener("keydown", (e) => {
 
 // Init: اگر صفحه اول home بود
 if (currentScreen === "home") onEnterHome();
+
+document.addEventListener("pointerdown", (e) => {
+  if (currentScreen !== "in-game") return;
+
+  const openNp = e.target.closest("#openNowPlayingBtn");
+  const quitG = e.target.closest("#quitFromGameBtn");
+  if (!openNp && !quitG) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (openNp) {
+    setActiveScreen("now-playing");
+    setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
+    return;
+  }
+
+  if (quitG) {
+    showOverlay("Quitting", runningGame || "Game");
+    setTimeout(() => {
+      runningGame = null;
+      hideOverlay();
+      setActiveScreen("games");
+      setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
+    }, 700);
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (currentScreen !== "in-game") return;
+
+  const openBtn = document.getElementById("openNowPlayingBtn");
+  const quitBtn = document.getElementById("quitFromGameBtn");
+  if (!openBtn || !quitBtn) return;
+
+  const active = document.activeElement;
+  const isOnBtn = active === openBtn || active === quitBtn;
+  if (!isOnBtn) openBtn.focus();
+
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (document.activeElement === openBtn) quitBtn.focus();
+    else openBtn.focus();
+  }
+
+  if (e.key === "Enter") {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (document.activeElement === openBtn) {
+      setActiveScreen("now-playing");
+      setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
+    } else {
+      showOverlay("Quitting", runningGame || "Game");
+      setTimeout(() => {
+        runningGame = null;
+        hideOverlay();
+        setActiveScreen("games");
+        setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
+      }, 700);
+    }
+  }
+});
