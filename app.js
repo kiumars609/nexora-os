@@ -60,6 +60,20 @@ const uiSound = {
   },
 };
 
+function chord(freqs = [520, 760], dur = 0.06, gap = 0.015) {
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  freqs.forEach((f, idx) => {
+    setTimeout(() => {
+      beep({ freq: f, dur, type: "triangle", vol: 0.05 });
+    }, idx * (dur * 1000 + gap * 1000));
+  });
+}
+
+uiSound.launch = () => chord([520, 660, 820], 0.05, 0.01); // 🔊 Launch
+uiSound.quit = () => chord([420, 320], 0.06, 0.02); // 🔊 Quit
+uiSound.overlay = () => beep({ freq: 640, dur: 0.03, type: "sine", vol: 0.04 }); // 🔊 Overlay pop
+
 function showOverlay(title = "Launching", sub = "Please wait...") {
   const overlay = document.getElementById("loadingOverlay");
   const titleEl = document.getElementById("loadingTitle");
@@ -70,6 +84,8 @@ function showOverlay(title = "Launching", sub = "Please wait...") {
 
   overlay?.classList.add("is-active");
   overlay?.setAttribute("aria-hidden", "false");
+
+  uiSound.overlay(); // 🔊 صدای باز شدن/ظاهر شدن Overlay
 }
 
 function hideOverlay() {
