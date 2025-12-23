@@ -90,6 +90,9 @@ body {
   font-weight: 500;
   letter-spacing: 0.04em;
   margin-right: 50px;
+
+  min-width: 110px;
+  text-align: right;
 }
 
 .header-os .right-side .os-info .wifi {
@@ -524,4 +527,14 @@ body {
 
 .snd.is-off {
   color: rgba(230, 237, 245, 0.35);
+}
+/* SND interactive */
+.snd {
+  cursor: pointer;
+}
+
+.snd:focus-visible {
+  outline: none;
+  color: rgba(230, 237, 245, 0.9);
+  text-shadow: 0 0 16px rgba(184, 220, 255, 0.35);
 }

@@ -127,29 +127,36 @@
 
   // ==================== Sound Toggle (M) + UI ====================
   function syncSoundUI() {
-    if (!sndStatusEl) return;
-    sndStatusEl.textContent = `SND: ${soundEnabled ? "ON" : "OFF"}`;
-    sndStatusEl.classList.toggle("is-off", !soundEnabled);
+  if (!sndStatusEl) return;
+
+  sndStatusEl.textContent = `SND: ${soundEnabled ? "ON" : "OFF"}`;
+  sndStatusEl.classList.toggle("is-off", !soundEnabled);
+
+  // Save state
+  try {
+    localStorage.setItem("nexora_sound_enabled", soundEnabled ? "1" : "0");
+  } catch (_) {}
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+
+  // OFF -> suspend
+  if (!soundEnabled && audioCtx && audioCtx.state !== "closed") {
+    try {
+      audioCtx.suspend?.();
+    } catch (_) {}
   }
 
-  function toggleSound() {
-    soundEnabled = !soundEnabled;
-
-    // خاموش -> واقعاً suspend
-    if (!soundEnabled && audioCtx && audioCtx.state !== "closed") {
-      try {
-        audioCtx.suspend?.();
-      } catch (_) {}
-    }
-
-    // روشن -> resume + tick
-    if (soundEnabled) {
-      ensureAudio();
-      setTimeout(() => uiSound.ok(), 0);
-    }
-
-    syncSoundUI();
+  // ON -> resume + tick
+  if (soundEnabled) {
+    ensureAudio();
+    setTimeout(() => uiSound.ok(), 0);
   }
+
+  syncSoundUI();
+}
+
 
   // -------------------- Overlay --------------------
   function showOverlay(title = "Launching", sub = "Please wait...") {
@@ -912,49 +919,75 @@
   });
 
   // -------------------- Keyboard: Mute toggle (global) --------------------
-  document.addEventListener("keydown", (e) => {
-    if (e.key !== "m" && e.key !== "M") return;
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "m" && e.key !== "M") return;
 
-    const tag = document.activeElement?.tagName?.toLowerCase();
-    const isTyping =
-      tag === "input" ||
-      tag === "textarea" ||
-      document.activeElement?.isContentEditable;
-    if (isTyping) return;
+  const tag = document.activeElement?.tagName?.toLowerCase();
+  const isTyping =
+    tag === "input" ||
+    tag === "textarea" ||
+    document.activeElement?.isContentEditable;
+  if (isTyping) return;
 
-    e.preventDefault();
-    toggleSound();
-  });
+  e.preventDefault();
+  toggleSound();
+});
 
-  // -------------------- Init --------------------
-  function init() {
-    // DOM elements
-    sndStatusEl = document.getElementById("sndStatus");
+// -------------------- Init --------------------
+function init() {
+  // DOM elements
+  sndStatusEl = document.getElementById("sndStatus");
 
-    // UI init
-    syncSoundUI();
-    startClock();
+  // restore sound from localStorage
+  try {
+    const saved = localStorage.getItem("nexora_sound_enabled");
+    if (saved === "0") soundEnabled = false;
+    if (saved === "1") soundEnabled = true;
+  } catch (_) {}
 
-    setActiveScreen("home", { pushHistory: false });
-    if (currentScreen === "home") onEnterHome();
+  // make SND clickable + keyboard accessible
+  if (sndStatusEl) {
+    // click/tap
+    sndStatusEl.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleSound();
+    });
 
-    // اگر span دیر لود شد، یه retry
-    if (!sndStatusEl) {
-      setTimeout(() => {
-        sndStatusEl = document.getElementById("sndStatus");
-        syncSoundUI();
-      }, 0);
-      setTimeout(() => {
-        sndStatusEl = document.getElementById("sndStatus");
-        syncSoundUI();
-      }, 50);
-    }
+    // Enter / Space
+    sndStatusEl.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      toggleSound();
+    });
   }
 
-  // script آخر body هست، اما برای اطمینان:
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init, { once: true });
-  } else {
-    init();
+  // UI init
+  syncSoundUI();
+  startClock();
+
+  setActiveScreen("home", { pushHistory: false });
+  if (currentScreen === "home") onEnterHome();
+
+  // اگر span دیر لود شد، یه retry
+  if (!sndStatusEl) {
+    setTimeout(() => {
+      sndStatusEl = document.getElementById("sndStatus");
+      syncSoundUI();
+    }, 0);
+
+    setTimeout(() => {
+      sndStatusEl = document.getElementById("sndStatus");
+      syncSoundUI();
+    }, 50);
   }
+}
+
+// script آخر body هست، اما برای اطمینان:
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init, { once: true });
+} else {
+  init();
+}
 })();
+
