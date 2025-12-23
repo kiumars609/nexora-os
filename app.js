@@ -252,6 +252,7 @@ document.addEventListener("keydown", (e) => {
 
 // -------------------- Keyboard: NAV (ArrowLeft/Right = انتخاب، Enter = ورود) --------------------
 document.addEventListener("keydown", (e) => {
+  if (currentScreen === "home") return; // ✅ جلوگیری از تداخل با Home Focus Engine
   if (currentScreen === "games" || currentScreen === "game-details") return;
 
   const tag = document.activeElement?.tagName?.toLowerCase();
