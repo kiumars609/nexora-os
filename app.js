@@ -64,18 +64,38 @@ function getNavOrder() {
     .filter(Boolean);
 }
 
-function updateNavActiveByName(name) {
+function setNavActiveByName(name) {
   navItems.forEach((i) => i.classList.remove("active"));
   document
     .querySelector(`.nav-item[data-screen="${name}"]`)
     ?.classList.add("active");
 }
 
+function setNavFocusByName(name) {
+  navItems.forEach((i) => i.classList.remove("is-focused"));
+  document
+    .querySelector(`.nav-item[data-screen="${name}"]`)
+    ?.classList.add("is-focused");
+}
+
+function clearNavFocus() {
+  navItems.forEach((i) => i.classList.remove("is-focused"));
+}
+
 function syncNavFocusWithCurrent() {
   const order = getNavOrder();
   const i = order.indexOf(currentScreen);
   navFocusIndex = i >= 0 ? i : 0;
-  updateNavActiveByName(order[navFocusIndex] || "home");
+
+  // active همیشه صفحه‌ی فعلی
+  setNavActiveByName(currentScreen);
+
+  // focus: اگر home نیستیم، فوکوس هم‌جهت با صفحه فعلی باشه
+  if (currentScreen !== "home") {
+    setNavFocusByName(order[navFocusIndex] || currentScreen);
+  } else {
+    clearNavFocus(); // روی Home، فوکوس رو Home Engine کنترل می‌کنه
+  }
 }
 
 // -------------------- Games Grid helpers --------------------
@@ -139,7 +159,7 @@ function setActiveScreen(name, options = { pushHistory: true }) {
   screens.forEach((s) => s.classList.remove("is-active"));
   document.querySelector(`.${name}-screen`)?.classList.add("is-active");
 
-  updateNavActiveByName(name);
+  setNavActiveByName(name);
 
   if (name === "games") {
     blockGameOpenUntil = performance.now() + 150;
@@ -507,8 +527,9 @@ function focusHomeNav(i = 0) {
   const items = getHomeNavItems();
   if (!items.length) return;
   homeNavIndex = Math.max(0, Math.min(i, items.length - 1));
-  // nav-item ها focusable نیستن؛ پس active رو مثل فوکوس رفتار می‌دیم
-  updateNavActiveByName(items[homeNavIndex].dataset.screen);
+
+  // ✅ فقط فوکوس (نه active)
+  setNavFocusByName(items[homeNavIndex].dataset.screen);
 }
 
 function focusHomeCard(i = 0) {
@@ -524,9 +545,19 @@ function focusHomeCard(i = 0) {
 function syncHomeZoneFocus() {
   clearHomeCardFocus();
 
-  if (homeZone === 0) focusHomeHero(heroIndex);
-  if (homeZone === 1) focusHomeNav(homeNavIndex);
-  if (homeZone === 2) focusHomeCard(cardIndex);
+  if (homeZone === 0) {
+    clearNavFocus(); // ✅ وقتی روی Hero هستیم، nav focus نداشته باشه
+    focusHomeHero(heroIndex);
+  }
+
+  if (homeZone === 1) {
+    focusHomeNav(homeNavIndex);
+  }
+
+  if (homeZone === 2) {
+    clearNavFocus(); // ✅ وقتی روی کارت‌ها هستیم، nav focus نداشته باشه
+    focusHomeCard(cardIndex);
+  }
 }
 
 // وقتی وارد Home شدیم، فوکوس رو منطقی تنظیم کن

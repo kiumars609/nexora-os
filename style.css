@@ -489,3 +489,25 @@ body {
 .screen {
   overflow: auto;
 }
+/* ===== NAV Focus (separate from active) ===== */
+.nav-item.is-focused {
+  color: rgba(230, 237, 245, 0.9);
+}
+
+.nav-item.is-focused::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  width: 34px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(184, 220, 255, 0.85);
+  box-shadow: 0 0 18px rgba(184, 220, 255, 0.25);
+}
+
+/* اگر هم active بود هم focused (مثلاً بعضی صفحات)، یه کم قوی‌تر */
+.nav-item.active.is-focused {
+  color: #e6edf5;
+}
