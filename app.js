@@ -1,3 +1,7 @@
+/* =========================
+   Nexora OS - app.js
+   ========================= */
+
 const screens = document.querySelectorAll(".screen");
 const navItems = document.querySelectorAll(".nav-item");
 
@@ -16,13 +20,22 @@ let currentTab = "home";
 // ==================== UI Sounds (WebAudio) ====================
 let audioCtx = null;
 let soundEnabled = true;
+let sndStatusEl = null; // بعد از DOM آماده میشه
 
 function ensureAudio() {
   if (!soundEnabled) return null;
+
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
-  if (audioCtx.state === "suspended") audioCtx.resume();
+
+  // بعضی مرورگرها resume رو promise میدن
+  if (audioCtx.state === "suspended") {
+    try {
+      audioCtx.resume?.();
+    } catch (_) {}
+  }
+
   return audioCtx;
 }
 
@@ -75,8 +88,36 @@ function chord(freqs = [520, 760], dur = 0.06, gap = 0.015) {
 
 uiSound.launch = () => chord([520, 660, 820], 0.05, 0.01); // Launch
 uiSound.quit = () => chord([420, 320], 0.06, 0.02); // Quit
-uiSound.overlay = () => beep({ freq: 640, dur: 0.03, type: "sine", vol: 0.04 }); // Overlay pop
+uiSound.overlay = () =>
+  beep({ freq: 640, dur: 0.03, type: "sine", vol: 0.04 }); // Overlay pop
 
+// ==================== Sound Toggle (M) + UI ====================
+function syncSoundUI() {
+  if (!sndStatusEl) return;
+  sndStatusEl.textContent = `SND: ${soundEnabled ? "ON" : "OFF"}`;
+  sndStatusEl.classList.toggle("is-off", !soundEnabled);
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+
+  // خاموش -> واقعاً suspend
+  if (!soundEnabled && audioCtx && audioCtx.state !== "closed") {
+    try {
+      audioCtx.suspend?.();
+    } catch (_) {}
+  }
+
+  // روشن -> resume و یک تیک کوتاه (با تاخیر خیلی کم برای اطمینان)
+  if (soundEnabled) {
+    ensureAudio();
+    setTimeout(() => uiSound.ok(), 0);
+  }
+
+  syncSoundUI();
+}
+
+// -------------------- Overlay --------------------
 function showOverlay(title = "Launching", sub = "Please wait...") {
   const overlay = document.getElementById("loadingOverlay");
   const titleEl = document.getElementById("loadingTitle");
@@ -88,7 +129,7 @@ function showOverlay(title = "Launching", sub = "Please wait...") {
   overlay?.classList.add("is-active");
   overlay?.setAttribute("aria-hidden", "false");
 
-  uiSound.overlay(); // صدای باز شدن/ظاهر شدن Overlay
+  uiSound.overlay();
 }
 
 function hideOverlay() {
@@ -107,7 +148,6 @@ function getNavOrder() {
 }
 
 function setNavActiveByName(name) {
-  // ✅ اگر صفحه تو nav نیست، active رو دست نزن
   const target = document.querySelector(`.nav-item[data-screen="${name}"]`);
   if (!target) return;
 
@@ -126,7 +166,6 @@ function clearNavFocus() {
   navItems.forEach((i) => i.classList.remove("is-focused"));
 }
 
-// هر screen ای که جزو nav اصلی نیست، باید active رو بر اساس currentTab نگه داره
 function updateTabFromScreen(name) {
   const isNav = !!document.querySelector(`.nav-item[data-screen="${name}"]`);
   if (isNav) currentTab = name;
@@ -135,12 +174,8 @@ function updateTabFromScreen(name) {
 function syncNavUI() {
   const order = getNavOrder();
 
-  // active همیشه "آخرین تب واقعی"
   setNavActiveByName(currentTab);
 
-  // focus:
-  // - روی Home: فوکوس nav رو Home Engine کنترل می‌کنه
-  // - روی صفحات دیگر: فوکوس روی همان tab باشد
   if (currentScreen !== "home") {
     const i = order.indexOf(currentTab);
     navFocusIndex = i >= 0 ? i : 0;
@@ -237,7 +272,6 @@ function setActiveScreen(name, options = { pushHistory: true }) {
   screens.forEach((s) => s.classList.remove("is-active"));
   document.querySelector(`.${name}-screen`)?.classList.add("is-active");
 
-  // فقط یک جا nav UI رو sync کن
   syncNavUI();
 
   if (name === "games") {
@@ -360,7 +394,6 @@ document.addEventListener("keydown", (e) => {
 });
 
 // -------------------- Keyboard: NAV (non-home) --------------------
-// (روی home غیرفعال است چون Home Focus Engine کنترل می‌کند)
 document.addEventListener("keydown", (e) => {
   if (currentScreen === "home") return;
   if (currentScreen === "games" || currentScreen === "game-details") return;
@@ -400,7 +433,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// -------------------- Keyboard: Games Grid (Arrow = حرکت، Enter = باز کردن) --------------------
+// -------------------- Keyboard: Games Grid --------------------
 document.addEventListener("keydown", (e) => {
   if (currentScreen !== "games") return;
 
@@ -452,7 +485,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// -------------------- Keyboard: Game Details (Left/Right + Enter) --------------------
+// -------------------- Keyboard: Game Details --------------------
 document.addEventListener("keydown", (e) => {
   if (currentScreen !== "game-details") return;
 
@@ -477,14 +510,15 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
     e.stopPropagation();
-    uiSound.ok();
 
     const title =
       document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
 
     if (document.activeElement === playBtn) {
+      uiSound.ok();
       launchGameFlow();
     } else {
+      uiSound.ok();
       showOverlay("Opening Options", title);
       setTimeout(() => {
         hideOverlay();
@@ -532,7 +566,7 @@ document.addEventListener("pointerdown", (e) => {
   }
 });
 
-// -------------------- Keyboard: Now Playing (Left/Right + Enter) --------------------
+// -------------------- Keyboard: Now Playing --------------------
 document.addEventListener("keydown", (e) => {
   if (currentScreen !== "now-playing") return;
 
@@ -557,7 +591,6 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
     e.stopPropagation();
-    uiSound.ok();
 
     const title =
       document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
@@ -565,6 +598,7 @@ document.addEventListener("keydown", (e) => {
     if (document.activeElement === resumeBtn) {
       if (!runningGame) return;
 
+      uiSound.ok();
       showOverlay("Resuming", runningGame);
       setTimeout(() => {
         hideOverlay();
@@ -616,7 +650,7 @@ document.addEventListener("pointerdown", (e) => {
   }
 });
 
-// -------------------- Keyboard: In-Game (Left/Right + Enter) --------------------
+// -------------------- Keyboard: In-Game --------------------
 document.addEventListener("keydown", (e) => {
   if (currentScreen !== "in-game") return;
 
@@ -641,9 +675,9 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
     e.stopPropagation();
-    uiSound.ok();
 
     if (document.activeElement === openBtn) {
+      uiSound.ok();
       setActiveScreen("now-playing");
       setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
     } else {
@@ -839,6 +873,26 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// -------------------- Init --------------------
-setActiveScreen("home", { pushHistory: false });
-if (currentScreen === "home") onEnterHome();
+// -------------------- Keyboard: Mute toggle (global) --------------------
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "m" && e.key !== "M") return;
+
+  const tag = document.activeElement?.tagName?.toLowerCase();
+  const isTyping =
+    tag === "input" ||
+    tag === "textarea" ||
+    document.activeElement?.isContentEditable;
+  if (isTyping) return;
+
+  e.preventDefault();
+  toggleSound();
+});
+
+// -------------------- Init (DOM ready) --------------------
+document.addEventListener("DOMContentLoaded", () => {
+  sndStatusEl = document.getElementById("sndStatus");
+  syncSoundUI();
+
+  setActiveScreen("home", { pushHistory: false });
+  if (currentScreen === "home") onEnterHome();
+});
