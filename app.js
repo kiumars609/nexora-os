@@ -5,10 +5,13 @@ const navItems = document.querySelectorAll(".nav-item");
 let currentScreen = "home";
 const historyStack = [];
 
-// ✅ جلوگیری از click-through بعد از ورود به Games
+// جلوگیری از click-through بعد از ورود به Games
 let blockGameOpenUntil = 0;
 let lastGamesFocusIndex = 0;
-let runningGame = null; // ✅ بازی در حال اجرا
+let runningGame = null; // بازی در حال اجرا
+
+// آخرین تبِ واقعی که کاربر روی nav بوده (home/games/media/system)
+let currentTab = "home";
 
 // ==================== UI Sounds (WebAudio) ====================
 let audioCtx = null;
@@ -70,9 +73,9 @@ function chord(freqs = [520, 760], dur = 0.06, gap = 0.015) {
   });
 }
 
-uiSound.launch = () => chord([520, 660, 820], 0.05, 0.01); // 🔊 Launch
-uiSound.quit = () => chord([420, 320], 0.06, 0.02); // 🔊 Quit
-uiSound.overlay = () => beep({ freq: 640, dur: 0.03, type: "sine", vol: 0.04 }); // 🔊 Overlay pop
+uiSound.launch = () => chord([520, 660, 820], 0.05, 0.01); // Launch
+uiSound.quit = () => chord([420, 320], 0.06, 0.02); // Quit
+uiSound.overlay = () => beep({ freq: 640, dur: 0.03, type: "sine", vol: 0.04 }); // Overlay pop
 
 function showOverlay(title = "Launching", sub = "Please wait...") {
   const overlay = document.getElementById("loadingOverlay");
@@ -85,7 +88,7 @@ function showOverlay(title = "Launching", sub = "Please wait...") {
   overlay?.classList.add("is-active");
   overlay?.setAttribute("aria-hidden", "false");
 
-  uiSound.overlay(); // 🔊 صدای باز شدن/ظاهر شدن Overlay
+  uiSound.overlay(); // صدای باز شدن/ظاهر شدن Overlay
 }
 
 function hideOverlay() {
@@ -94,34 +97,7 @@ function hideOverlay() {
   overlay?.setAttribute("aria-hidden", "true");
 }
 
-function launchGameFlow() {
-  const gameName =
-    document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
-
-  runningGame = gameName; // ✅ ست بازی درحال اجرا
-
-  // Now Playing text
-  const npTitle = document.getElementById("nowPlayingTitle");
-  const npSub = document.getElementById("nowPlayingSub");
-  if (npTitle) npTitle.textContent = gameName;
-  if (npSub) npSub.textContent = "Running... Resume to continue.";
-
-  // In-Game text
-  const igTitle = document.getElementById("inGameTitle");
-  const igSub = document.getElementById("inGameSub");
-  if (igTitle) igTitle.textContent = gameName;
-  if (igSub) igSub.textContent = "You are in-game. Open Now Playing anytime.";
-
-  showOverlay("Launching", gameName);
-
-  setTimeout(() => {
-    hideOverlay();
-    setActiveScreen("in-game"); // ✅ به جای now-playing مستقیم برو داخل بازی
-    setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
-  }, 900);
-}
-
-// -------------------- NAV focus (for keyboard) --------------------
+// -------------------- NAV helpers --------------------
 let navFocusIndex = 0;
 
 function getNavOrder() {
@@ -131,10 +107,12 @@ function getNavOrder() {
 }
 
 function setNavActiveByName(name) {
+  // ✅ اگر صفحه تو nav نیست، active رو دست نزن
+  const target = document.querySelector(`.nav-item[data-screen="${name}"]`);
+  if (!target) return;
+
   navItems.forEach((i) => i.classList.remove("active"));
-  document
-    .querySelector(`.nav-item[data-screen="${name}"]`)
-    ?.classList.add("active");
+  target.classList.add("active");
 }
 
 function setNavFocusByName(name) {
@@ -148,19 +126,27 @@ function clearNavFocus() {
   navItems.forEach((i) => i.classList.remove("is-focused"));
 }
 
-function syncNavFocusWithCurrent() {
+// هر screen ای که جزو nav اصلی نیست، باید active رو بر اساس currentTab نگه داره
+function updateTabFromScreen(name) {
+  const isNav = !!document.querySelector(`.nav-item[data-screen="${name}"]`);
+  if (isNav) currentTab = name;
+}
+
+function syncNavUI() {
   const order = getNavOrder();
-  const i = order.indexOf(currentScreen);
-  navFocusIndex = i >= 0 ? i : 0;
 
-  // active همیشه صفحه‌ی فعلی
-  setNavActiveByName(currentScreen);
+  // active همیشه "آخرین تب واقعی"
+  setNavActiveByName(currentTab);
 
-  // focus: اگر home نیستیم، فوکوس هم‌جهت با صفحه فعلی باشه
+  // focus:
+  // - روی Home: فوکوس nav رو Home Engine کنترل می‌کنه
+  // - روی صفحات دیگر: فوکوس روی همان tab باشد
   if (currentScreen !== "home") {
-    setNavFocusByName(order[navFocusIndex] || currentScreen);
+    const i = order.indexOf(currentTab);
+    navFocusIndex = i >= 0 ? i : 0;
+    setNavFocusByName(order[navFocusIndex] || currentTab);
   } else {
-    clearNavFocus(); // روی Home، فوکوس رو Home Engine کنترل می‌کنه
+    clearNavFocus();
   }
 }
 
@@ -180,7 +166,6 @@ function focusGameByIndex(index) {
   if (!cards.length) return;
 
   const i = Math.max(0, Math.min(index, cards.length - 1));
-  // ✅ یادمون می‌مونه آخرین کارت کدوم بود
   lastGamesFocusIndex = i;
 
   cards.forEach((c) => c.classList.remove("is-focused"));
@@ -201,16 +186,41 @@ function getFocusedGameIndex() {
 function openGameFromElement(el) {
   const gameName = el?.dataset?.game || el?.textContent?.trim() || "Game";
 
-  // متن‌های صفحه details رو پر کن
   const titleEl = document.getElementById("detailsTitle");
   const subEl = document.getElementById("detailsSub");
 
   if (titleEl) titleEl.textContent = gameName;
   if (subEl) subEl.textContent = "Press Play to start, or Back to return.";
 
-  // برو به صفحه جزئیات
   setActiveScreen("game-details");
   setTimeout(() => document.getElementById("playBtn")?.focus(), 0);
+}
+
+// -------------------- Launch flow --------------------
+function launchGameFlow() {
+  const gameName =
+    document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
+
+  runningGame = gameName;
+
+  const npTitle = document.getElementById("nowPlayingTitle");
+  const npSub = document.getElementById("nowPlayingSub");
+  if (npTitle) npTitle.textContent = gameName;
+  if (npSub) npSub.textContent = "Running... Resume to continue.";
+
+  const igTitle = document.getElementById("inGameTitle");
+  const igSub = document.getElementById("inGameSub");
+  if (igTitle) igTitle.textContent = gameName;
+  if (igSub) igSub.textContent = "You are in-game. Open Now Playing anytime.";
+
+  showOverlay("Launching", gameName);
+  uiSound.launch();
+
+  setTimeout(() => {
+    hideOverlay();
+    setActiveScreen("in-game");
+    setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
+  }, 900);
 }
 
 // -------------------- Screen switching --------------------
@@ -220,27 +230,25 @@ function setActiveScreen(name, options = { pushHistory: true }) {
   if (options.pushHistory && name !== currentScreen) {
     historyStack.push(currentScreen);
   }
+
   currentScreen = name;
+  updateTabFromScreen(name);
 
   screens.forEach((s) => s.classList.remove("is-active"));
   document.querySelector(`.${name}-screen`)?.classList.add("is-active");
 
-  setNavActiveByName(name);
+  // فقط یک جا nav UI رو sync کن
+  syncNavUI();
 
   if (name === "games") {
     blockGameOpenUntil = performance.now() + 150;
-
-    // ✅ به جای 0، همون کارت قبلی رو برگردون
     setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
   } else {
-    // ✅ فقط وقتی داریم از games می‌ریم بیرون و مقصد "game-details" نیست، پاک کن
     if (name !== "game-details") {
       clearGameFocus();
       lastGamesFocusIndex = 0;
     }
   }
-
-  syncNavFocusWithCurrent();
 }
 
 function goBack() {
@@ -251,19 +259,19 @@ function goBack() {
 
 // -------------------- Pointer (Console-like) --------------------
 document.addEventListener("pointerdown", (e) => {
-  // 1) Back
+  // Back
   const backEl = e.target.closest('[data-action="back"]');
   if (backEl) {
     e.preventDefault();
     e.stopPropagation();
+    uiSound.back();
     goBack();
     return;
   }
 
-  // 2) Game card
+  // Games card
   const card = e.target.closest(".games-screen .game-card");
   if (card && currentScreen === "games") {
-    // ✅ اگر تازه وارد games شدیم، باز کردن کارت ممنوع
     if (performance.now() < blockGameOpenUntil) return;
 
     e.preventDefault();
@@ -273,11 +281,12 @@ document.addEventListener("pointerdown", (e) => {
     const index = cards.indexOf(card);
     if (index >= 0) focusGameByIndex(index);
 
+    uiSound.ok();
     openGameFromElement(card);
     return;
   }
 
-  // 2.5) Details buttons (Play / Options)
+  // Details buttons (Play / Options)
   if (currentScreen === "game-details") {
     const playBtn = e.target.closest("#playBtn");
     const optionsBtn = e.target.closest("#optionsBtn");
@@ -290,20 +299,21 @@ document.addEventListener("pointerdown", (e) => {
         document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
 
       if (playBtn) {
+        uiSound.ok();
         launchGameFlow();
       } else {
+        uiSound.ok();
         showOverlay("Opening Options", title);
         setTimeout(() => {
           hideOverlay();
           alert(`Options: ${title}`);
         }, 600);
       }
-
       return;
     }
   }
 
-  // 3) Navigate by data-screen
+  // Navigate by data-screen (Nav click)
   const goEl = e.target.closest("[data-screen]");
   if (!goEl) return;
 
@@ -312,10 +322,11 @@ document.addEventListener("pointerdown", (e) => {
 
   e.preventDefault();
   e.stopPropagation();
+  uiSound.ok();
   setActiveScreen(target);
 });
 
-// ✅ خیلی مهم: بعضی مرورگرها click رو بعدش می‌فرستن، اینجا خفه‌ش می‌کنیم
+// Prevent click-through after pointerdown (games)
 document.addEventListener(
   "click",
   (e) => {
@@ -329,7 +340,7 @@ document.addEventListener(
       }
     }
   },
-  true // capture
+  true
 );
 
 // -------------------- Keyboard: Back (ESC / Backspace) --------------------
@@ -348,10 +359,12 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// -------------------- Keyboard: NAV (ArrowLeft/Right = انتخاب، Enter = ورود) --------------------
+// -------------------- Keyboard: NAV (non-home) --------------------
+// (روی home غیرفعال است چون Home Focus Engine کنترل می‌کند)
 document.addEventListener("keydown", (e) => {
-  if (currentScreen === "home") return; // ✅ جلوگیری از تداخل با Home Focus Engine
+  if (currentScreen === "home") return;
   if (currentScreen === "games" || currentScreen === "game-details") return;
+  if (currentScreen === "in-game" || currentScreen === "now-playing") return;
 
   const tag = document.activeElement?.tagName?.toLowerCase();
   const isTyping =
@@ -364,16 +377,24 @@ document.addEventListener("keydown", (e) => {
   if (!order.length) return;
 
   if (e.key === "ArrowRight") {
+    e.preventDefault();
+    uiSound.move();
     navFocusIndex = (navFocusIndex + 1) % order.length;
-    updateNavActiveByName(order[navFocusIndex]);
+    setNavFocusByName(order[navFocusIndex]);
+    return;
   }
 
   if (e.key === "ArrowLeft") {
+    e.preventDefault();
+    uiSound.move();
     navFocusIndex = (navFocusIndex - 1 + order.length) % order.length;
-    updateNavActiveByName(order[navFocusIndex]);
+    setNavFocusByName(order[navFocusIndex]);
+    return;
   }
 
   if (e.key === "Enter") {
+    e.preventDefault();
+    uiSound.ok();
     const target = order[navFocusIndex];
     if (target) setActiveScreen(target);
   }
@@ -399,38 +420,37 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
     uiSound.move();
     focusGameByIndex(index + 1);
+    return;
   }
 
   if (e.key === "ArrowLeft") {
     e.preventDefault();
     uiSound.move();
     focusGameByIndex(index - 1);
+    return;
   }
 
   if (e.key === "ArrowDown") {
     e.preventDefault();
     uiSound.move();
     focusGameByIndex(index + cols);
+    return;
   }
 
   if (e.key === "ArrowUp") {
     e.preventDefault();
     uiSound.move();
     focusGameByIndex(index - cols);
+    return;
   }
 
   if (e.key === "Enter") {
-    // ✅ Enter هم اگر تازه وارد شدیم، باز نکنه
     if (performance.now() < blockGameOpenUntil) return;
-
     e.preventDefault();
     uiSound.ok();
     openGameFromElement(document.activeElement);
   }
 });
-
-// -------------------- Init --------------------
-setActiveScreen("home", { pushHistory: false });
 
 // -------------------- Keyboard: Game Details (Left/Right + Enter) --------------------
 document.addEventListener("keydown", (e) => {
@@ -440,22 +460,18 @@ document.addEventListener("keydown", (e) => {
   const optionsBtn = document.getElementById("optionsBtn");
   if (!playBtn || !optionsBtn) return;
 
-  // اگر فوکوس روی هیچکدوم نبود، خودمون می‌ذاریم روی Play
   const active = document.activeElement;
   const isOnDetailsBtn = active === playBtn || active === optionsBtn;
-
-  if (!isOnDetailsBtn) {
-    playBtn.focus();
-  }
+  if (!isOnDetailsBtn) playBtn.focus();
 
   if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
     e.preventDefault();
     e.stopPropagation();
     uiSound.move();
 
-    // اگر روی Play هستیم برو Options، اگر روی Options هستیم برو Play
     if (document.activeElement === playBtn) optionsBtn.focus();
     else playBtn.focus();
+    return;
   }
 
   if (e.key === "Enter") {
@@ -478,6 +494,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// -------------------- Pointer: Now Playing --------------------
 document.addEventListener("pointerdown", (e) => {
   if (currentScreen !== "now-playing") return;
 
@@ -494,6 +511,7 @@ document.addEventListener("pointerdown", (e) => {
   if (resume) {
     if (!runningGame) return;
 
+    uiSound.ok();
     showOverlay("Resuming", runningGame);
     setTimeout(() => {
       hideOverlay();
@@ -504,16 +522,16 @@ document.addEventListener("pointerdown", (e) => {
       );
     }, 500);
   } else {
+    uiSound.quit();
     showOverlay("Quitting", runningGame || title);
     setTimeout(() => {
-      runningGame = null; // ✅ بازی رو ببند
+      runningGame = null;
       hideOverlay();
       setActiveScreen("games");
     }, 700);
   }
 });
 
-// -------------------- Keyboard: Now Playing (Left/Right + Enter) --------------------
 // -------------------- Keyboard: Now Playing (Left/Right + Enter) --------------------
 document.addEventListener("keydown", (e) => {
   if (currentScreen !== "now-playing") return;
@@ -524,25 +542,22 @@ document.addEventListener("keydown", (e) => {
 
   const active = document.activeElement;
   const isOnNpBtn = active === resumeBtn || active === quitBtn;
-
   if (!isOnNpBtn) resumeBtn.focus();
 
-  // ⬅➡ move
   if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
     e.preventDefault();
     e.stopPropagation();
-    uiSound.move(); // 🔊
+    uiSound.move();
 
     if (document.activeElement === resumeBtn) quitBtn.focus();
     else resumeBtn.focus();
     return;
   }
 
-  // ⏎ ok
   if (e.key === "Enter") {
     e.preventDefault();
     e.stopPropagation();
-    uiSound.ok(); // 🔊
+    uiSound.ok();
 
     const title =
       document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
@@ -560,11 +575,85 @@ document.addEventListener("keydown", (e) => {
         );
       }, 500);
     } else {
+      uiSound.quit();
       showOverlay("Quitting", runningGame || title);
       setTimeout(() => {
         runningGame = null;
         hideOverlay();
         setActiveScreen("games");
+      }, 700);
+    }
+  }
+});
+
+// -------------------- Pointer: In-Game --------------------
+document.addEventListener("pointerdown", (e) => {
+  if (currentScreen !== "in-game") return;
+
+  const openNp = e.target.closest("#openNowPlayingBtn");
+  const quitG = e.target.closest("#quitFromGameBtn");
+  if (!openNp && !quitG) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (openNp) {
+    uiSound.ok();
+    setActiveScreen("now-playing");
+    setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
+    return;
+  }
+
+  if (quitG) {
+    uiSound.quit();
+    showOverlay("Quitting", runningGame || "Game");
+    setTimeout(() => {
+      runningGame = null;
+      hideOverlay();
+      setActiveScreen("games");
+      setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
+    }, 700);
+  }
+});
+
+// -------------------- Keyboard: In-Game (Left/Right + Enter) --------------------
+document.addEventListener("keydown", (e) => {
+  if (currentScreen !== "in-game") return;
+
+  const openBtn = document.getElementById("openNowPlayingBtn");
+  const quitBtn = document.getElementById("quitFromGameBtn");
+  if (!openBtn || !quitBtn) return;
+
+  const active = document.activeElement;
+  const isOnBtn = active === openBtn || active === quitBtn;
+  if (!isOnBtn) openBtn.focus();
+
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+    e.preventDefault();
+    e.stopPropagation();
+    uiSound.move();
+
+    if (document.activeElement === openBtn) quitBtn.focus();
+    else openBtn.focus();
+    return;
+  }
+
+  if (e.key === "Enter") {
+    e.preventDefault();
+    e.stopPropagation();
+    uiSound.ok();
+
+    if (document.activeElement === openBtn) {
+      setActiveScreen("now-playing");
+      setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
+    } else {
+      uiSound.quit();
+      showOverlay("Quitting", runningGame || "Game");
+      setTimeout(() => {
+        runningGame = null;
+        hideOverlay();
+        setActiveScreen("games");
+        setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
       }, 700);
     }
   }
@@ -581,7 +670,6 @@ function qsAll(sel) {
 }
 
 function getHomeHeroButtons() {
-  // فقط دکمه‌های داخل home-screen
   return qsAll(".home-screen .hero-btn");
 }
 
@@ -608,8 +696,6 @@ function focusHomeNav(i = 0) {
   const items = getHomeNavItems();
   if (!items.length) return;
   homeNavIndex = Math.max(0, Math.min(i, items.length - 1));
-
-  // ✅ فقط فوکوس (نه active)
   setNavFocusByName(items[homeNavIndex].dataset.screen);
 }
 
@@ -619,7 +705,6 @@ function focusHomeCard(i = 0) {
   cardIndex = Math.max(0, Math.min(i, cards.length - 1));
   clearHomeCardFocus();
   cards[cardIndex].classList.add("is-focused");
-  // برای اسکرین‌ریدر بهتر:
   cards[cardIndex].setAttribute("aria-selected", "true");
 }
 
@@ -627,7 +712,7 @@ function syncHomeZoneFocus() {
   clearHomeCardFocus();
 
   if (homeZone === 0) {
-    clearNavFocus(); // ✅ وقتی روی Hero هستیم، nav focus نداشته باشه
+    clearNavFocus();
     focusHomeHero(heroIndex);
   }
 
@@ -636,12 +721,11 @@ function syncHomeZoneFocus() {
   }
 
   if (homeZone === 2) {
-    clearNavFocus(); // ✅ وقتی روی کارت‌ها هستیم، nav focus نداشته باشه
+    clearNavFocus();
     focusHomeCard(cardIndex);
   }
 }
 
-// وقتی وارد Home شدیم، فوکوس رو منطقی تنظیم کن
 function onEnterHome() {
   homeZone = 0;
   heroIndex = 0;
@@ -650,8 +734,6 @@ function onEnterHome() {
   syncHomeZoneFocus();
 }
 
-// patch: هر بار home فعال شد
-// (بدون دست زدن به setActiveScreen، با یک observer ساده)
 const homeScreenEl = document.querySelector(".home-screen");
 const homeObserver = new MutationObserver(() => {
   if (currentScreen === "home") onEnterHome();
@@ -673,7 +755,6 @@ document.addEventListener("keydown", (e) => {
   const navs = getHomeNavItems();
   const cards = getHomeCards();
 
-  // Up/Down: تغییر زون
   if (e.key === "ArrowDown") {
     e.preventDefault();
     uiSound.move();
@@ -690,7 +771,6 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  // Left/Right: حرکت داخل زون
   if (e.key === "ArrowRight") {
     e.preventDefault();
     uiSound.move();
@@ -709,7 +789,6 @@ document.addEventListener("keydown", (e) => {
       cardIndex = (cardIndex + 1) % cards.length;
       focusHomeCard(cardIndex);
     }
-
     return;
   }
 
@@ -731,110 +810,35 @@ document.addEventListener("keydown", (e) => {
       cardIndex = (cardIndex - 1 + cards.length) % cards.length;
       focusHomeCard(cardIndex);
     }
-
     return;
   }
 
-  // Enter: اجرا
   if (e.key === "Enter") {
     e.preventDefault();
     uiSound.ok();
 
     if (homeZone === 0) {
-      // Hero buttons کلیک واقعی دارند
       heroBtns[heroIndex]?.click();
       return;
     }
 
     if (homeZone === 1) {
-      // Nav: برو به صفحه انتخاب‌شده
       const target = navs[homeNavIndex]?.dataset?.screen;
       if (target) setActiveScreen(target);
       return;
     }
 
     if (homeZone === 2) {
-      // Context cards: فعلاً یه رفتار نمونه (بعداً می‌تونیم actions واقعی بدیم)
       const title =
         cards[cardIndex]
           ?.querySelector(".context-title")
           ?.textContent?.trim() || "Card";
       showOverlay("Opening", title);
       setTimeout(() => hideOverlay(), 600);
-      return;
     }
   }
 });
 
-// Init: اگر صفحه اول home بود
+// -------------------- Init --------------------
+setActiveScreen("home", { pushHistory: false });
 if (currentScreen === "home") onEnterHome();
-
-document.addEventListener("pointerdown", (e) => {
-  if (currentScreen !== "in-game") return;
-
-  const openNp = e.target.closest("#openNowPlayingBtn");
-  const quitG = e.target.closest("#quitFromGameBtn");
-  if (!openNp && !quitG) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  if (openNp) {
-    setActiveScreen("now-playing");
-    setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
-    return;
-  }
-
-  if (quitG) {
-    showOverlay("Quitting", runningGame || "Game");
-    setTimeout(() => {
-      runningGame = null;
-      hideOverlay();
-      setActiveScreen("games");
-      setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
-    }, 700);
-  }
-});
-
-// -------------------- Keyboard: In-Game (Left/Right + Enter) --------------------
-document.addEventListener("keydown", (e) => {
-  if (currentScreen !== "in-game") return;
-
-  const openBtn = document.getElementById("openNowPlayingBtn");
-  const quitBtn = document.getElementById("quitFromGameBtn");
-  if (!openBtn || !quitBtn) return;
-
-  const active = document.activeElement;
-  const isOnBtn = active === openBtn || active === quitBtn;
-  if (!isOnBtn) openBtn.focus();
-
-  // ⬅➡ move
-  if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-    e.preventDefault();
-    e.stopPropagation();
-    uiSound.move(); // 🔊
-
-    if (document.activeElement === openBtn) quitBtn.focus();
-    else openBtn.focus();
-    return;
-  }
-
-  // ⏎ ok
-  if (e.key === "Enter") {
-    e.preventDefault();
-    e.stopPropagation();
-    uiSound.ok(); // 🔊
-
-    if (document.activeElement === openBtn) {
-      setActiveScreen("now-playing");
-      setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
-    } else {
-      showOverlay("Quitting", runningGame || "Game");
-      setTimeout(() => {
-        runningGame = null;
-        hideOverlay();
-        setActiveScreen("games");
-      }, 700);
-    }
-  }
-});
