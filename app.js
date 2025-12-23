@@ -8,6 +8,7 @@ const historyStack = [];
 // ✅ جلوگیری از click-through بعد از ورود به Games
 let blockGameOpenUntil = 0;
 let lastGamesFocusIndex = 0;
+let runningGame = null; // ✅ بازی در حال اجرا
 
 function showOverlay(title = "Launching", sub = "Please wait...") {
   const overlay = document.getElementById("loadingOverlay");
@@ -31,18 +32,26 @@ function launchGameFlow() {
   const gameName =
     document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
 
-  // متن صفحه Now Playing رو هم پر کن
+  runningGame = gameName; // ✅ ست بازی درحال اجرا
+
+  // Now Playing text
   const npTitle = document.getElementById("nowPlayingTitle");
   const npSub = document.getElementById("nowPlayingSub");
   if (npTitle) npTitle.textContent = gameName;
-  if (npSub) npSub.textContent = "Running... Press Back to return.";
+  if (npSub) npSub.textContent = "Running... Resume to continue.";
+
+  // In-Game text
+  const igTitle = document.getElementById("inGameTitle");
+  const igSub = document.getElementById("inGameSub");
+  if (igTitle) igTitle.textContent = gameName;
+  if (igSub) igSub.textContent = "You are in-game. Open Now Playing anytime.";
 
   showOverlay("Launching", gameName);
 
   setTimeout(() => {
     hideOverlay();
-    setActiveScreen("now-playing");
-    setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
+    setActiveScreen("in-game"); // ✅ به جای now-playing مستقیم برو داخل بازی
+    setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
   }, 900);
 }
 
@@ -387,13 +396,22 @@ document.addEventListener("pointerdown", (e) => {
     document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
 
   if (resume) {
-    showOverlay("Resuming", title);
-    setTimeout(() => hideOverlay(), 500);
-  } else {
-    showOverlay("Quitting", title);
+    if (!runningGame) return;
+
+    showOverlay("Resuming", runningGame);
     setTimeout(() => {
       hideOverlay();
-      // برگرد به Games (یا Home، هرچی دوست داری)
+      setActiveScreen("in-game");
+      setTimeout(
+        () => document.getElementById("openNowPlayingBtn")?.focus(),
+        0
+      );
+    }, 500);
+  } else {
+    showOverlay("Quitting", runningGame || title);
+    setTimeout(() => {
+      runningGame = null; // ✅ بازی رو ببند
+      hideOverlay();
       setActiveScreen("games");
     }, 700);
   }
@@ -429,11 +447,21 @@ document.addEventListener("keydown", (e) => {
       document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
 
     if (document.activeElement === resumeBtn) {
-      showOverlay("Resuming", title);
-      setTimeout(() => hideOverlay(), 500);
-    } else {
-      showOverlay("Quitting", title);
+      if (!runningGame) return;
+
+      showOverlay("Resuming", runningGame);
       setTimeout(() => {
+        hideOverlay();
+        setActiveScreen("in-game");
+        setTimeout(
+          () => document.getElementById("openNowPlayingBtn")?.focus(),
+          0
+        );
+      }, 500);
+    } else {
+      showOverlay("Quitting", runningGame || title);
+      setTimeout(() => {
+        runningGame = null; // ✅
         hideOverlay();
         setActiveScreen("games");
       }, 700);
