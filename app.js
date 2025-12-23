@@ -10,6 +10,56 @@ let blockGameOpenUntil = 0;
 let lastGamesFocusIndex = 0;
 let runningGame = null; // ✅ بازی در حال اجرا
 
+// ==================== UI Sounds (WebAudio) ====================
+let audioCtx = null;
+let soundEnabled = true;
+
+function ensureAudio() {
+  if (!soundEnabled) return null;
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function beep({ freq = 600, dur = 0.04, type = "sine", vol = 0.06 } = {}) {
+  const ctx = ensureAudio();
+  if (!ctx) return;
+
+  const t0 = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t0);
+
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.start(t0);
+  osc.stop(t0 + dur + 0.02);
+}
+
+const uiSound = {
+  move() {
+    beep({ freq: 520, dur: 0.03, type: "triangle", vol: 0.05 });
+  },
+  ok() {
+    beep({ freq: 760, dur: 0.05, type: "sine", vol: 0.06 });
+  },
+  back() {
+    beep({ freq: 320, dur: 0.05, type: "sine", vol: 0.06 });
+  },
+  open() {
+    beep({ freq: 680, dur: 0.06, type: "triangle", vol: 0.06 });
+  },
+};
+
 function showOverlay(title = "Launching", sub = "Please wait...") {
   const overlay = document.getElementById("loadingOverlay");
   const titleEl = document.getElementById("loadingTitle");
@@ -276,7 +326,10 @@ document.addEventListener("keydown", (e) => {
     tag === "textarea" ||
     document.activeElement?.isContentEditable;
 
-  if (!isTyping) goBack();
+  if (!isTyping) {
+    uiSound.back();
+    goBack();
+  }
 });
 
 // -------------------- Keyboard: NAV (ArrowLeft/Right = انتخاب، Enter = ورود) --------------------
@@ -328,21 +381,25 @@ document.addEventListener("keydown", (e) => {
 
   if (e.key === "ArrowRight") {
     e.preventDefault();
+    uiSound.move();
     focusGameByIndex(index + 1);
   }
 
   if (e.key === "ArrowLeft") {
     e.preventDefault();
+    uiSound.move();
     focusGameByIndex(index - 1);
   }
 
   if (e.key === "ArrowDown") {
     e.preventDefault();
+    uiSound.move();
     focusGameByIndex(index + cols);
   }
 
   if (e.key === "ArrowUp") {
     e.preventDefault();
+    uiSound.move();
     focusGameByIndex(index - cols);
   }
 
@@ -351,6 +408,7 @@ document.addEventListener("keydown", (e) => {
     if (performance.now() < blockGameOpenUntil) return;
 
     e.preventDefault();
+    uiSound.ok();
     openGameFromElement(document.activeElement);
   }
 });
@@ -377,6 +435,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
     e.preventDefault();
     e.stopPropagation();
+    uiSound.move();
 
     // اگر روی Play هستیم برو Options، اگر روی Options هستیم برو Play
     if (document.activeElement === playBtn) optionsBtn.focus();
@@ -386,6 +445,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
     e.stopPropagation();
+    uiSound.ok();
 
     const title =
       document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
@@ -438,6 +498,7 @@ document.addEventListener("pointerdown", (e) => {
 });
 
 // -------------------- Keyboard: Now Playing (Left/Right + Enter) --------------------
+// -------------------- Keyboard: Now Playing (Left/Right + Enter) --------------------
 document.addEventListener("keydown", (e) => {
   if (currentScreen !== "now-playing") return;
 
@@ -448,20 +509,24 @@ document.addEventListener("keydown", (e) => {
   const active = document.activeElement;
   const isOnNpBtn = active === resumeBtn || active === quitBtn;
 
-  // اگر فوکوس روی هیچکدوم نبود، بذار روی Resume
   if (!isOnNpBtn) resumeBtn.focus();
 
+  // ⬅➡ move
   if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
     e.preventDefault();
     e.stopPropagation();
+    uiSound.move(); // 🔊
 
     if (document.activeElement === resumeBtn) quitBtn.focus();
     else resumeBtn.focus();
+    return;
   }
 
+  // ⏎ ok
   if (e.key === "Enter") {
     e.preventDefault();
     e.stopPropagation();
+    uiSound.ok(); // 🔊
 
     const title =
       document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
@@ -481,7 +546,7 @@ document.addEventListener("keydown", (e) => {
     } else {
       showOverlay("Quitting", runningGame || title);
       setTimeout(() => {
-        runningGame = null; // ✅
+        runningGame = null;
         hideOverlay();
         setActiveScreen("games");
       }, 700);
@@ -595,6 +660,7 @@ document.addEventListener("keydown", (e) => {
   // Up/Down: تغییر زون
   if (e.key === "ArrowDown") {
     e.preventDefault();
+    uiSound.move();
     homeZone = Math.min(2, homeZone + 1);
     syncHomeZoneFocus();
     return;
@@ -602,6 +668,7 @@ document.addEventListener("keydown", (e) => {
 
   if (e.key === "ArrowUp") {
     e.preventDefault();
+    uiSound.move();
     homeZone = Math.max(0, homeZone - 1);
     syncHomeZoneFocus();
     return;
@@ -610,6 +677,7 @@ document.addEventListener("keydown", (e) => {
   // Left/Right: حرکت داخل زون
   if (e.key === "ArrowRight") {
     e.preventDefault();
+    uiSound.move();
 
     if (homeZone === 0 && heroBtns.length) {
       heroIndex = (heroIndex + 1) % heroBtns.length;
@@ -631,6 +699,7 @@ document.addEventListener("keydown", (e) => {
 
   if (e.key === "ArrowLeft") {
     e.preventDefault();
+    uiSound.move();
 
     if (homeZone === 0 && heroBtns.length) {
       heroIndex = (heroIndex - 1 + heroBtns.length) % heroBtns.length;
@@ -653,6 +722,7 @@ document.addEventListener("keydown", (e) => {
   // Enter: اجرا
   if (e.key === "Enter") {
     e.preventDefault();
+    uiSound.ok();
 
     if (homeZone === 0) {
       // Hero buttons کلیک واقعی دارند
@@ -710,6 +780,7 @@ document.addEventListener("pointerdown", (e) => {
   }
 });
 
+// -------------------- Keyboard: In-Game (Left/Right + Enter) --------------------
 document.addEventListener("keydown", (e) => {
   if (currentScreen !== "in-game") return;
 
@@ -721,17 +792,22 @@ document.addEventListener("keydown", (e) => {
   const isOnBtn = active === openBtn || active === quitBtn;
   if (!isOnBtn) openBtn.focus();
 
+  // ⬅➡ move
   if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
     e.preventDefault();
     e.stopPropagation();
+    uiSound.move(); // 🔊
 
     if (document.activeElement === openBtn) quitBtn.focus();
     else openBtn.focus();
+    return;
   }
 
+  // ⏎ ok
   if (e.key === "Enter") {
     e.preventDefault();
     e.stopPropagation();
+    uiSound.ok(); // 🔊
 
     if (document.activeElement === openBtn) {
       setActiveScreen("now-playing");
@@ -742,7 +818,6 @@ document.addEventListener("keydown", (e) => {
         runningGame = null;
         hideOverlay();
         setActiveScreen("games");
-        setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
       }, 700);
     }
   }
