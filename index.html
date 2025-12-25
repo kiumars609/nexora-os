@@ -163,27 +163,27 @@
           <div style="height: 24px"></div>
           <div class="games-title">SYSTEM</div>
 
-          <section class="context-cards system-cards">
+          <section class="system-grid" id="systemGrid">
             <!-- Clock Format -->
-            <div
-              class="context-card setting-card"
-              tabindex="0"
-              data-setting="timeFormat"
-            >
+            <div class="setting-card" data-setting-card tabindex="0">
               <div class="context-title">Clock Format</div>
-              <div class="context-value" id="timeFormatValue">12H</div>
-              <div class="context-sub">Press Enter to toggle</div>
+              <div class="context-value" id="clockFormatValue">12H</div>
+
+              <div class="details-actions" style="margin-top: 12px">
+                <button class="hero-btn primary" id="clock12Btn">12H</button>
+                <button class="hero-btn" id="clock24Btn">24H</button>
+              </div>
             </div>
 
             <!-- Sound -->
-            <div
-              class="context-card setting-card"
-              tabindex="0"
-              data-setting="sound"
-            >
+            <div class="setting-card" data-setting-card tabindex="0">
               <div class="context-title">Sound</div>
-              <div class="context-value" id="soundValue">ON</div>
-              <div class="context-sub">Press Enter to toggle</div>
+              <div class="context-value" id="systemSoundValue">ON</div>
+
+              <div class="details-actions" style="margin-top: 12px">
+                <button class="hero-btn primary" id="soundOnBtn">ON</button>
+                <button class="hero-btn" id="soundOffBtn">OFF</button>
+              </div>
             </div>
 
             <!-- Placeholder -->

@@ -1,9 +1,9 @@
 /* =========================
-   Nexora OS - app.js (single unified fixed)
+   Nexora OS - app.js (System settings fixed + Media/System zones)
    ========================= */
 
 (() => {
-  // -------------------- DOM (static NodeLists are OK here) --------------------
+  // -------------------- DOM --------------------
   const screens = document.querySelectorAll(".screen");
   const navItems = document.querySelectorAll(".nav-item");
 
@@ -11,20 +11,43 @@
   let currentScreen = "home";
   const historyStack = [];
 
-  // جلوگیری از click-through بعد از ورود به Games
   let blockGameOpenUntil = 0;
   let lastGamesFocusIndex = 0;
-  let runningGame = null; // بازی در حال اجرا
+  let runningGame = null;
 
-  // آخرین تبِ واقعی که کاربر روی nav بوده (home/games/media/system)
   let currentTab = "home";
 
+  // ==================== SETTINGS (single source of truth) ====================
+  const SETTINGS = {
+    soundKey: "nexora_sound_enabled", // "1" | "0"
+    clockKey: "nexora_use24h", // "1" | "0"
+  };
+
+  function loadBool(key, defaultValue) {
+    try {
+      const v = localStorage.getItem(key);
+      if (v === "1") return true;
+      if (v === "0") return false;
+      return defaultValue;
+    } catch (_) {
+      return defaultValue;
+    }
+  }
+
+  function saveBool(key, value) {
+    try {
+      localStorage.setItem(key, value ? "1" : "0");
+    } catch (_) {}
+  }
+
   // ==================== Clock ====================
+  let use24h = loadBool(SETTINGS.clockKey, false);
+
   function pad2(n) {
     return String(n).padStart(2, "0");
   }
 
-  function formatTime(date, { use24h = false } = {}) {
+  function formatTime(date) {
     const h = date.getHours();
     const m = date.getMinutes();
 
@@ -35,29 +58,30 @@
     return `${hour12}:${pad2(m)} ${ampm}`;
   }
 
-  function startClock() {
+  let clockInterval = null;
+
+  function renderClock() {
     const el = document.getElementById("timeEl");
     if (!el) return;
+    el.textContent = formatTime(new Date());
+  }
 
-    // فعلاً از localStorage می‌خونه (بعداً تو System کنترلش می‌کنیم)
-    let use24h = false;
-    try {
-      const saved = localStorage.getItem("nexora_use24h");
-      if (saved === "1") use24h = true;
-      if (saved === "0") use24h = false;
-    } catch (_) {}
+  function startClock() {
+    renderClock();
+    if (clockInterval) clearInterval(clockInterval);
+    clockInterval = setInterval(renderClock, 60 * 1000);
+  }
 
-    const render = () => {
-      el.textContent = formatTime(new Date(), { use24h });
-    };
-
-    render();
-    setInterval(render, 60 * 1000);
+  function setClockFormat(nextUse24h) {
+    use24h = !!nextUse24h;
+    saveBool(SETTINGS.clockKey, use24h);
+    renderClock(); // 🔥 مهم: همون لحظه اثر بذاره
+    syncSystemUI(); // دکمه‌ها و متن System هم sync بشه
   }
 
   // ==================== UI Sounds (WebAudio) ====================
   let audioCtx = null;
-  let soundEnabled = true;
+  let soundEnabled = loadBool(SETTINGS.soundKey, true);
   let sndStatusEl = null;
 
   function ensureAudio() {
@@ -108,9 +132,6 @@
     back() {
       beep({ freq: 320, dur: 0.05, type: "sine", vol: 0.06 });
     },
-    open() {
-      beep({ freq: 680, dur: 0.06, type: "triangle", vol: 0.06 });
-    },
   };
 
   function chord(freqs = [520, 760], dur = 0.06, gap = 0.015) {
@@ -125,35 +146,35 @@
 
   uiSound.launch = () => chord([520, 660, 820], 0.05, 0.01);
   uiSound.quit = () => chord([420, 320], 0.06, 0.02);
-  uiSound.overlay = () =>
-    beep({ freq: 640, dur: 0.03, type: "sine", vol: 0.04 });
+  uiSound.overlay = () => beep({ freq: 640, dur: 0.03, type: "sine", vol: 0.04 });
 
   function syncSoundUI() {
     if (!sndStatusEl) return;
-
     sndStatusEl.textContent = `SND: ${soundEnabled ? "ON" : "OFF"}`;
     sndStatusEl.classList.toggle("is-off", !soundEnabled);
-
-    try {
-      localStorage.setItem("nexora_sound_enabled", soundEnabled ? "1" : "0");
-    } catch (_) {}
   }
 
-  function toggleSound() {
-    soundEnabled = !soundEnabled;
+  function setSoundEnabled(next) {
+    soundEnabled = !!next;
+    saveBool(SETTINGS.soundKey, soundEnabled);
 
+    // suspend/resume
     if (!soundEnabled && audioCtx && audioCtx.state !== "closed") {
       try {
         audioCtx.suspend?.();
       } catch (_) {}
     }
-
     if (soundEnabled) {
       ensureAudio();
       setTimeout(() => uiSound.ok(), 0);
     }
 
     syncSoundUI();
+    syncSystemUI(); // System هم sync بشه
+  }
+
+  function toggleSound() {
+    setSoundEnabled(!soundEnabled);
   }
 
   // -------------------- Overlay --------------------
@@ -196,9 +217,7 @@
 
   function setNavFocusByName(name) {
     navItems.forEach((i) => i.classList.remove("is-focused"));
-    document
-      .querySelector(`.nav-item[data-screen="${name}"]`)
-      ?.classList.add("is-focused");
+    document.querySelector(`.nav-item[data-screen="${name}"]`)?.classList.add("is-focused");
   }
 
   function clearNavFocus() {
@@ -271,9 +290,7 @@
 
   // -------------------- Launch flow --------------------
   function launchGameFlow() {
-    const gameName =
-      document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
-
+    const gameName = document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
     runningGame = gameName;
 
     const npTitle = document.getElementById("nowPlayingTitle");
@@ -321,6 +338,11 @@
         lastGamesFocusIndex = 0;
       }
     }
+
+    // وقتی وارد Home/Media/System می‌شیم زون‌ها رو ریسِت کن
+    if (name === "home") onEnterHome();
+    if (name === "media") onEnterMedia();
+    if (name === "system") onEnterSystem();
   }
 
   function goBack() {
@@ -329,8 +351,8 @@
     setActiveScreen(prev, { pushHistory: false });
   }
 
-  // ==================== Home Focus Engine (PS-like) ====================
-  let homeZone = 0; // 0: Hero buttons | 1: Nav | 2: Context cards
+  // ==================== Home Focus Engine ====================
+  let homeZone = 0; // 0 hero | 1 nav | 2 cards
   let heroIndex = 0;
   let homeNavIndex = 0;
   let cardIndex = 0;
@@ -371,7 +393,6 @@
   }
   function syncHomeZoneFocus() {
     clearHomeCardFocus();
-
     if (homeZone === 0) {
       clearNavFocus();
       focusHomeHero(heroIndex);
@@ -392,15 +413,154 @@
     syncHomeZoneFocus();
   }
 
-  const homeScreenEl = document.querySelector(".home-screen");
-  const homeObserver = new MutationObserver(() => {
-    if (currentScreen === "home") onEnterHome();
-  });
-  if (homeScreenEl) homeObserver.observe(homeScreenEl, { attributes: true });
+  // ==================== MEDIA Zone/Focus ====================
+  // فرض: توی media-screen کارت‌هایی داری با کلاس .media-card یا .context-card
+  let mediaZone = 0; // 0 nav | 1 cards
+  let mediaNavIndex = 0;
+  let mediaCardIndex = 0;
 
-  // ==================== Unified Pointer (single listener) ====================
+  function getMediaNavItems() {
+    return qsAll(".media-screen .nav-item");
+  }
+  function getMediaCards() {
+    // اگر ساختار کارت‌هات فرق داشت این selector رو تغییر بده
+    return qsAll(".media-screen .media-card, .media-screen .context-card");
+  }
+  function clearMediaCardFocus() {
+    getMediaCards().forEach((c) => c.classList.remove("is-focused"));
+  }
+  function focusMediaNav(i = 0) {
+    const items = getMediaNavItems();
+    if (!items.length) return;
+    mediaNavIndex = Math.max(0, Math.min(i, items.length - 1));
+    setNavFocusByName(items[mediaNavIndex].dataset.screen);
+  }
+  function focusMediaCard(i = 0) {
+    const cards = getMediaCards();
+    if (!cards.length) return;
+    mediaCardIndex = Math.max(0, Math.min(i, cards.length - 1));
+    clearMediaCardFocus();
+    cards[mediaCardIndex].classList.add("is-focused");
+    cards[mediaCardIndex].focus?.();
+  }
+  function syncMediaZoneFocus() {
+    clearMediaCardFocus();
+    if (mediaZone === 0) focusMediaNav(mediaNavIndex);
+    if (mediaZone === 1) {
+      clearNavFocus();
+      focusMediaCard(mediaCardIndex);
+    }
+  }
+  function onEnterMedia() {
+    mediaZone = 0;
+    mediaNavIndex = 0;
+    mediaCardIndex = 0;
+    syncMediaZoneFocus();
+  }
+
+  // ==================== SYSTEM Zone/Focus + Real Settings ====================
+  let systemZone = 0; // 0 nav | 1 setting cards | 2 inner buttons
+  let systemNavIndex = 0;
+  let systemCardIndex = 0;
+  let systemBtnIndex = 0;
+
+  function getSystemNavItems() {
+    return qsAll(".system-screen .nav-item");
+  }
+  function getSystemCards() {
+    return qsAll(".system-screen [data-setting-card]");
+  }
+  function getSystemButtonsInCard(cardEl) {
+    if (!cardEl) return [];
+    return Array.from(cardEl.querySelectorAll("button.hero-btn"));
+  }
+
+  function clearSystemCardFocus() {
+    getSystemCards().forEach((c) => c.classList.remove("is-focused"));
+  }
+
+  function focusSystemNav(i = 0) {
+    const items = getSystemNavItems();
+    if (!items.length) return;
+    systemNavIndex = Math.max(0, Math.min(i, items.length - 1));
+    setNavFocusByName(items[systemNavIndex].dataset.screen);
+  }
+
+  function focusSystemCard(i = 0) {
+    const cards = getSystemCards();
+    if (!cards.length) return;
+    systemCardIndex = Math.max(0, Math.min(i, cards.length - 1));
+    clearSystemCardFocus();
+    cards[systemCardIndex].classList.add("is-focused");
+    cards[systemCardIndex].focus?.();
+  }
+
+  function focusSystemButton(i = 0) {
+    const cards = getSystemCards();
+    const card = cards[systemCardIndex];
+    const btns = getSystemButtonsInCard(card);
+    if (!btns.length) return;
+    systemBtnIndex = Math.max(0, Math.min(i, btns.length - 1));
+    btns[systemBtnIndex].focus();
+  }
+
+  function syncSystemZoneFocus() {
+    clearSystemCardFocus();
+
+    if (systemZone === 0) {
+      focusSystemNav(systemNavIndex);
+      return;
+    }
+
+    if (systemZone === 1) {
+      clearNavFocus();
+      focusSystemCard(systemCardIndex);
+      return;
+    }
+
+    if (systemZone === 2) {
+      clearNavFocus();
+      focusSystemCard(systemCardIndex);
+      focusSystemButton(systemBtnIndex);
+    }
+  }
+
+  function syncSystemUI() {
+    // متن‌ها
+    const clockValue = document.getElementById("clockFormatValue");
+    if (clockValue) clockValue.textContent = use24h ? "24H" : "12H";
+
+    const sysSoundValue = document.getElementById("systemSoundValue");
+    if (sysSoundValue) sysSoundValue.textContent = soundEnabled ? "ON" : "OFF";
+
+    // دکمه‌ها (primary)
+    const clock12Btn = document.getElementById("clock12Btn");
+    const clock24Btn = document.getElementById("clock24Btn");
+    if (clock12Btn && clock24Btn) {
+      clock12Btn.classList.toggle("primary", !use24h);
+      clock24Btn.classList.toggle("primary", use24h);
+    }
+
+    const soundOnBtn = document.getElementById("soundOnBtn");
+    const soundOffBtn = document.getElementById("soundOffBtn");
+    if (soundOnBtn && soundOffBtn) {
+      soundOnBtn.classList.toggle("primary", soundEnabled);
+      soundOffBtn.classList.toggle("primary", !soundEnabled);
+    }
+  }
+
+  function onEnterSystem() {
+    systemZone = 0;
+    systemNavIndex = 0;
+    systemCardIndex = 0;
+    systemBtnIndex = 0;
+    syncSystemUI();
+    syncSystemZoneFocus();
+  }
+
+  // ==================== Unified Pointer ====================
   document.addEventListener("pointerdown", (e) => {
-    // SND click
+    // SND click (header)
     if (sndStatusEl && e.target === sndStatusEl) {
       e.preventDefault();
       e.stopPropagation();
@@ -418,7 +578,28 @@
       return;
     }
 
-    // In-Game buttons
+    // SYSTEM clicks
+    if (currentScreen === "system") {
+      const c12 = e.target.closest("#clock12Btn");
+      const c24 = e.target.closest("#clock24Btn");
+      const sOn = e.target.closest("#soundOnBtn");
+      const sOff = e.target.closest("#soundOffBtn");
+
+      if (c12 || c24 || sOn || sOff) {
+        e.preventDefault();
+        e.stopPropagation();
+        uiSound.ok();
+
+        if (c12) setClockFormat(false);
+        if (c24) setClockFormat(true);
+        if (sOn) setSoundEnabled(true);
+        if (sOff) setSoundEnabled(false);
+
+        return;
+      }
+    }
+
+    // In-Game
     if (currentScreen === "in-game") {
       const openNp = e.target.closest("#openNowPlayingBtn");
       const quitG = e.target.closest("#quitFromGameBtn");
@@ -432,7 +613,6 @@
           setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
           return;
         }
-
         if (quitG) {
           uiSound.quit();
           showOverlay("Quitting", runningGame || "Game");
@@ -447,7 +627,7 @@
       }
     }
 
-    // Now Playing buttons
+    // Now Playing
     if (currentScreen === "now-playing") {
       const resume = e.target.closest("#resumeBtn");
       const quit = e.target.closest("#quitBtn");
@@ -456,8 +636,7 @@
         e.stopPropagation();
 
         const title =
-          document.getElementById("nowPlayingTitle")?.textContent?.trim() ||
-          "Game";
+          document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
 
         if (resume) {
           if (!runningGame) return;
@@ -466,10 +645,7 @@
           setTimeout(() => {
             hideOverlay();
             setActiveScreen("in-game");
-            setTimeout(
-              () => document.getElementById("openNowPlayingBtn")?.focus(),
-              0
-            );
+            setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
           }, 500);
         } else {
           uiSound.quit();
@@ -489,7 +665,6 @@
     const card = e.target.closest(".games-screen .game-card");
     if (card && currentScreen === "games") {
       if (performance.now() < blockGameOpenUntil) return;
-
       e.preventDefault();
       e.stopPropagation();
 
@@ -502,11 +677,10 @@
       return;
     }
 
-    // Details buttons (Play / Options)
+    // Details (Play/Options)
     if (currentScreen === "game-details") {
       const playBtn = e.target.closest("#playBtn");
       const optionsBtn = e.target.closest("#optionsBtn");
-
       if (playBtn || optionsBtn) {
         e.preventDefault();
         e.stopPropagation();
@@ -529,7 +703,7 @@
       }
     }
 
-    // Nav click (data-screen)
+    // Nav click
     const goEl = e.target.closest("[data-screen]");
     if (goEl) {
       const target = goEl.dataset.screen;
@@ -637,8 +811,7 @@
     const cards = getGameCards();
     if (!cards.length) return;
 
-    const isOnGameCard =
-      document.activeElement?.classList?.contains("game-card");
+    const isOnGameCard = document.activeElement?.classList?.contains("game-card");
     if (!isOnGameCard) return;
 
     const grid = document.getElementById("gamesGrid");
@@ -653,28 +826,24 @@
       focusGameByIndex(index + 1);
       return;
     }
-
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       uiSound.move();
       focusGameByIndex(index - 1);
       return;
     }
-
     if (e.key === "ArrowDown") {
       e.preventDefault();
       uiSound.move();
       focusGameByIndex(index + cols);
       return;
     }
-
     if (e.key === "ArrowUp") {
       e.preventDefault();
       uiSound.move();
       focusGameByIndex(index - cols);
       return;
     }
-
     if (e.key === "Enter") {
       if (performance.now() < blockGameOpenUntil) return;
       e.preventDefault();
@@ -705,9 +874,7 @@
 
     if (e.key === "Enter") {
       e.preventDefault();
-
-      const title =
-        document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
+      const title = document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
 
       if (document.activeElement === playBtn) {
         uiSound.ok();
@@ -784,22 +951,16 @@
 
     if (e.key === "Enter") {
       e.preventDefault();
-
-      const title =
-        document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
+      const title = document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
 
       if (document.activeElement === resumeBtn) {
         if (!runningGame) return;
-
         uiSound.ok();
         showOverlay("Resuming", runningGame);
         setTimeout(() => {
           hideOverlay();
           setActiveScreen("in-game");
-          setTimeout(
-            () => document.getElementById("openNowPlayingBtn")?.focus(),
-            0
-          );
+          setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
         }, 500);
       } else {
         uiSound.quit();
@@ -814,15 +975,13 @@
     }
   });
 
-  // -------------------- Keyboard: Home PS navigation --------------------
+  // -------------------- Keyboard: Home Engine --------------------
   document.addEventListener("keydown", (e) => {
     if (currentScreen !== "home") return;
 
     const tag = document.activeElement?.tagName?.toLowerCase();
     const isTyping =
-      tag === "input" ||
-      tag === "textarea" ||
-      document.activeElement?.isContentEditable;
+      tag === "input" || tag === "textarea" || document.activeElement?.isContentEditable;
     if (isTyping) return;
 
     const heroBtns = getHomeHeroButtons();
@@ -836,7 +995,6 @@
       syncHomeZoneFocus();
       return;
     }
-
     if (e.key === "ArrowUp") {
       e.preventDefault();
       uiSound.move();
@@ -844,7 +1002,6 @@
       syncHomeZoneFocus();
       return;
     }
-
     if (e.key === "ArrowRight") {
       e.preventDefault();
       uiSound.move();
@@ -863,7 +1020,6 @@
       }
       return;
     }
-
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       uiSound.move();
@@ -898,37 +1054,189 @@
       }
       if (homeZone === 2) {
         const title =
-          cards[cardIndex]
-            ?.querySelector(".context-title")
-            ?.textContent?.trim() || "Card";
+          cards[cardIndex]?.querySelector(".context-title")?.textContent?.trim() || "Card";
         showOverlay("Opening", title);
         setTimeout(() => hideOverlay(), 600);
       }
     }
   });
 
+  // -------------------- Keyboard: MEDIA Zone/Focus --------------------
+  document.addEventListener("keydown", (e) => {
+    if (currentScreen !== "media") return;
+
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    const isTyping =
+      tag === "input" || tag === "textarea" || document.activeElement?.isContentEditable;
+    if (isTyping) return;
+
+    const navs = getMediaNavItems();
+    const cards = getMediaCards();
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      uiSound.move();
+      mediaZone = Math.min(1, mediaZone + 1);
+      syncMediaZoneFocus();
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      uiSound.move();
+      mediaZone = Math.max(0, mediaZone - 1);
+      syncMediaZoneFocus();
+      return;
+    }
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      uiSound.move();
+
+      if (mediaZone === 0 && navs.length) {
+        mediaNavIndex = (mediaNavIndex + 1) % navs.length;
+        focusMediaNav(mediaNavIndex);
+      }
+      if (mediaZone === 1 && cards.length) {
+        mediaCardIndex = (mediaCardIndex + 1) % cards.length;
+        focusMediaCard(mediaCardIndex);
+      }
+      return;
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      uiSound.move();
+
+      if (mediaZone === 0 && navs.length) {
+        mediaNavIndex = (mediaNavIndex - 1 + navs.length) % navs.length;
+        focusMediaNav(mediaNavIndex);
+      }
+      if (mediaZone === 1 && cards.length) {
+        mediaCardIndex = (mediaCardIndex - 1 + cards.length) % cards.length;
+        focusMediaCard(mediaCardIndex);
+      }
+      return;
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      uiSound.ok();
+
+      if (mediaZone === 0) {
+        const target = navs[mediaNavIndex]?.dataset?.screen;
+        if (target) setActiveScreen(target);
+        return;
+      }
+      if (mediaZone === 1) {
+        const title = cards[mediaCardIndex]?.textContent?.trim() || "Media";
+        showOverlay("Opening", title);
+        setTimeout(() => hideOverlay(), 600);
+      }
+    }
+  });
+
+  // -------------------- Keyboard: SYSTEM Zone/Focus --------------------
+  document.addEventListener("keydown", (e) => {
+    if (currentScreen !== "system") return;
+
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    const isTyping =
+      tag === "input" || tag === "textarea" || document.activeElement?.isContentEditable;
+    if (isTyping) return;
+
+    const navs = getSystemNavItems();
+    const cards = getSystemCards();
+    const btns = getSystemButtonsInCard(cards[systemCardIndex]);
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      uiSound.move();
+      systemZone = Math.min(2, systemZone + 1);
+      syncSystemZoneFocus();
+      return;
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      uiSound.move();
+      systemZone = Math.max(0, systemZone - 1);
+      syncSystemZoneFocus();
+      return;
+    }
+
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      uiSound.move();
+
+      if (systemZone === 0 && navs.length) {
+        systemNavIndex = (systemNavIndex + 1) % navs.length;
+        focusSystemNav(systemNavIndex);
+      }
+      if (systemZone === 1 && cards.length) {
+        systemCardIndex = (systemCardIndex + 1) % cards.length;
+        focusSystemCard(systemCardIndex);
+      }
+      if (systemZone === 2 && btns.length) {
+        systemBtnIndex = (systemBtnIndex + 1) % btns.length;
+        focusSystemButton(systemBtnIndex);
+      }
+      return;
+    }
+
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      uiSound.move();
+
+      if (systemZone === 0 && navs.length) {
+        systemNavIndex = (systemNavIndex - 1 + navs.length) % navs.length;
+        focusSystemNav(systemNavIndex);
+      }
+      if (systemZone === 1 && cards.length) {
+        systemCardIndex = (systemCardIndex - 1 + cards.length) % cards.length;
+        focusSystemCard(systemCardIndex);
+      }
+      if (systemZone === 2 && btns.length) {
+        systemBtnIndex = (systemBtnIndex - 1 + btns.length) % btns.length;
+        focusSystemButton(systemBtnIndex);
+      }
+      return;
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      uiSound.ok();
+
+      if (systemZone === 0) {
+        const target = navs[systemNavIndex]?.dataset?.screen;
+        if (target) setActiveScreen(target);
+        return;
+      }
+
+      if (systemZone === 1) {
+        // وارد دکمه‌های داخل کارت شو
+        systemZone = 2;
+        systemBtnIndex = 0;
+        syncSystemZoneFocus();
+        return;
+      }
+
+      if (systemZone === 2) {
+        // تصمیم بر اساس id دکمه
+        const focusedId = document.activeElement?.id;
+
+        if (focusedId === "clock12Btn") setClockFormat(false);
+        if (focusedId === "clock24Btn") setClockFormat(true);
+
+        if (focusedId === "soundOnBtn") setSoundEnabled(true);
+        if (focusedId === "soundOffBtn") setSoundEnabled(false);
+      }
+    }
+  });
+
   // -------------------- Init --------------------
   function init() {
-    // DOM elements
     sndStatusEl = document.getElementById("sndStatus");
 
-    // restore sound from localStorage
-    try {
-      const saved = localStorage.getItem("nexora_sound_enabled");
-      if (saved === "0") soundEnabled = false;
-      if (saved === "1") soundEnabled = true;
-    } catch (_) {}
-
-    // make SND clickable + keyboard accessible
     if (sndStatusEl) {
       sndStatusEl.setAttribute("tabindex", "0");
-
-      sndStatusEl.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleSound();
-      });
-
       sndStatusEl.addEventListener("keydown", (e) => {
         if (e.key !== "Enter" && e.key !== " ") return;
         e.preventDefault();
@@ -936,11 +1244,16 @@
       });
     }
 
+    // sync header
     syncSoundUI();
+
+    // clock
     startClock();
 
+    // system UI initial sync
+    syncSystemUI();
+
     setActiveScreen("home", { pushHistory: false });
-    if (currentScreen === "home") onEnterHome();
   }
 
   if (document.readyState === "loading") {
