@@ -552,3 +552,300 @@ body {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(220, 235, 255, 0.22);
 }
+/* =========================
+   Animated Background (Aurora)
+   ========================= */
+
+.main-os {
+  position: relative; /* مهم */
+}
+
+/* لایه بک‌گراند */
+.os-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* اینکه محتوا روی بک‌گراند بیاد */
+.header-os,
+.screens {
+  position: relative;
+  z-index: 1;
+}
+
+/* blobs */
+.blob {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 999px;
+  filter: blur(60px);
+  opacity: 0.22;
+  transform: translate3d(0, 0, 0);
+  animation: floaty 10s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+.b1 {
+  top: -120px;
+  left: -120px;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(184, 220, 255, 0.85),
+    rgba(184, 220, 255, 0) 60%
+  );
+  animation-duration: 12s;
+}
+
+.b2 {
+  bottom: -160px;
+  right: -160px;
+  background: radial-gradient(
+    circle at 70% 70%,
+    rgba(120, 170, 255, 0.75),
+    rgba(120, 170, 255, 0) 60%
+  );
+  animation-duration: 14s;
+  animation-direction: reverse;
+}
+
+.b3 {
+  top: 30%;
+  left: 55%;
+  background: radial-gradient(
+    circle at 40% 50%,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0) 60%
+  );
+  width: 420px;
+  height: 420px;
+  animation-duration: 16s;
+}
+
+/* یه گرین خیلی لطیف برای حس سینمایی */
+.grain {
+  position: absolute;
+  inset: -30%;
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  transform: translate3d(0, 0, 0);
+  animation: grainMove 8s steps(6) infinite;
+}
+
+@keyframes floaty {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  40% {
+    transform: translate(40px, -30px) scale(1.05);
+  }
+  70% {
+    transform: translate(-25px, 30px) scale(0.98);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes grainMove {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-2%, 3%);
+  }
+  50% {
+    transform: translate(3%, -2%);
+  }
+  75% {
+    transform: translate(-3%, -1%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+/* احترام به reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .blob,
+  .grain {
+    animation: none !important;
+  }
+}
+/* =========================
+   Animated Background (Aurora PRO)
+   ========================= */
+
+.main-os {
+  position: relative;
+  isolation: isolate; /* مهم برای blend */
+}
+
+/* لایه بک‌گراند */
+.os-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* محتوا روی بک‌گراند */
+.header-os,
+.screens {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- Blobs --- */
+.blob {
+  position: absolute;
+  width: 620px;
+  height: 620px;
+  border-radius: 999px;
+  filter: blur(55px) saturate(140%);
+  opacity: 0.32; /* بیشتر تو چشم */
+  transform: translate3d(0, 0, 0);
+  animation: floaty 10s ease-in-out infinite;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+
+.b1 {
+  top: -160px;
+  left: -160px;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(184, 220, 255, 0.95),
+    rgba(184, 220, 255, 0) 62%
+  );
+  animation-duration: 11s;
+}
+
+.b2 {
+  bottom: -200px;
+  right: -200px;
+  background: radial-gradient(
+    circle at 70% 70%,
+    rgba(90, 150, 255, 0.95),
+    rgba(90, 150, 255, 0) 62%
+  );
+  animation-duration: 13s;
+  animation-direction: reverse;
+}
+
+.b3 {
+  top: 22%;
+  left: 52%;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(
+    circle at 40% 50%,
+    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0) 60%
+  );
+  animation-duration: 16s;
+}
+
+/* --- Aurora Sweep (نوار نورانی متحرک) --- */
+.os-bg::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(
+    from 180deg,
+    rgba(184, 220, 255, 0) 0deg,
+    rgba(184, 220, 255, 0.22) 60deg,
+    rgba(120, 170, 255, 0.15) 120deg,
+    rgba(255, 255, 255, 0.1) 180deg,
+    rgba(184, 220, 255, 0) 260deg
+  );
+  filter: blur(28px);
+  opacity: 0.9;
+  mix-blend-mode: screen;
+  animation: sweep 9s ease-in-out infinite;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+/* --- Vignette (عمق بیشتر) --- */
+.os-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(5, 6, 7, 0) 35%,
+    rgba(5, 6, 7, 0.55) 100%
+  );
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+/* --- Grain --- */
+.grain {
+  position: absolute;
+  inset: -30%;
+  opacity: 0.1; /* یه ذره قوی‌تر */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+  transform: translate3d(0, 0, 0);
+  animation: grainMove 7s steps(6) infinite;
+}
+
+/* Animations */
+@keyframes floaty {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  35% {
+    transform: translate(55px, -35px) scale(1.08);
+  }
+  70% {
+    transform: translate(-35px, 40px) scale(0.98);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translate(-2%, 2%) rotate(0deg) scale(1.05);
+  }
+  50% {
+    transform: translate(2%, -2%) rotate(140deg) scale(1.12);
+  }
+  100% {
+    transform: translate(-2%, 2%) rotate(280deg) scale(1.05);
+  }
+}
+
+@keyframes grainMove {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-2%, 3%);
+  }
+  50% {
+    transform: translate(3%, -2%);
+  }
+  75% {
+    transform: translate(-3%, -1%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .blob,
+  .grain,
+  .os-bg::before {
+    animation: none !important;
+  }
+}
