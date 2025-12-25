@@ -158,6 +158,59 @@
             <button class="hero-btn" id="quitFromGameBtn">Quit</button>
           </div>
         </section>
+        <!-- MEDIA SCREEN -->
+        <section class="screen media-screen">
+          <button class="back-btn" data-action="back">← Back</button>
+
+          <div style="height: 24px"></div>
+
+          <div class="details-title">MEDIA</div>
+          <div class="details-sub">Music, videos, screenshots…</div>
+
+          <section class="context-cards">
+            <div class="context-card">
+              <div class="context-title">Music</div>
+              <div class="context-value">Playlists</div>
+              <div class="context-sub">Open</div>
+            </div>
+
+            <div class="context-card">
+              <div class="context-title">Gallery</div>
+              <div class="context-value">Screenshots</div>
+              <div class="context-sub">Browse</div>
+            </div>
+
+            <div class="context-card">
+              <div class="context-title">YouTube</div>
+              <div class="context-value">Watch</div>
+              <div class="context-sub">Open</div>
+            </div>
+          </section>
+        </section>
+
+        <!-- SYSTEM SCREEN -->
+        <section class="screen system-screen">
+          <button class="back-btn" data-action="back">← Back</button>
+
+          <div style="height: 24px"></div>
+
+          <div class="details-title">SYSTEM</div>
+          <div class="details-sub">Settings & Preferences</div>
+
+          <section class="context-cards">
+            <div class="context-card" id="toggleClockFormat">
+              <div class="context-title">Clock</div>
+              <div class="context-value" id="clockModeText">12H</div>
+              <div class="context-sub">Press Enter to toggle</div>
+            </div>
+
+            <div class="context-card" id="toggleSoundCard">
+              <div class="context-title">Sound</div>
+              <div class="context-value" id="soundModeText">ON</div>
+              <div class="context-sub">Press Enter to toggle</div>
+            </div>
+          </section>
+        </section>
       </section>
     </section>
     <!-- Main of OS -->
@@ -168,8 +221,6 @@
         <div class="loading-sub" id="loadingSub">Please wait...</div>
       </div>
     </div>
-
-    <!-- New code here -->
 
     <script src="./app.js"></script>
   </body>
