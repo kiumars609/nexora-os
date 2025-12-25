@@ -1,5 +1,5 @@
 /* =========================
-   Nexora OS - app.js (full fixed)
+   Nexora OS - app.js (single unified fixed)
    ========================= */
 
 (() => {
@@ -39,22 +39,26 @@
     const el = document.getElementById("timeEl");
     if (!el) return;
 
-    const use24h = false; // بعداً می‌تونیم از System تنظیمش کنیم
+    // فعلاً از localStorage می‌خونه (بعداً تو System کنترلش می‌کنیم)
+    let use24h = false;
+    try {
+      const saved = localStorage.getItem("nexora_use24h");
+      if (saved === "1") use24h = true;
+      if (saved === "0") use24h = false;
+    } catch (_) {}
 
     const render = () => {
       el.textContent = formatTime(new Date(), { use24h });
     };
 
     render();
-
-    // هر دقیقه
     setInterval(render, 60 * 1000);
   }
 
   // ==================== UI Sounds (WebAudio) ====================
   let audioCtx = null;
   let soundEnabled = true;
-  let sndStatusEl = null; // بعد از DOM آماده میشه
+  let sndStatusEl = null;
 
   function ensureAudio() {
     if (!soundEnabled) return null;
@@ -112,7 +116,6 @@
   function chord(freqs = [520, 760], dur = 0.06, gap = 0.015) {
     const ctx = ensureAudio();
     if (!ctx) return;
-
     freqs.forEach((f, idx) => {
       setTimeout(() => {
         beep({ freq: f, dur, type: "triangle", vol: 0.05 });
@@ -125,38 +128,33 @@
   uiSound.overlay = () =>
     beep({ freq: 640, dur: 0.03, type: "sine", vol: 0.04 });
 
-  // ==================== Sound Toggle (M) + UI ====================
   function syncSoundUI() {
-  if (!sndStatusEl) return;
+    if (!sndStatusEl) return;
 
-  sndStatusEl.textContent = `SND: ${soundEnabled ? "ON" : "OFF"}`;
-  sndStatusEl.classList.toggle("is-off", !soundEnabled);
+    sndStatusEl.textContent = `SND: ${soundEnabled ? "ON" : "OFF"}`;
+    sndStatusEl.classList.toggle("is-off", !soundEnabled);
 
-  // Save state
-  try {
-    localStorage.setItem("nexora_sound_enabled", soundEnabled ? "1" : "0");
-  } catch (_) {}
-}
-
-function toggleSound() {
-  soundEnabled = !soundEnabled;
-
-  // OFF -> suspend
-  if (!soundEnabled && audioCtx && audioCtx.state !== "closed") {
     try {
-      audioCtx.suspend?.();
+      localStorage.setItem("nexora_sound_enabled", soundEnabled ? "1" : "0");
     } catch (_) {}
   }
 
-  // ON -> resume + tick
-  if (soundEnabled) {
-    ensureAudio();
-    setTimeout(() => uiSound.ok(), 0);
+  function toggleSound() {
+    soundEnabled = !soundEnabled;
+
+    if (!soundEnabled && audioCtx && audioCtx.state !== "closed") {
+      try {
+        audioCtx.suspend?.();
+      } catch (_) {}
+    }
+
+    if (soundEnabled) {
+      ensureAudio();
+      setTimeout(() => uiSound.ok(), 0);
+    }
+
+    syncSoundUI();
   }
-
-  syncSoundUI();
-}
-
 
   // -------------------- Overlay --------------------
   function showOverlay(title = "Launching", sub = "Please wait...") {
@@ -214,17 +212,14 @@ function toggleSound() {
 
   function syncNavUI() {
     const order = getNavOrder();
-
-    // active همیشه آخرین tab واقعی
     setNavActiveByName(currentTab);
 
-    // focus:
     if (currentScreen !== "home") {
       const i = order.indexOf(currentTab);
       navFocusIndex = i >= 0 ? i : 0;
       setNavFocusByName(order[navFocusIndex] || currentTab);
     } else {
-      clearNavFocus(); // روی home فوکوس nav دست Home Engine هست
+      clearNavFocus();
     }
   }
 
@@ -315,7 +310,6 @@ function toggleSound() {
     screens.forEach((s) => s.classList.remove("is-active"));
     document.querySelector(`.${name}-screen`)?.classList.add("is-active");
 
-    // فقط یک جا sync
     syncNavUI();
 
     if (name === "games") {
@@ -335,8 +329,85 @@ function toggleSound() {
     setActiveScreen(prev, { pushHistory: false });
   }
 
-  // -------------------- Pointer (Console-like) --------------------
+  // ==================== Home Focus Engine (PS-like) ====================
+  let homeZone = 0; // 0: Hero buttons | 1: Nav | 2: Context cards
+  let heroIndex = 0;
+  let homeNavIndex = 0;
+  let cardIndex = 0;
+
+  function qsAll(sel) {
+    return Array.from(document.querySelectorAll(sel));
+  }
+  function getHomeHeroButtons() {
+    return qsAll(".home-screen .hero-btn");
+  }
+  function getHomeNavItems() {
+    return qsAll(".home-screen .nav-item");
+  }
+  function getHomeCards() {
+    return qsAll(".home-screen .context-card");
+  }
+  function clearHomeCardFocus() {
+    getHomeCards().forEach((c) => c.classList.remove("is-focused"));
+  }
+  function focusHomeHero(i = 0) {
+    const btns = getHomeHeroButtons();
+    if (!btns.length) return;
+    heroIndex = Math.max(0, Math.min(i, btns.length - 1));
+    btns[heroIndex].focus();
+  }
+  function focusHomeNav(i = 0) {
+    const items = getHomeNavItems();
+    if (!items.length) return;
+    homeNavIndex = Math.max(0, Math.min(i, items.length - 1));
+    setNavFocusByName(items[homeNavIndex].dataset.screen);
+  }
+  function focusHomeCard(i = 0) {
+    const cards = getHomeCards();
+    if (!cards.length) return;
+    cardIndex = Math.max(0, Math.min(i, cards.length - 1));
+    clearHomeCardFocus();
+    cards[cardIndex].classList.add("is-focused");
+  }
+  function syncHomeZoneFocus() {
+    clearHomeCardFocus();
+
+    if (homeZone === 0) {
+      clearNavFocus();
+      focusHomeHero(heroIndex);
+    }
+    if (homeZone === 1) {
+      focusHomeNav(homeNavIndex);
+    }
+    if (homeZone === 2) {
+      clearNavFocus();
+      focusHomeCard(cardIndex);
+    }
+  }
+  function onEnterHome() {
+    homeZone = 0;
+    heroIndex = 0;
+    homeNavIndex = 0;
+    cardIndex = 0;
+    syncHomeZoneFocus();
+  }
+
+  const homeScreenEl = document.querySelector(".home-screen");
+  const homeObserver = new MutationObserver(() => {
+    if (currentScreen === "home") onEnterHome();
+  });
+  if (homeScreenEl) homeObserver.observe(homeScreenEl, { attributes: true });
+
+  // ==================== Unified Pointer (single listener) ====================
   document.addEventListener("pointerdown", (e) => {
+    // SND click
+    if (sndStatusEl && e.target === sndStatusEl) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleSound();
+      return;
+    }
+
     // Back
     const backEl = e.target.closest('[data-action="back"]');
     if (backEl) {
@@ -345,6 +416,73 @@ function toggleSound() {
       uiSound.back();
       goBack();
       return;
+    }
+
+    // In-Game buttons
+    if (currentScreen === "in-game") {
+      const openNp = e.target.closest("#openNowPlayingBtn");
+      const quitG = e.target.closest("#quitFromGameBtn");
+      if (openNp || quitG) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (openNp) {
+          uiSound.ok();
+          setActiveScreen("now-playing");
+          setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
+          return;
+        }
+
+        if (quitG) {
+          uiSound.quit();
+          showOverlay("Quitting", runningGame || "Game");
+          setTimeout(() => {
+            runningGame = null;
+            hideOverlay();
+            setActiveScreen("games");
+            setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
+          }, 700);
+          return;
+        }
+      }
+    }
+
+    // Now Playing buttons
+    if (currentScreen === "now-playing") {
+      const resume = e.target.closest("#resumeBtn");
+      const quit = e.target.closest("#quitBtn");
+      if (resume || quit) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const title =
+          document.getElementById("nowPlayingTitle")?.textContent?.trim() ||
+          "Game";
+
+        if (resume) {
+          if (!runningGame) return;
+          uiSound.ok();
+          showOverlay("Resuming", runningGame);
+          setTimeout(() => {
+            hideOverlay();
+            setActiveScreen("in-game");
+            setTimeout(
+              () => document.getElementById("openNowPlayingBtn")?.focus(),
+              0
+            );
+          }, 500);
+        } else {
+          uiSound.quit();
+          showOverlay("Quitting", runningGame || title);
+          setTimeout(() => {
+            runningGame = null;
+            hideOverlay();
+            setActiveScreen("games");
+            setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
+          }, 700);
+        }
+        return;
+      }
     }
 
     // Games card
@@ -391,17 +529,18 @@ function toggleSound() {
       }
     }
 
-    // Navigate by data-screen (Nav click)
+    // Nav click (data-screen)
     const goEl = e.target.closest("[data-screen]");
-    if (!goEl) return;
+    if (goEl) {
+      const target = goEl.dataset.screen;
+      if (!target) return;
 
-    const target = goEl.dataset.screen;
-    if (!target) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    uiSound.ok();
-    setActiveScreen(target);
+      e.preventDefault();
+      e.stopPropagation();
+      uiSound.ok();
+      setActiveScreen(target);
+      return;
+    }
   });
 
   // Prevent click-through after pointerdown (games)
@@ -430,11 +569,25 @@ function toggleSound() {
       tag === "input" ||
       tag === "textarea" ||
       document.activeElement?.isContentEditable;
+    if (isTyping) return;
 
-    if (!isTyping) {
-      uiSound.back();
-      goBack();
-    }
+    uiSound.back();
+    goBack();
+  });
+
+  // -------------------- Keyboard: Mute toggle (M) --------------------
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "m" && e.key !== "M") return;
+
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    const isTyping =
+      tag === "input" ||
+      tag === "textarea" ||
+      document.activeElement?.isContentEditable;
+    if (isTyping) return;
+
+    e.preventDefault();
+    toggleSound();
   });
 
   // -------------------- Keyboard: NAV (non-home) --------------------
@@ -544,9 +697,7 @@ function toggleSound() {
 
     if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
       e.preventDefault();
-      e.stopPropagation();
       uiSound.move();
-
       if (document.activeElement === playBtn) optionsBtn.focus();
       else playBtn.focus();
       return;
@@ -554,7 +705,6 @@ function toggleSound() {
 
     if (e.key === "Enter") {
       e.preventDefault();
-      e.stopPropagation();
 
       const title =
         document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
@@ -573,41 +723,42 @@ function toggleSound() {
     }
   });
 
-  // -------------------- Pointer: Now Playing --------------------
-  document.addEventListener("pointerdown", (e) => {
-    if (currentScreen !== "now-playing") return;
+  // -------------------- Keyboard: In-Game --------------------
+  document.addEventListener("keydown", (e) => {
+    if (currentScreen !== "in-game") return;
 
-    const resume = e.target.closest("#resumeBtn");
-    const quit = e.target.closest("#quitBtn");
-    if (!resume && !quit) return;
+    const openBtn = document.getElementById("openNowPlayingBtn");
+    const quitBtn = document.getElementById("quitFromGameBtn");
+    if (!openBtn || !quitBtn) return;
 
-    e.preventDefault();
-    e.stopPropagation();
+    const active = document.activeElement;
+    const isOnBtn = active === openBtn || active === quitBtn;
+    if (!isOnBtn) openBtn.focus();
 
-    const title =
-      document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      uiSound.move();
+      if (document.activeElement === openBtn) quitBtn.focus();
+      else openBtn.focus();
+      return;
+    }
 
-    if (resume) {
-      if (!runningGame) return;
-
-      uiSound.ok();
-      showOverlay("Resuming", runningGame);
-      setTimeout(() => {
-        hideOverlay();
-        setActiveScreen("in-game");
-        setTimeout(
-          () => document.getElementById("openNowPlayingBtn")?.focus(),
-          0
-        );
-      }, 500);
-    } else {
-      uiSound.quit();
-      showOverlay("Quitting", runningGame || title);
-      setTimeout(() => {
-        runningGame = null;
-        hideOverlay();
-        setActiveScreen("games");
-      }, 700);
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (document.activeElement === openBtn) {
+        uiSound.ok();
+        setActiveScreen("now-playing");
+        setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
+      } else {
+        uiSound.quit();
+        showOverlay("Quitting", runningGame || "Game");
+        setTimeout(() => {
+          runningGame = null;
+          hideOverlay();
+          setActiveScreen("games");
+          setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
+        }, 700);
+      }
     }
   });
 
@@ -625,9 +776,7 @@ function toggleSound() {
 
     if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
       e.preventDefault();
-      e.stopPropagation();
       uiSound.move();
-
       if (document.activeElement === resumeBtn) quitBtn.focus();
       else resumeBtn.focus();
       return;
@@ -635,7 +784,6 @@ function toggleSound() {
 
     if (e.key === "Enter") {
       e.preventDefault();
-      e.stopPropagation();
 
       const title =
         document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
@@ -660,164 +808,11 @@ function toggleSound() {
           runningGame = null;
           hideOverlay();
           setActiveScreen("games");
-        }, 700);
-      }
-    }
-  });
-
-  // -------------------- Pointer: In-Game --------------------
-  document.addEventListener("pointerdown", (e) => {
-    if (currentScreen !== "in-game") return;
-
-    const openNp = e.target.closest("#openNowPlayingBtn");
-    const quitG = e.target.closest("#quitFromGameBtn");
-    if (!openNp && !quitG) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (openNp) {
-      uiSound.ok();
-      setActiveScreen("now-playing");
-      setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
-      return;
-    }
-
-    if (quitG) {
-      uiSound.quit();
-      showOverlay("Quitting", runningGame || "Game");
-      setTimeout(() => {
-        runningGame = null;
-        hideOverlay();
-        setActiveScreen("games");
-        setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
-      }, 700);
-    }
-  });
-
-  // -------------------- Keyboard: In-Game --------------------
-  document.addEventListener("keydown", (e) => {
-    if (currentScreen !== "in-game") return;
-
-    const openBtn = document.getElementById("openNowPlayingBtn");
-    const quitBtn = document.getElementById("quitFromGameBtn");
-    if (!openBtn || !quitBtn) return;
-
-    const active = document.activeElement;
-    const isOnBtn = active === openBtn || active === quitBtn;
-    if (!isOnBtn) openBtn.focus();
-
-    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-      e.preventDefault();
-      e.stopPropagation();
-      uiSound.move();
-
-      if (document.activeElement === openBtn) quitBtn.focus();
-      else openBtn.focus();
-      return;
-    }
-
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (document.activeElement === openBtn) {
-        uiSound.ok();
-        setActiveScreen("now-playing");
-        setTimeout(() => document.getElementById("resumeBtn")?.focus(), 0);
-      } else {
-        uiSound.quit();
-        showOverlay("Quitting", runningGame || "Game");
-        setTimeout(() => {
-          runningGame = null;
-          hideOverlay();
-          setActiveScreen("games");
           setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
         }, 700);
       }
     }
   });
-
-  // ==================== Home Focus Engine (PS-like) ====================
-  let homeZone = 0; // 0: Hero buttons | 1: Nav | 2: Context cards
-  let heroIndex = 0;
-  let homeNavIndex = 0;
-  let cardIndex = 0;
-
-  function qsAll(sel) {
-    return Array.from(document.querySelectorAll(sel));
-  }
-
-  function getHomeHeroButtons() {
-    return qsAll(".home-screen .hero-btn");
-  }
-
-  function getHomeNavItems() {
-    return qsAll(".home-screen .nav-item");
-  }
-
-  function getHomeCards() {
-    return qsAll(".home-screen .context-card");
-  }
-
-  function clearHomeCardFocus() {
-    getHomeCards().forEach((c) => c.classList.remove("is-focused"));
-  }
-
-  function focusHomeHero(i = 0) {
-    const btns = getHomeHeroButtons();
-    if (!btns.length) return;
-    heroIndex = Math.max(0, Math.min(i, btns.length - 1));
-    btns[heroIndex].focus();
-  }
-
-  function focusHomeNav(i = 0) {
-    const items = getHomeNavItems();
-    if (!items.length) return;
-    homeNavIndex = Math.max(0, Math.min(i, items.length - 1));
-    setNavFocusByName(items[homeNavIndex].dataset.screen);
-  }
-
-  function focusHomeCard(i = 0) {
-    const cards = getHomeCards();
-    if (!cards.length) return;
-    cardIndex = Math.max(0, Math.min(i, cards.length - 1));
-    clearHomeCardFocus();
-    cards[cardIndex].classList.add("is-focused");
-    cards[cardIndex].setAttribute("aria-selected", "true");
-  }
-
-  function syncHomeZoneFocus() {
-    clearHomeCardFocus();
-
-    if (homeZone === 0) {
-      clearNavFocus();
-      focusHomeHero(heroIndex);
-    }
-
-    if (homeZone === 1) {
-      focusHomeNav(homeNavIndex);
-    }
-
-    if (homeZone === 2) {
-      clearNavFocus();
-      focusHomeCard(cardIndex);
-    }
-  }
-
-  function onEnterHome() {
-    homeZone = 0;
-    heroIndex = 0;
-    homeNavIndex = 0;
-    cardIndex = 0;
-    syncHomeZoneFocus();
-  }
-
-  const homeScreenEl = document.querySelector(".home-screen");
-  const homeObserver = new MutationObserver(() => {
-    if (currentScreen === "home") onEnterHome();
-  });
-  if (homeScreenEl) homeObserver.observe(homeScreenEl, { attributes: true });
 
   // -------------------- Keyboard: Home PS navigation --------------------
   document.addEventListener("keydown", (e) => {
@@ -858,12 +853,10 @@ function toggleSound() {
         heroIndex = (heroIndex + 1) % heroBtns.length;
         focusHomeHero(heroIndex);
       }
-
       if (homeZone === 1 && navs.length) {
         homeNavIndex = (homeNavIndex + 1) % navs.length;
         focusHomeNav(homeNavIndex);
       }
-
       if (homeZone === 2 && cards.length) {
         cardIndex = (cardIndex + 1) % cards.length;
         focusHomeCard(cardIndex);
@@ -879,12 +872,10 @@ function toggleSound() {
         heroIndex = (heroIndex - 1 + heroBtns.length) % heroBtns.length;
         focusHomeHero(heroIndex);
       }
-
       if (homeZone === 1 && navs.length) {
         homeNavIndex = (homeNavIndex - 1 + navs.length) % navs.length;
         focusHomeNav(homeNavIndex);
       }
-
       if (homeZone === 2 && cards.length) {
         cardIndex = (cardIndex - 1 + cards.length) % cards.length;
         focusHomeCard(cardIndex);
@@ -900,13 +891,11 @@ function toggleSound() {
         heroBtns[heroIndex]?.click();
         return;
       }
-
       if (homeZone === 1) {
         const target = navs[homeNavIndex]?.dataset?.screen;
         if (target) setActiveScreen(target);
         return;
       }
-
       if (homeZone === 2) {
         const title =
           cards[cardIndex]
@@ -918,76 +907,45 @@ function toggleSound() {
     }
   });
 
-  // -------------------- Keyboard: Mute toggle (global) --------------------
-document.addEventListener("keydown", (e) => {
-  if (e.key !== "m" && e.key !== "M") return;
+  // -------------------- Init --------------------
+  function init() {
+    // DOM elements
+    sndStatusEl = document.getElementById("sndStatus");
 
-  const tag = document.activeElement?.tagName?.toLowerCase();
-  const isTyping =
-    tag === "input" ||
-    tag === "textarea" ||
-    document.activeElement?.isContentEditable;
-  if (isTyping) return;
+    // restore sound from localStorage
+    try {
+      const saved = localStorage.getItem("nexora_sound_enabled");
+      if (saved === "0") soundEnabled = false;
+      if (saved === "1") soundEnabled = true;
+    } catch (_) {}
 
-  e.preventDefault();
-  toggleSound();
-});
+    // make SND clickable + keyboard accessible
+    if (sndStatusEl) {
+      sndStatusEl.setAttribute("tabindex", "0");
 
-// -------------------- Init --------------------
-function init() {
-  // DOM elements
-  sndStatusEl = document.getElementById("sndStatus");
+      sndStatusEl.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleSound();
+      });
 
-  // restore sound from localStorage
-  try {
-    const saved = localStorage.getItem("nexora_sound_enabled");
-    if (saved === "0") soundEnabled = false;
-    if (saved === "1") soundEnabled = true;
-  } catch (_) {}
+      sndStatusEl.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        toggleSound();
+      });
+    }
 
-  // make SND clickable + keyboard accessible
-  if (sndStatusEl) {
-    // click/tap
-    sndStatusEl.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleSound();
-    });
+    syncSoundUI();
+    startClock();
 
-    // Enter / Space
-    sndStatusEl.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter" && e.key !== " ") return;
-      e.preventDefault();
-      toggleSound();
-    });
+    setActiveScreen("home", { pushHistory: false });
+    if (currentScreen === "home") onEnterHome();
   }
 
-  // UI init
-  syncSoundUI();
-  startClock();
-
-  setActiveScreen("home", { pushHistory: false });
-  if (currentScreen === "home") onEnterHome();
-
-  // اگر span دیر لود شد، یه retry
-  if (!sndStatusEl) {
-    setTimeout(() => {
-      sndStatusEl = document.getElementById("sndStatus");
-      syncSoundUI();
-    }, 0);
-
-    setTimeout(() => {
-      sndStatusEl = document.getElementById("sndStatus");
-      syncSoundUI();
-    }, 50);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
+  } else {
+    init();
   }
-}
-
-// script آخر body هست، اما برای اطمینان:
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init, { once: true });
-} else {
-  init();
-}
 })();
-
