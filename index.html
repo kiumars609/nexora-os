@@ -42,16 +42,24 @@
               SND: ON
             </span>
 
-            <span class="wifi" id="wifiStatus" title="Wi-Fi: ON (W)">
-              <img src="assets/images/icones/wifi.png" alt="wifi" />
+            <span
+              class="wifi"
+              id="wifiStatus"
+              tabindex="0"
+              role="status"
+              aria-live="polite"
+            >
+              <img src="assets/images/icones/wifi.png" alt="Wi-Fi" />
             </span>
 
             <span
               class="controller"
               id="controllerStatus"
-              title="Controller: Connected (C)"
+              tabindex="0"
+              role="status"
+              aria-live="polite"
             >
-              <img src="assets/images/icones/controller.png" alt="controller" />
+              <img src="assets/images/icones/controller.png" alt="Controller" />
             </span>
           </div>
         </div>
@@ -140,7 +148,11 @@
           <div class="games-title">MEDIA</div>
 
           <section class="context-cards media-cards">
-            <div class="context-card media-card" tabindex="0" data-media="Store">
+            <div
+              class="context-card media-card"
+              tabindex="0"
+              data-media="Store"
+            >
               <div class="context-title">Store</div>
               <div class="context-value">Browse</div>
               <div class="context-sub">Discover new content</div>
@@ -278,7 +290,7 @@
         <div class="loading-sub" id="loadingSub">Please wait...</div>
       </div>
     </div>
-
+    <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
     <script src="./app.js"></script>
   </body>
 </html>

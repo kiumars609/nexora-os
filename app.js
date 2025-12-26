@@ -24,6 +24,19 @@
   // currentTab = active underline tab (HOME/GAMES/MEDIA/SYSTEM)
   let currentTab = "home";
 
+  let toastTimer = null;
+
+  function showToast(msg = "OK") {
+    const el = document.getElementById("toast");
+    if (!el) return;
+
+    el.textContent = msg;
+    el.classList.add("is-show");
+
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("is-show"), 900);
+  }
+
   // ==================== SETTINGS ====================
   const SETTINGS = {
     soundKey: "nexora_sound_enabled", // "1" | "0"
@@ -126,12 +139,14 @@
     wifiOn = !wifiOn;
     saveBool(SETTINGS.wifiKey, wifiOn);
     syncWifiUI();
+    showToast(`Wi-Fi: ${wifiOn ? "ON" : "OFF"}`);
   }
 
   function toggleController() {
     controllerOn = !controllerOn;
     saveBool(SETTINGS.controllerKey, controllerOn);
     syncControllerUI();
+    showToast(`Controller: ${controllerOn ? "Connected" : "Disconnected"}`);
   }
 
   // ==================== Clock ====================
@@ -171,6 +186,7 @@
     saveBool(SETTINGS.clockKey, use24h);
     renderClock();
     syncSystemUI();
+    showToast(`Clock: ${use24h ? "24H" : "12H"}`);
   }
 
   function toggleClockFormat() {
@@ -270,6 +286,7 @@
 
     syncSoundUI();
     syncSystemUI();
+    showToast(`Sound: ${soundEnabled ? "ON" : "OFF"}`);
   }
 
   function toggleSound() {
@@ -405,7 +422,10 @@
     setTimeout(() => {
       hideOverlay();
       setActiveScreen("in-game");
-      setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
+      setTimeout(
+        () => document.getElementById("openNowPlayingBtn")?.focus(),
+        0
+      );
     }, 900);
   }
 
@@ -760,7 +780,8 @@
         e.stopPropagation();
 
         const title =
-          document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
+          document.getElementById("detailsTitle")?.textContent?.trim() ||
+          "Game";
 
         if (playBtn) {
           uiSound.ok();
@@ -1065,7 +1086,8 @@
     if (e.key === "Enter") {
       e.preventDefault();
       const title =
-        document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
+        document.getElementById("nowPlayingTitle")?.textContent?.trim() ||
+        "Game";
 
       if (document.activeElement === resumeBtn) {
         if (!runningGame) return;
@@ -1172,8 +1194,9 @@
 
       if (homeZone === 2) {
         const title =
-          cards[cardIndex]?.querySelector(".context-title")?.textContent?.trim() ||
-          "Card";
+          cards[cardIndex]
+            ?.querySelector(".context-title")
+            ?.textContent?.trim() || "Card";
         showOverlay("Opening", title);
         setTimeout(() => hideOverlay(), 600);
       }
