@@ -1,5 +1,11 @@
 /* =========================
-   Nexora OS - app.js (fixed structure + wifi/controller + shortcuts)
+   Nexora OS - app.js (FULL FIXED)
+   - Global nav aware
+   - Active underline + focus underline fixed
+   - Home zones fixed (Nav top -> Hero -> Cards)
+   - Games ArrowUp -> Nav when on first row
+   - Nav keyboard works whenever nav-item focused
+   - Media/System enter keeps nav focus on currentTab
    ========================= */
 
 (() => {
@@ -15,15 +21,10 @@
   let lastGamesFocusIndex = 0;
   let runningGame = null;
 
+  // currentTab = active underline tab (HOME/GAMES/MEDIA/SYSTEM)
   let currentTab = "home";
 
-  function getCurrentTabIndex() {
-    const order = getNavOrder();
-    const i = order.indexOf(currentTab);
-    return i >= 0 ? i : 0;
-  }
-
-  // ==================== SETTINGS (single source of truth) ====================
+  // ==================== SETTINGS ====================
   const SETTINGS = {
     soundKey: "nexora_sound_enabled", // "1" | "0"
     clockKey: "nexora_use24h", // "1" | "0"
@@ -46,6 +47,61 @@
     try {
       localStorage.setItem(key, value ? "1" : "0");
     } catch (_) {}
+  }
+
+  // ==================== NAV helpers ====================
+  let navFocusIndex = 0;
+
+  function getNavOrder() {
+    return Array.from(navItems)
+      .map((el) => el.dataset.screen)
+      .filter(Boolean);
+  }
+
+  function getCurrentTabIndex() {
+    const order = getNavOrder();
+    const i = order.indexOf(currentTab);
+    return i >= 0 ? i : 0;
+  }
+
+  function setNavActiveByName(name) {
+    const target = document.querySelector(`.nav-item[data-screen="${name}"]`);
+    if (!target) return;
+    navItems.forEach((i) => i.classList.remove("active"));
+    target.classList.add("active");
+  }
+
+  function setNavFocusByName(name) {
+    navItems.forEach((i) => i.classList.remove("is-focused"));
+    document
+      .querySelector(`.nav-item[data-screen="${name}"]`)
+      ?.classList.add("is-focused");
+  }
+
+  function clearNavFocus() {
+    navItems.forEach((i) => i.classList.remove("is-focused"));
+  }
+
+  function focusNavDomByName(name) {
+    const el = document.querySelector(`.nav-item[data-screen="${name}"]`);
+    if (!el) return;
+    setNavFocusByName(name);
+    // چون nav-item ها div هستن و tabindex=0 دارن:
+    el.focus?.();
+  }
+
+  function syncNavUI() {
+    const order = getNavOrder();
+    setNavActiveByName(currentTab);
+
+    if (currentScreen !== "home") {
+      const i = order.indexOf(currentTab);
+      navFocusIndex = i >= 0 ? i : 0;
+      setNavFocusByName(order[navFocusIndex] || currentTab);
+    } else {
+      // تو home خط focus تو nav نذاریم مگر اینکه user خودش وارد nav zone بشه
+      clearNavFocus();
+    }
   }
 
   // ==================== Header status: WiFi / Controller ====================
@@ -206,6 +262,7 @@
         audioCtx.suspend?.();
       } catch (_) {}
     }
+
     if (soundEnabled) {
       ensureAudio();
       setTimeout(() => uiSound.ok(), 0);
@@ -240,50 +297,44 @@
     overlay?.setAttribute("aria-hidden", "true");
   }
 
-  // -------------------- NAV helpers --------------------
-  let navFocusIndex = 0;
+  // -------------------- Screen switching --------------------
+  function setActiveScreen(name, options = { pushHistory: true }) {
+    if (!name) return;
 
-  function getNavOrder() {
-    return Array.from(navItems)
-      .map((el) => el.dataset.screen)
-      .filter(Boolean);
-  }
-
-  function setNavActiveByName(name) {
-    const target = document.querySelector(`.nav-item[data-screen="${name}"]`);
-    if (!target) return;
-
-    navItems.forEach((i) => i.classList.remove("active"));
-    target.classList.add("active");
-  }
-
-  function setNavFocusByName(name) {
-    navItems.forEach((i) => i.classList.remove("is-focused"));
-    document
-      .querySelector(`.nav-item[data-screen="${name}"]`)
-      ?.classList.add("is-focused");
-  }
-
-  function clearNavFocus() {
-    navItems.forEach((i) => i.classList.remove("is-focused"));
-  }
-
-  function updateTabFromScreen(name) {
-    const isNav = !!document.querySelector(`.nav-item[data-screen="${name}"]`);
-    if (isNav) currentTab = name;
-  }
-
-  function syncNavUI() {
-    const order = getNavOrder();
-    setNavActiveByName(currentTab);
-
-    if (currentScreen !== "home") {
-      const i = order.indexOf(currentTab);
-      navFocusIndex = i >= 0 ? i : 0;
-      setNavFocusByName(order[navFocusIndex] || currentTab);
-    } else {
-      clearNavFocus();
+    if (options.pushHistory && name !== currentScreen) {
+      historyStack.push(currentScreen);
     }
+
+    currentScreen = name;
+
+    // ✅ ضامن: هر صفحه‌ای که جزو nav هست، active-tab هم همون بشه
+    if (getNavOrder().includes(name)) currentTab = name;
+
+    screens.forEach((s) => s.classList.remove("is-active"));
+    document.querySelector(`.${name}-screen`)?.classList.add("is-active");
+
+    syncNavUI();
+
+    if (name === "games") {
+      blockGameOpenUntil = performance.now() + 150;
+      setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
+    } else {
+      if (name !== "game-details") {
+        clearGameFocus();
+        lastGamesFocusIndex = 0;
+      }
+    }
+
+    // zone resets
+    if (name === "home") onEnterHome();
+    if (name === "media") onEnterMedia();
+    if (name === "system") onEnterSystem();
+  }
+
+  function goBack() {
+    const prev = historyStack.pop();
+    if (!prev) return;
+    setActiveScreen(prev, { pushHistory: false });
   }
 
   // -------------------- Games Grid helpers --------------------
@@ -354,53 +405,13 @@
     setTimeout(() => {
       hideOverlay();
       setActiveScreen("in-game");
-      setTimeout(
-        () => document.getElementById("openNowPlayingBtn")?.focus(),
-        0
-      );
+      setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
     }, 900);
   }
 
-  // -------------------- Screen switching --------------------
-  function setActiveScreen(name, options = { pushHistory: true }) {
-    if (!name) return;
-
-    if (options.pushHistory && name !== currentScreen) {
-      historyStack.push(currentScreen);
-    }
-
-    currentScreen = name;
-    if (getNavOrder().includes(name)) currentTab = name;
-    updateTabFromScreen(name);
-
-    screens.forEach((s) => s.classList.remove("is-active"));
-    document.querySelector(`.${name}-screen`)?.classList.add("is-active");
-
-    syncNavUI();
-
-    if (name === "games") {
-      blockGameOpenUntil = performance.now() + 150;
-      setTimeout(() => focusGameByIndex(lastGamesFocusIndex), 0);
-    } else {
-      if (name !== "game-details") {
-        clearGameFocus();
-        lastGamesFocusIndex = 0;
-      }
-    }
-
-    if (name === "home") onEnterHome();
-    if (name === "media") onEnterMedia();
-    if (name === "system") onEnterSystem();
-  }
-
-  function goBack() {
-    const prev = historyStack.pop();
-    if (!prev) return;
-    setActiveScreen(prev, { pushHistory: false });
-  }
-
   // ==================== Home Focus Engine ====================
-  let homeZone = 0; // 0 hero | 1 nav | 2 cards
+  // ✅ global nav بالاست: 0 nav | 1 hero | 2 cards
+  let homeZone = 1;
   let heroIndex = 0;
   let homeNavIndex = 0;
   let cardIndex = 0;
@@ -420,18 +431,22 @@
   function clearHomeCardFocus() {
     getHomeCards().forEach((c) => c.classList.remove("is-focused"));
   }
+
   function focusHomeHero(i = 0) {
     const btns = getHomeHeroButtons();
     if (!btns.length) return;
     heroIndex = Math.max(0, Math.min(i, btns.length - 1));
     btns[heroIndex].focus();
   }
+
   function focusHomeNav(i = 0) {
     const items = getHomeNavItems();
     if (!items.length) return;
     homeNavIndex = Math.max(0, Math.min(i, items.length - 1));
-    setNavFocusByName(items[homeNavIndex].dataset.screen);
+    const name = items[homeNavIndex].dataset.screen;
+    focusNavDomByName(name);
   }
+
   function focusHomeCard(i = 0) {
     const cards = getHomeCards();
     if (!cards.length) return;
@@ -440,24 +455,34 @@
     cards[cardIndex].classList.add("is-focused");
     cards[cardIndex].focus?.();
   }
+
   function syncHomeZoneFocus() {
     clearHomeCardFocus();
+
     if (homeZone === 0) {
+      // NAV
+      focusHomeNav(homeNavIndex);
+      return;
+    }
+
+    if (homeZone === 1) {
+      // HERO
       clearNavFocus();
       focusHomeHero(heroIndex);
+      return;
     }
-    if (homeZone === 1) {
-      focusHomeNav(homeNavIndex);
-    }
+
     if (homeZone === 2) {
+      // CARDS
       clearNavFocus();
       focusHomeCard(cardIndex);
     }
   }
+
   function onEnterHome() {
-    homeZone = 0;
+    homeZone = 1; // start on hero
     heroIndex = 0;
-    homeNavIndex = 0;
+    homeNavIndex = getCurrentTabIndex();
     cardIndex = 0;
     syncHomeZoneFocus();
   }
@@ -467,9 +492,6 @@
   let mediaNavIndex = 0;
   let mediaCardIndex = 0;
 
-  function getMediaNavItems() {
-    return qsAll(".nav .nav-item");
-  }
   function getMediaCards() {
     return qsAll(".media-screen .media-card, .media-screen .context-card");
   }
@@ -477,10 +499,10 @@
     getMediaCards().forEach((c) => c.classList.remove("is-focused"));
   }
   function focusMediaNav(i = 0) {
-    const items = getMediaNavItems();
-    if (!items.length) return;
-    mediaNavIndex = Math.max(0, Math.min(i, items.length - 1));
-    setNavFocusByName(items[mediaNavIndex].dataset.screen);
+    const order = getNavOrder();
+    mediaNavIndex = Math.max(0, Math.min(i, order.length - 1));
+    const name = order[mediaNavIndex] || "home";
+    focusNavDomByName(name);
   }
   function focusMediaCard(i = 0) {
     const cards = getMediaCards();
@@ -492,7 +514,10 @@
   }
   function syncMediaZoneFocus() {
     clearMediaCardFocus();
-    if (mediaZone === 0) focusMediaNav(mediaNavIndex);
+    if (mediaZone === 0) {
+      focusMediaNav(mediaNavIndex);
+      return;
+    }
     if (mediaZone === 1) {
       clearNavFocus();
       focusMediaCard(mediaCardIndex);
@@ -500,20 +525,17 @@
   }
   function onEnterMedia() {
     mediaZone = 0;
-    mediaNavIndex = getCurrentTabIndex(); // ✅ به جای 0
+    mediaNavIndex = getCurrentTabIndex(); // ✅ مهم
     mediaCardIndex = 0;
     syncMediaZoneFocus();
   }
 
-  // ==================== SYSTEM Zone/Focus + Real Settings ====================
-  let systemZone = 0; // 0 nav | 1 setting cards | 2 inner buttons
+  // ==================== SYSTEM Zone/Focus + Settings ====================
+  let systemZone = 0; // 0 nav | 1 cards | 2 inner buttons
   let systemNavIndex = 0;
   let systemCardIndex = 0;
   let systemBtnIndex = 0;
 
-  function getSystemNavItems() {
-    return qsAll(".nav .nav-item");
-  }
   function getSystemCards() {
     return qsAll(".system-screen [data-setting-card]");
   }
@@ -521,18 +543,15 @@
     if (!cardEl) return [];
     return Array.from(cardEl.querySelectorAll("button.hero-btn"));
   }
-
   function clearSystemCardFocus() {
     getSystemCards().forEach((c) => c.classList.remove("is-focused"));
   }
-
   function focusSystemNav(i = 0) {
-    const items = getSystemNavItems();
-    if (!items.length) return;
-    systemNavIndex = Math.max(0, Math.min(i, items.length - 1));
-    setNavFocusByName(items[systemNavIndex].dataset.screen);
+    const order = getNavOrder();
+    systemNavIndex = Math.max(0, Math.min(i, order.length - 1));
+    const name = order[systemNavIndex] || "home";
+    focusNavDomByName(name);
   }
-
   function focusSystemCard(i = 0) {
     const cards = getSystemCards();
     if (!cards.length) return;
@@ -541,7 +560,6 @@
     cards[systemCardIndex].classList.add("is-focused");
     cards[systemCardIndex].focus?.();
   }
-
   function focusSystemButton(i = 0) {
     const cards = getSystemCards();
     const card = cards[systemCardIndex];
@@ -550,7 +568,6 @@
     systemBtnIndex = Math.max(0, Math.min(i, btns.length - 1));
     btns[systemBtnIndex].focus();
   }
-
   function syncSystemZoneFocus() {
     clearSystemCardFocus();
 
@@ -596,24 +613,22 @@
 
   function onEnterSystem() {
     systemZone = 0;
-    systemNavIndex = getCurrentTabIndex(); // ✅ به جای 0
+    systemNavIndex = getCurrentTabIndex(); // ✅ مهم
     systemCardIndex = 0;
     systemBtnIndex = 0;
     syncSystemUI();
     syncSystemZoneFocus();
   }
 
-  // --- Shift+M: open system on Sound ---
   function openSystemOnSound() {
     setActiveScreen("system");
-    // Sound card is index 1 (Clock card = 0, Sound card = 1)
     systemZone = 2;
-    systemCardIndex = 1;
+    systemCardIndex = 1; // Sound card index
     systemBtnIndex = 0;
     syncSystemZoneFocus();
   }
 
-  // ==================== Unified Pointer ====================
+  // ==================== Pointer interactions ====================
   document.addEventListener("pointerdown", (e) => {
     // SND click (header)
     if (sndStatusEl && e.target === sndStatusEl) {
@@ -720,7 +735,7 @@
       }
     }
 
-    // Games card
+    // Games card click
     const card = e.target.closest(".games-screen .game-card");
     if (card && currentScreen === "games") {
       if (performance.now() < blockGameOpenUntil) return;
@@ -745,8 +760,7 @@
         e.stopPropagation();
 
         const title =
-          document.getElementById("detailsTitle")?.textContent?.trim() ||
-          "Game";
+          document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
 
         if (playBtn) {
           uiSound.ok();
@@ -794,67 +808,86 @@
     true
   );
 
-  // -------------------- Keyboard: Back (ESC / Backspace) --------------------
-  document.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape" && e.key !== "Backspace") return;
-
+  // ==================== Keyboard: universal helpers ====================
+  function isTypingContext() {
     const tag = document.activeElement?.tagName?.toLowerCase();
-    const isTyping =
+    return (
       tag === "input" ||
       tag === "textarea" ||
-      document.activeElement?.isContentEditable;
-    if (isTyping) return;
+      document.activeElement?.isContentEditable
+    );
+  }
 
+  // ✅ NAV keyboard always works when nav-item focused
+  document.addEventListener("keydown", (e) => {
+    const active = document.activeElement;
+    if (!active || !active.classList?.contains("nav-item")) return;
+    if (isTypingContext()) return;
+
+    const order = getNavOrder();
+    if (!order.length) return;
+
+    const currentName = active.dataset.screen;
+    let i = order.indexOf(currentName);
+    if (i < 0) i = 0;
+
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      uiSound.move();
+      i = (i + 1) % order.length;
+      focusNavDomByName(order[i]);
+      return;
+    }
+
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      uiSound.move();
+      i = (i - 1 + order.length) % order.length;
+      focusNavDomByName(order[i]);
+      return;
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      uiSound.ok();
+      if (currentName) setActiveScreen(currentName);
+    }
+  });
+
+  // Back (ESC / Backspace)
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" && e.key !== "Backspace") return;
+    if (isTypingContext()) return;
     uiSound.back();
     goBack();
   });
 
-  // -------------------- Keyboard: Mute toggle (M) + Shift+M --------------------
+  // Mute toggle (M) + Shift+M
   document.addEventListener("keydown", (e) => {
     if (e.key !== "m" && e.key !== "M") return;
-
-    const tag = document.activeElement?.tagName?.toLowerCase();
-    const isTyping =
-      tag === "input" ||
-      tag === "textarea" ||
-      document.activeElement?.isContentEditable;
-    if (isTyping) return;
+    if (isTypingContext()) return;
 
     e.preventDefault();
-
     if (e.shiftKey) {
       uiSound.ok();
       openSystemOnSound();
       return;
     }
-
     toggleSound();
   });
 
-  // -------------------- Keyboard: T (clock toggle quick test) --------------------
+  // T toggle clock
   document.addEventListener("keydown", (e) => {
     if (e.key !== "t" && e.key !== "T") return;
-
-    const tag = document.activeElement?.tagName?.toLowerCase();
-    const isTyping =
-      tag === "input" ||
-      tag === "textarea" ||
-      document.activeElement?.isContentEditable;
-    if (isTyping) return;
-
+    if (isTypingContext()) return;
     e.preventDefault();
     uiSound.ok();
     toggleClockFormat();
   });
 
-  // -------------------- Keyboard: W / C (wifi/controller) --------------------
+  // W / C toggle wifi/controller
   document.addEventListener("keydown", (e) => {
-    const tag = document.activeElement?.tagName?.toLowerCase();
-    const isTyping =
-      tag === "input" ||
-      tag === "textarea" ||
-      document.activeElement?.isContentEditable;
-    if (isTyping) return;
+    if (isTypingContext()) return;
 
     if (e.key === "w" || e.key === "W") {
       e.preventDefault();
@@ -869,51 +902,10 @@
     }
   });
 
-  // -------------------- Keyboard: NAV (generic) --------------------
-  // مهم: برای media/system اجرا نشه (چون اون‌ها engine خودشون رو دارن)
-  document.addEventListener("keydown", (e) => {
-    if (currentScreen === "home") return;
-    if (currentScreen === "games" || currentScreen === "game-details") return;
-    if (currentScreen === "in-game" || currentScreen === "now-playing") return;
-    if (currentScreen === "media" || currentScreen === "system") return;
-
-    const tag = document.activeElement?.tagName?.toLowerCase();
-    const isTyping =
-      tag === "input" ||
-      tag === "textarea" ||
-      document.activeElement?.isContentEditable;
-    if (isTyping) return;
-
-    const order = getNavOrder();
-    if (!order.length) return;
-
-    if (e.key === "ArrowRight") {
-      e.preventDefault();
-      uiSound.move();
-      navFocusIndex = (navFocusIndex + 1) % order.length;
-      setNavFocusByName(order[navFocusIndex]);
-      return;
-    }
-
-    if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      uiSound.move();
-      navFocusIndex = (navFocusIndex - 1 + order.length) % order.length;
-      setNavFocusByName(order[navFocusIndex]);
-      return;
-    }
-
-    if (e.key === "Enter") {
-      e.preventDefault();
-      uiSound.ok();
-      const target = order[navFocusIndex];
-      if (target) setActiveScreen(target);
-    }
-  });
-
-  // -------------------- Keyboard: Games Grid --------------------
+  // ==================== Keyboard: Games Grid ====================
   document.addEventListener("keydown", (e) => {
     if (currentScreen !== "games") return;
+    if (isTypingContext()) return;
 
     const cards = getGameCards();
     if (!cards.length) return;
@@ -949,6 +941,15 @@
     if (e.key === "ArrowUp") {
       e.preventDefault();
       uiSound.move();
+
+      // ✅ اگر روی ردیف اول هستی، برو روی NAV
+      if (index < cols) {
+        navFocusIndex = getCurrentTabIndex();
+        const name = getNavOrder()[navFocusIndex] || currentTab;
+        focusNavDomByName(name);
+        return;
+      }
+
       focusGameByIndex(index - cols);
       return;
     }
@@ -960,9 +961,10 @@
     }
   });
 
-  // -------------------- Keyboard: Game Details --------------------
+  // Keyboard: Game Details
   document.addEventListener("keydown", (e) => {
     if (currentScreen !== "game-details") return;
+    if (isTypingContext()) return;
 
     const playBtn = document.getElementById("playBtn");
     const optionsBtn = document.getElementById("optionsBtn");
@@ -999,9 +1001,10 @@
     }
   });
 
-  // -------------------- Keyboard: In-Game --------------------
+  // Keyboard: In-Game
   document.addEventListener("keydown", (e) => {
     if (currentScreen !== "in-game") return;
+    if (isTypingContext()) return;
 
     const openBtn = document.getElementById("openNowPlayingBtn");
     const quitBtn = document.getElementById("quitFromGameBtn");
@@ -1038,9 +1041,10 @@
     }
   });
 
-  // -------------------- Keyboard: Now Playing --------------------
+  // Keyboard: Now Playing
   document.addEventListener("keydown", (e) => {
     if (currentScreen !== "now-playing") return;
+    if (isTypingContext()) return;
 
     const resumeBtn = document.getElementById("resumeBtn");
     const quitBtn = document.getElementById("quitBtn");
@@ -1061,8 +1065,7 @@
     if (e.key === "Enter") {
       e.preventDefault();
       const title =
-        document.getElementById("nowPlayingTitle")?.textContent?.trim() ||
-        "Game";
+        document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
 
       if (document.activeElement === resumeBtn) {
         if (!runningGame) return;
@@ -1089,16 +1092,10 @@
     }
   });
 
-  // -------------------- Keyboard: Home Engine --------------------
+  // Keyboard: HOME Engine
   document.addEventListener("keydown", (e) => {
     if (currentScreen !== "home") return;
-
-    const tag = document.activeElement?.tagName?.toLowerCase();
-    const isTyping =
-      tag === "input" ||
-      tag === "textarea" ||
-      document.activeElement?.isContentEditable;
-    if (isTyping) return;
+    if (isTypingContext()) return;
 
     const heroBtns = getHomeHeroButtons();
     const navs = getHomeNavItems();
@@ -1111,6 +1108,7 @@
       syncHomeZoneFocus();
       return;
     }
+
     if (e.key === "ArrowUp") {
       e.preventDefault();
       uiSound.move();
@@ -1118,17 +1116,18 @@
       syncHomeZoneFocus();
       return;
     }
+
     if (e.key === "ArrowRight") {
       e.preventDefault();
       uiSound.move();
 
-      if (homeZone === 0 && heroBtns.length) {
-        heroIndex = (heroIndex + 1) % heroBtns.length;
-        focusHomeHero(heroIndex);
-      }
-      if (homeZone === 1 && navs.length) {
+      if (homeZone === 0 && navs.length) {
         homeNavIndex = (homeNavIndex + 1) % navs.length;
         focusHomeNav(homeNavIndex);
+      }
+      if (homeZone === 1 && heroBtns.length) {
+        heroIndex = (heroIndex + 1) % heroBtns.length;
+        focusHomeHero(heroIndex);
       }
       if (homeZone === 2 && cards.length) {
         cardIndex = (cardIndex + 1) % cards.length;
@@ -1136,17 +1135,18 @@
       }
       return;
     }
+
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       uiSound.move();
 
-      if (homeZone === 0 && heroBtns.length) {
-        heroIndex = (heroIndex - 1 + heroBtns.length) % heroBtns.length;
-        focusHomeHero(heroIndex);
-      }
-      if (homeZone === 1 && navs.length) {
+      if (homeZone === 0 && navs.length) {
         homeNavIndex = (homeNavIndex - 1 + navs.length) % navs.length;
         focusHomeNav(homeNavIndex);
+      }
+      if (homeZone === 1 && heroBtns.length) {
+        heroIndex = (heroIndex - 1 + heroBtns.length) % heroBtns.length;
+        focusHomeHero(heroIndex);
       }
       if (homeZone === 2 && cards.length) {
         cardIndex = (cardIndex - 1 + cards.length) % cards.length;
@@ -1159,38 +1159,33 @@
       e.preventDefault();
       uiSound.ok();
 
-      if (homeZone === 0) {
-        heroBtns[heroIndex]?.click();
+      if (homeZone === 1) {
+        heroBtns[heroIndex]?.click?.();
         return;
       }
-      if (homeZone === 1) {
+
+      if (homeZone === 0) {
         const target = navs[homeNavIndex]?.dataset?.screen;
         if (target) setActiveScreen(target);
         return;
       }
+
       if (homeZone === 2) {
         const title =
-          cards[cardIndex]
-            ?.querySelector(".context-title")
-            ?.textContent?.trim() || "Card";
+          cards[cardIndex]?.querySelector(".context-title")?.textContent?.trim() ||
+          "Card";
         showOverlay("Opening", title);
         setTimeout(() => hideOverlay(), 600);
       }
     }
   });
 
-  // -------------------- Keyboard: MEDIA Zone/Focus --------------------
+  // Keyboard: MEDIA Engine
   document.addEventListener("keydown", (e) => {
     if (currentScreen !== "media") return;
+    if (isTypingContext()) return;
 
-    const tag = document.activeElement?.tagName?.toLowerCase();
-    const isTyping =
-      tag === "input" ||
-      tag === "textarea" ||
-      document.activeElement?.isContentEditable;
-    if (isTyping) return;
-
-    const navs = getMediaNavItems();
+    const order = getNavOrder();
     const cards = getMediaCards();
 
     if (e.key === "ArrowDown") {
@@ -1200,6 +1195,7 @@
       syncMediaZoneFocus();
       return;
     }
+
     if (e.key === "ArrowUp") {
       e.preventDefault();
       uiSound.move();
@@ -1207,12 +1203,13 @@
       syncMediaZoneFocus();
       return;
     }
+
     if (e.key === "ArrowRight") {
       e.preventDefault();
       uiSound.move();
 
-      if (mediaZone === 0 && navs.length) {
-        mediaNavIndex = (mediaNavIndex + 1) % navs.length;
+      if (mediaZone === 0 && order.length) {
+        mediaNavIndex = (mediaNavIndex + 1) % order.length;
         focusMediaNav(mediaNavIndex);
       }
       if (mediaZone === 1 && cards.length) {
@@ -1221,12 +1218,13 @@
       }
       return;
     }
+
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       uiSound.move();
 
-      if (mediaZone === 0 && navs.length) {
-        mediaNavIndex = (mediaNavIndex - 1 + navs.length) % navs.length;
+      if (mediaZone === 0 && order.length) {
+        mediaNavIndex = (mediaNavIndex - 1 + order.length) % order.length;
         focusMediaNav(mediaNavIndex);
       }
       if (mediaZone === 1 && cards.length) {
@@ -1241,10 +1239,11 @@
       uiSound.ok();
 
       if (mediaZone === 0) {
-        const target = navs[mediaNavIndex]?.dataset?.screen;
+        const target = order[mediaNavIndex];
         if (target) setActiveScreen(target);
         return;
       }
+
       if (mediaZone === 1) {
         const title = cards[mediaCardIndex]?.dataset?.media || "Media";
         showOverlay("Opening", title);
@@ -1253,18 +1252,12 @@
     }
   });
 
-  // -------------------- Keyboard: SYSTEM Zone/Focus --------------------
+  // Keyboard: SYSTEM Engine
   document.addEventListener("keydown", (e) => {
     if (currentScreen !== "system") return;
+    if (isTypingContext()) return;
 
-    const tag = document.activeElement?.tagName?.toLowerCase();
-    const isTyping =
-      tag === "input" ||
-      tag === "textarea" ||
-      document.activeElement?.isContentEditable;
-    if (isTyping) return;
-
-    const navs = getSystemNavItems();
+    const order = getNavOrder();
     const cards = getSystemCards();
     const btns = getSystemButtonsInCard(cards[systemCardIndex]);
 
@@ -1288,8 +1281,8 @@
       e.preventDefault();
       uiSound.move();
 
-      if (systemZone === 0 && navs.length) {
-        systemNavIndex = (systemNavIndex + 1) % navs.length;
+      if (systemZone === 0 && order.length) {
+        systemNavIndex = (systemNavIndex + 1) % order.length;
         focusSystemNav(systemNavIndex);
       }
       if (systemZone === 1 && cards.length) {
@@ -1307,8 +1300,8 @@
       e.preventDefault();
       uiSound.move();
 
-      if (systemZone === 0 && navs.length) {
-        systemNavIndex = (systemNavIndex - 1 + navs.length) % navs.length;
+      if (systemZone === 0 && order.length) {
+        systemNavIndex = (systemNavIndex - 1 + order.length) % order.length;
         focusSystemNav(systemNavIndex);
       }
       if (systemZone === 1 && cards.length) {
@@ -1327,7 +1320,7 @@
       uiSound.ok();
 
       if (systemZone === 0) {
-        const target = navs[systemNavIndex]?.dataset?.screen;
+        const target = order[systemNavIndex];
         if (target) setActiveScreen(target);
         return;
       }
@@ -1351,10 +1344,10 @@
     }
   });
 
-  // -------------------- Init --------------------
+  // ==================== Init ====================
   function init() {
+    // SND header
     sndStatusEl = document.getElementById("sndStatus");
-
     if (sndStatusEl) {
       sndStatusEl.setAttribute("tabindex", "0");
       sndStatusEl.addEventListener("keydown", (e) => {
@@ -1364,13 +1357,18 @@
       });
     }
 
+    // sync header
     syncSoundUI();
     syncWifiUI();
     syncControllerUI();
 
+    // clock
     startClock();
+
+    // system ui sync
     syncSystemUI();
 
+    // start
     setActiveScreen("home", { pushHistory: false });
   }
 
