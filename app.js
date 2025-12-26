@@ -1,5 +1,5 @@
 /* =========================
-   Nexora OS - app.js (System settings fixed + Media/System zones)
+   Nexora OS - app.js (fixed structure + wifi/controller + shortcuts)
    ========================= */
 
 (() => {
@@ -21,6 +21,8 @@
   const SETTINGS = {
     soundKey: "nexora_sound_enabled", // "1" | "0"
     clockKey: "nexora_use24h", // "1" | "0"
+    wifiKey: "nexora_wifi_on", // "1" | "0"
+    controllerKey: "nexora_controller_on", // "1" | "0"
   };
 
   function loadBool(key, defaultValue) {
@@ -38,6 +40,36 @@
     try {
       localStorage.setItem(key, value ? "1" : "0");
     } catch (_) {}
+  }
+
+  // ==================== Header status: WiFi / Controller ====================
+  let wifiOn = loadBool(SETTINGS.wifiKey, true);
+  let controllerOn = loadBool(SETTINGS.controllerKey, true);
+
+  function syncWifiUI() {
+    const el = document.getElementById("wifiStatus");
+    if (!el) return;
+    el.classList.toggle("is-off", !wifiOn);
+    el.title = `Wi-Fi: ${wifiOn ? "ON" : "OFF"} (W)`;
+  }
+
+  function syncControllerUI() {
+    const el = document.getElementById("controllerStatus");
+    if (!el) return;
+    el.classList.toggle("is-off", !controllerOn);
+    el.title = `Controller: ${controllerOn ? "Connected" : "Disconnected"} (C)`;
+  }
+
+  function toggleWifi() {
+    wifiOn = !wifiOn;
+    saveBool(SETTINGS.wifiKey, wifiOn);
+    syncWifiUI();
+  }
+
+  function toggleController() {
+    controllerOn = !controllerOn;
+    saveBool(SETTINGS.controllerKey, controllerOn);
+    syncControllerUI();
   }
 
   // ==================== Clock ====================
@@ -75,8 +107,12 @@
   function setClockFormat(nextUse24h) {
     use24h = !!nextUse24h;
     saveBool(SETTINGS.clockKey, use24h);
-    renderClock(); // 🔥 مهم: همون لحظه اثر بذاره
-    syncSystemUI(); // دکمه‌ها و متن System هم sync بشه
+    renderClock();
+    syncSystemUI();
+  }
+
+  function toggleClockFormat() {
+    setClockFormat(!use24h);
   }
 
   // ==================== UI Sounds (WebAudio) ====================
@@ -146,7 +182,8 @@
 
   uiSound.launch = () => chord([520, 660, 820], 0.05, 0.01);
   uiSound.quit = () => chord([420, 320], 0.06, 0.02);
-  uiSound.overlay = () => beep({ freq: 640, dur: 0.03, type: "sine", vol: 0.04 });
+  uiSound.overlay = () =>
+    beep({ freq: 640, dur: 0.03, type: "sine", vol: 0.04 });
 
   function syncSoundUI() {
     if (!sndStatusEl) return;
@@ -158,7 +195,6 @@
     soundEnabled = !!next;
     saveBool(SETTINGS.soundKey, soundEnabled);
 
-    // suspend/resume
     if (!soundEnabled && audioCtx && audioCtx.state !== "closed") {
       try {
         audioCtx.suspend?.();
@@ -170,7 +206,7 @@
     }
 
     syncSoundUI();
-    syncSystemUI(); // System هم sync بشه
+    syncSystemUI();
   }
 
   function toggleSound() {
@@ -217,7 +253,9 @@
 
   function setNavFocusByName(name) {
     navItems.forEach((i) => i.classList.remove("is-focused"));
-    document.querySelector(`.nav-item[data-screen="${name}"]`)?.classList.add("is-focused");
+    document
+      .querySelector(`.nav-item[data-screen="${name}"]`)
+      ?.classList.add("is-focused");
   }
 
   function clearNavFocus() {
@@ -290,7 +328,8 @@
 
   // -------------------- Launch flow --------------------
   function launchGameFlow() {
-    const gameName = document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
+    const gameName =
+      document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
     runningGame = gameName;
 
     const npTitle = document.getElementById("nowPlayingTitle");
@@ -339,7 +378,6 @@
       }
     }
 
-    // وقتی وارد Home/Media/System می‌شیم زون‌ها رو ریسِت کن
     if (name === "home") onEnterHome();
     if (name === "media") onEnterMedia();
     if (name === "system") onEnterSystem();
@@ -364,7 +402,7 @@
     return qsAll(".home-screen .hero-btn");
   }
   function getHomeNavItems() {
-    return qsAll(".home-screen .nav-item");
+    return qsAll(".nav .nav-item");
   }
   function getHomeCards() {
     return qsAll(".home-screen .context-card");
@@ -390,6 +428,7 @@
     cardIndex = Math.max(0, Math.min(i, cards.length - 1));
     clearHomeCardFocus();
     cards[cardIndex].classList.add("is-focused");
+    cards[cardIndex].focus?.();
   }
   function syncHomeZoneFocus() {
     clearHomeCardFocus();
@@ -414,16 +453,14 @@
   }
 
   // ==================== MEDIA Zone/Focus ====================
-  // فرض: توی media-screen کارت‌هایی داری با کلاس .media-card یا .context-card
   let mediaZone = 0; // 0 nav | 1 cards
   let mediaNavIndex = 0;
   let mediaCardIndex = 0;
 
   function getMediaNavItems() {
-    return qsAll(".media-screen .nav-item");
+    return qsAll(".nav .nav-item");
   }
   function getMediaCards() {
-    // اگر ساختار کارت‌هات فرق داشت این selector رو تغییر بده
     return qsAll(".media-screen .media-card, .media-screen .context-card");
   }
   function clearMediaCardFocus() {
@@ -465,7 +502,7 @@
   let systemBtnIndex = 0;
 
   function getSystemNavItems() {
-    return qsAll(".system-screen .nav-item");
+    return qsAll(".nav .nav-item");
   }
   function getSystemCards() {
     return qsAll(".system-screen [data-setting-card]");
@@ -526,14 +563,12 @@
   }
 
   function syncSystemUI() {
-    // متن‌ها
     const clockValue = document.getElementById("clockFormatValue");
     if (clockValue) clockValue.textContent = use24h ? "24H" : "12H";
 
     const sysSoundValue = document.getElementById("systemSoundValue");
     if (sysSoundValue) sysSoundValue.textContent = soundEnabled ? "ON" : "OFF";
 
-    // دکمه‌ها (primary)
     const clock12Btn = document.getElementById("clock12Btn");
     const clock24Btn = document.getElementById("clock24Btn");
     if (clock12Btn && clock24Btn) {
@@ -555,6 +590,16 @@
     systemCardIndex = 0;
     systemBtnIndex = 0;
     syncSystemUI();
+    syncSystemZoneFocus();
+  }
+
+  // --- Shift+M: open system on Sound ---
+  function openSystemOnSound() {
+    setActiveScreen("system");
+    // Sound card is index 1 (Clock card = 0, Sound card = 1)
+    systemZone = 2;
+    systemCardIndex = 1;
+    systemBtnIndex = 0;
     syncSystemZoneFocus();
   }
 
@@ -636,7 +681,8 @@
         e.stopPropagation();
 
         const title =
-          document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
+          document.getElementById("nowPlayingTitle")?.textContent?.trim() ||
+          "Game";
 
         if (resume) {
           if (!runningGame) return;
@@ -645,7 +691,10 @@
           setTimeout(() => {
             hideOverlay();
             setActiveScreen("in-game");
-            setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
+            setTimeout(
+              () => document.getElementById("openNowPlayingBtn")?.focus(),
+              0
+            );
           }, 500);
         } else {
           uiSound.quit();
@@ -703,7 +752,7 @@
       }
     }
 
-    // Nav click
+    // Nav click (global)
     const goEl = e.target.closest("[data-screen]");
     if (goEl) {
       const target = goEl.dataset.screen;
@@ -749,7 +798,7 @@
     goBack();
   });
 
-  // -------------------- Keyboard: Mute toggle (M) --------------------
+  // -------------------- Keyboard: Mute toggle (M) + Shift+M --------------------
   document.addEventListener("keydown", (e) => {
     if (e.key !== "m" && e.key !== "M") return;
 
@@ -761,14 +810,61 @@
     if (isTyping) return;
 
     e.preventDefault();
+
+    if (e.shiftKey) {
+      uiSound.ok();
+      openSystemOnSound();
+      return;
+    }
+
     toggleSound();
   });
 
-  // -------------------- Keyboard: NAV (non-home) --------------------
+  // -------------------- Keyboard: T (clock toggle quick test) --------------------
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "t" && e.key !== "T") return;
+
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    const isTyping =
+      tag === "input" ||
+      tag === "textarea" ||
+      document.activeElement?.isContentEditable;
+    if (isTyping) return;
+
+    e.preventDefault();
+    uiSound.ok();
+    toggleClockFormat();
+  });
+
+  // -------------------- Keyboard: W / C (wifi/controller) --------------------
+  document.addEventListener("keydown", (e) => {
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    const isTyping =
+      tag === "input" ||
+      tag === "textarea" ||
+      document.activeElement?.isContentEditable;
+    if (isTyping) return;
+
+    if (e.key === "w" || e.key === "W") {
+      e.preventDefault();
+      uiSound.move();
+      toggleWifi();
+    }
+
+    if (e.key === "c" || e.key === "C") {
+      e.preventDefault();
+      uiSound.move();
+      toggleController();
+    }
+  });
+
+  // -------------------- Keyboard: NAV (generic) --------------------
+  // مهم: برای media/system اجرا نشه (چون اون‌ها engine خودشون رو دارن)
   document.addEventListener("keydown", (e) => {
     if (currentScreen === "home") return;
     if (currentScreen === "games" || currentScreen === "game-details") return;
     if (currentScreen === "in-game" || currentScreen === "now-playing") return;
+    if (currentScreen === "media" || currentScreen === "system") return;
 
     const tag = document.activeElement?.tagName?.toLowerCase();
     const isTyping =
@@ -874,7 +970,8 @@
 
     if (e.key === "Enter") {
       e.preventDefault();
-      const title = document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
+      const title =
+        document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
 
       if (document.activeElement === playBtn) {
         uiSound.ok();
@@ -951,7 +1048,8 @@
 
     if (e.key === "Enter") {
       e.preventDefault();
-      const title = document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
+      const title =
+        document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
 
       if (document.activeElement === resumeBtn) {
         if (!runningGame) return;
@@ -960,7 +1058,10 @@
         setTimeout(() => {
           hideOverlay();
           setActiveScreen("in-game");
-          setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
+          setTimeout(
+            () => document.getElementById("openNowPlayingBtn")?.focus(),
+            0
+          );
         }, 500);
       } else {
         uiSound.quit();
@@ -981,7 +1082,9 @@
 
     const tag = document.activeElement?.tagName?.toLowerCase();
     const isTyping =
-      tag === "input" || tag === "textarea" || document.activeElement?.isContentEditable;
+      tag === "input" ||
+      tag === "textarea" ||
+      document.activeElement?.isContentEditable;
     if (isTyping) return;
 
     const heroBtns = getHomeHeroButtons();
@@ -1054,7 +1157,8 @@
       }
       if (homeZone === 2) {
         const title =
-          cards[cardIndex]?.querySelector(".context-title")?.textContent?.trim() || "Card";
+          cards[cardIndex]?.querySelector(".context-title")?.textContent?.trim() ||
+          "Card";
         showOverlay("Opening", title);
         setTimeout(() => hideOverlay(), 600);
       }
@@ -1067,7 +1171,9 @@
 
     const tag = document.activeElement?.tagName?.toLowerCase();
     const isTyping =
-      tag === "input" || tag === "textarea" || document.activeElement?.isContentEditable;
+      tag === "input" ||
+      tag === "textarea" ||
+      document.activeElement?.isContentEditable;
     if (isTyping) return;
 
     const navs = getMediaNavItems();
@@ -1126,7 +1232,7 @@
         return;
       }
       if (mediaZone === 1) {
-        const title = cards[mediaCardIndex]?.textContent?.trim() || "Media";
+        const title = cards[mediaCardIndex]?.dataset?.media || "Media";
         showOverlay("Opening", title);
         setTimeout(() => hideOverlay(), 600);
       }
@@ -1139,7 +1245,9 @@
 
     const tag = document.activeElement?.tagName?.toLowerCase();
     const isTyping =
-      tag === "input" || tag === "textarea" || document.activeElement?.isContentEditable;
+      tag === "input" ||
+      tag === "textarea" ||
+      document.activeElement?.isContentEditable;
     if (isTyping) return;
 
     const navs = getSystemNavItems();
@@ -1211,7 +1319,6 @@
       }
 
       if (systemZone === 1) {
-        // وارد دکمه‌های داخل کارت شو
         systemZone = 2;
         systemBtnIndex = 0;
         syncSystemZoneFocus();
@@ -1219,7 +1326,6 @@
       }
 
       if (systemZone === 2) {
-        // تصمیم بر اساس id دکمه
         const focusedId = document.activeElement?.id;
 
         if (focusedId === "clock12Btn") setClockFormat(false);
@@ -1244,13 +1350,11 @@
       });
     }
 
-    // sync header
     syncSoundUI();
+    syncWifiUI();
+    syncControllerUI();
 
-    // clock
     startClock();
-
-    // system UI initial sync
     syncSystemUI();
 
     setActiveScreen("home", { pushHistory: false });

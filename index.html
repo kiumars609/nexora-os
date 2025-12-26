@@ -21,36 +21,54 @@
         <div class="left-side">
           <div class="user-info">
             <span class="avatar">
-              <img src="assets/images/icones/avatar.png" />
+              <img src="assets/images/icones/avatar.png" alt="avatar" />
             </span>
             <span class="username">Alex</span>
           </div>
         </div>
+
         <div class="right-side">
           <div class="os-info">
             <span class="time" id="timeEl">--:--</span>
+
             <span
               class="snd"
               id="sndStatus"
               role="status"
               aria-live="polite"
               tabindex="0"
+              title="Toggle sound (M)"
             >
               SND: ON
             </span>
-            <span class="wifi">
-              <img src="assets/images/icones/wifi.png" />
+
+            <span class="wifi" id="wifiStatus" title="Wi-Fi: ON (W)">
+              <img src="assets/images/icones/wifi.png" alt="wifi" />
             </span>
-            <span class="controller">
-              <img src="assets/images/icones/controller.png" />
+
+            <span
+              class="controller"
+              id="controllerStatus"
+              title="Controller: Connected (C)"
+            >
+              <img src="assets/images/icones/controller.png" alt="controller" />
             </span>
           </div>
         </div>
       </header>
       <!-- Header -->
 
+      <!-- GLOBAL NAV (برای همه صفحات) -->
+      <nav class="nav" aria-label="Main navigation">
+        <div class="nav-item active" data-screen="home" tabindex="0">HOME</div>
+        <div class="nav-item" data-screen="games" tabindex="0">GAMES</div>
+        <div class="nav-item" data-screen="media" tabindex="0">MEDIA</div>
+        <div class="nav-item" data-screen="system" tabindex="0">SYSTEM</div>
+      </nav>
+
       <!-- Screens -->
       <section class="screens">
+        <!-- HOME -->
         <section class="screen home-screen is-active">
           <!-- Hero -->
           <section class="hero">
@@ -60,69 +78,61 @@
               <button class="hero-btn">Options</button>
             </div>
           </section>
-          <!-- Hero -->
-          <!-- Navigation Row -->
-          <nav class="nav">
-            <div class="nav-item active" data-screen="home">HOME</div>
-            <div class="nav-item" data-screen="games">GAMES</div>
-            <div class="nav-item" data-screen="media">MEDIA</div>
-            <div class="nav-item" data-screen="system">SYSTEM</div>
-          </nav>
-          <!-- Navigation Row -->
+
           <!-- Context Cards -->
           <section class="context-cards">
-            <div class="context-card">
+            <div class="context-card" tabindex="0">
               <div class="context-title">Quick Resume</div>
               <div class="context-value">2 Games</div>
               <div class="context-sub">Ready to play</div>
             </div>
 
-            <div class="context-card">
+            <div class="context-card" tabindex="0">
               <div class="context-title">Recent</div>
               <div class="context-value">The Last of Us Part 2</div>
               <div class="context-sub">Last played</div>
             </div>
 
-            <div class="context-card">
+            <div class="context-card" tabindex="0">
               <div class="context-title">Downloads</div>
               <div class="context-value">1 Active</div>
               <div class="context-sub">45%</div>
             </div>
 
-            <div class="context-card">
+            <div class="context-card" tabindex="0">
               <div class="context-title">Friends</div>
               <div class="context-value">3 Online</div>
               <div class="context-sub">Join party</div>
             </div>
           </section>
-          <!-- Context Cards -->
         </section>
 
-        <!-- GAMES SCREEN -->
+        <!-- GAMES -->
         <section class="screen games-screen">
           <button class="back-btn" data-action="back">← Back</button>
-          <!-- همینجا بعداً Title + Filters + Grid رو می‌ذاریم -->
+
           <div style="height: 24px"></div>
           <div class="games-title">GAMES LIBRARY</div>
-          <!-- Grid -->
+
           <section class="games-grid" id="gamesGrid">
             <button class="game-card" data-game="The Last of Us Part 2">
               The Last of Us Part 2
             </button>
-            <button class="game-card" data-game="God of War">
+            <button class="game-card" data-game="God of War Ragnarok">
               God of War Ragnarok
             </button>
-            <button class="game-card" data-game="Spider-Man">
+            <button class="game-card" data-game="Spider-Man 2">
               Spider-Man 2
             </button>
             <button class="game-card" data-game="Horizon">Horizon</button>
             <button class="game-card" data-game="Cyberpunk">Cyberpunk</button>
-            <button class="game-card" data-game="GTA V">GTA VI</button>
+            <button class="game-card" data-game="GTA VI">GTA VI</button>
             <button class="game-card" data-game="Elden Ring">Elden Ring</button>
             <button class="game-card" data-game="Minecraft">Minecraft</button>
           </section>
         </section>
-        <!-- MEDIA SCREEN -->
+
+        <!-- MEDIA -->
         <section class="screen media-screen">
           <button class="back-btn" data-action="back">← Back</button>
 
@@ -130,25 +140,37 @@
           <div class="games-title">MEDIA</div>
 
           <section class="context-cards media-cards">
-            <div class="context-card" tabindex="0" data-media="Store">
+            <div class="context-card media-card" tabindex="0" data-media="Store">
               <div class="context-title">Store</div>
               <div class="context-value">Browse</div>
               <div class="context-sub">Discover new content</div>
             </div>
 
-            <div class="context-card" tabindex="0" data-media="Library">
+            <div
+              class="context-card media-card"
+              tabindex="0"
+              data-media="Library"
+            >
               <div class="context-title">Library</div>
               <div class="context-value">Your Media</div>
               <div class="context-sub">Movies & Music</div>
             </div>
 
-            <div class="context-card" tabindex="0" data-media="Spotify">
+            <div
+              class="context-card media-card"
+              tabindex="0"
+              data-media="Spotify"
+            >
               <div class="context-title">Spotify</div>
               <div class="context-value">Open</div>
               <div class="context-sub">Listen now</div>
             </div>
 
-            <div class="context-card" tabindex="0" data-media="YouTube">
+            <div
+              class="context-card media-card"
+              tabindex="0"
+              data-media="YouTube"
+            >
               <div class="context-title">YouTube</div>
               <div class="context-value">Watch</div>
               <div class="context-sub">Trending videos</div>
@@ -156,7 +178,7 @@
           </section>
         </section>
 
-        <!-- SYSTEM SCREEN -->
+        <!-- SYSTEM -->
         <section class="screen system-screen">
           <button class="back-btn" data-action="back">← Back</button>
 
@@ -201,12 +223,11 @@
           </section>
         </section>
 
-        <!-- GAME DETAILS SCREEN -->
+        <!-- GAME DETAILS -->
         <section class="screen game-details-screen">
           <button class="back-btn" data-action="back">← Back</button>
 
           <div style="height: 24px"></div>
-
           <div class="details-title" id="detailsTitle">GAME TITLE</div>
           <div class="details-sub" id="detailsSub">Some info...</div>
 
@@ -215,7 +236,8 @@
             <button class="hero-btn" id="optionsBtn">Options</button>
           </div>
         </section>
-        <!-- NOW PLAYING SCREEN -->
+
+        <!-- NOW PLAYING -->
         <section class="screen now-playing-screen">
           <button class="back-btn" data-action="back">← Back</button>
 
@@ -229,7 +251,8 @@
             <button class="hero-btn" id="quitBtn">Quit</button>
           </div>
         </section>
-        <!-- IN GAME SCREEN -->
+
+        <!-- IN GAME -->
         <section class="screen in-game-screen">
           <button class="back-btn" data-action="back">← Back</button>
 
@@ -245,62 +268,9 @@
             <button class="hero-btn" id="quitFromGameBtn">Quit</button>
           </div>
         </section>
-        <!-- MEDIA SCREEN -->
-        <section class="screen media-screen">
-          <button class="back-btn" data-action="back">← Back</button>
-
-          <div style="height: 24px"></div>
-
-          <div class="details-title">MEDIA</div>
-          <div class="details-sub">Music, videos, screenshots…</div>
-
-          <section class="context-cards">
-            <div class="context-card">
-              <div class="context-title">Music</div>
-              <div class="context-value">Playlists</div>
-              <div class="context-sub">Open</div>
-            </div>
-
-            <div class="context-card">
-              <div class="context-title">Gallery</div>
-              <div class="context-value">Screenshots</div>
-              <div class="context-sub">Browse</div>
-            </div>
-
-            <div class="context-card">
-              <div class="context-title">YouTube</div>
-              <div class="context-value">Watch</div>
-              <div class="context-sub">Open</div>
-            </div>
-          </section>
-        </section>
-
-        <!-- SYSTEM SCREEN -->
-        <section class="screen system-screen">
-          <button class="back-btn" data-action="back">← Back</button>
-
-          <div style="height: 24px"></div>
-
-          <div class="details-title">SYSTEM</div>
-          <div class="details-sub">Settings & Preferences</div>
-
-          <section class="context-cards">
-            <div class="context-card" id="toggleClockFormat">
-              <div class="context-title">Clock</div>
-              <div class="context-value" id="clockModeText">12H</div>
-              <div class="context-sub">Press Enter to toggle</div>
-            </div>
-
-            <div class="context-card" id="toggleSoundCard">
-              <div class="context-title">Sound</div>
-              <div class="context-value" id="soundModeText">ON</div>
-              <div class="context-sub">Press Enter to toggle</div>
-            </div>
-          </section>
-        </section>
       </section>
     </section>
-    <!-- Main of OS -->
+
     <!-- LOADING OVERLAY -->
     <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
       <div class="loading-box">
@@ -308,9 +278,6 @@
         <div class="loading-sub" id="loadingSub">Please wait...</div>
       </div>
     </div>
-
-
-    <!-- New code here -->
 
     <script src="./app.js"></script>
   </body>
