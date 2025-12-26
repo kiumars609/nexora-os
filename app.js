@@ -1,11 +1,8 @@
 /* =========================
-   Nexora OS - app.js (FULL FIXED)
-   - Global nav aware
-   - Active underline + focus underline fixed
-   - Home zones fixed (Nav top -> Hero -> Cards)
-   - Games ArrowUp -> Nav when on first row
-   - Nav keyboard works whenever nav-item focused
-   - Media/System enter keeps nav focus on currentTab
+   Nexora OS - app.js (FULL FIXED v2)
+   - Wi-Fi/Controller click + keyboard focus works
+   - Toast visible feedback
+   - Global nav + Home/Games/Media/System focus logic preserved
    ========================= */
 
 (() => {
@@ -34,7 +31,7 @@
     el.classList.add("is-show");
 
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove("is-show"), 900);
+    toastTimer = setTimeout(() => el.classList.remove("is-show"), 1000);
   }
 
   // ==================== SETTINGS ====================
@@ -99,7 +96,6 @@
     const el = document.querySelector(`.nav-item[data-screen="${name}"]`);
     if (!el) return;
     setNavFocusByName(name);
-    // چون nav-item ها div هستن و tabindex=0 دارن:
     el.focus?.();
   }
 
@@ -112,7 +108,6 @@
       navFocusIndex = i >= 0 ? i : 0;
       setNavFocusByName(order[navFocusIndex] || currentTab);
     } else {
-      // تو home خط focus تو nav نذاریم مگر اینکه user خودش وارد nav zone بشه
       clearNavFocus();
     }
   }
@@ -132,7 +127,9 @@
     const el = document.getElementById("controllerStatus");
     if (!el) return;
     el.classList.toggle("is-off", !controllerOn);
-    el.title = `Controller: ${controllerOn ? "Connected" : "Disconnected"} (C)`;
+    el.title = `Controller: ${
+      controllerOn ? "Connected" : "Disconnected"
+    } (C)`;
   }
 
   function toggleWifi() {
@@ -146,7 +143,9 @@
     controllerOn = !controllerOn;
     saveBool(SETTINGS.controllerKey, controllerOn);
     syncControllerUI();
-    showToast(`Controller: ${controllerOn ? "Connected" : "Disconnected"}`);
+    showToast(
+      `Controller: ${controllerOn ? "Connected" : "Disconnected"}`
+    );
   }
 
   // ==================== Clock ====================
@@ -324,7 +323,7 @@
 
     currentScreen = name;
 
-    // ✅ ضامن: هر صفحه‌ای که جزو nav هست، active-tab هم همون بشه
+    // ✅ هر صفحه‌ای که جزو nav هست، active-tab هم همون بشه
     if (getNavOrder().includes(name)) currentTab = name;
 
     screens.forEach((s) => s.classList.remove("is-active"));
@@ -342,7 +341,6 @@
       }
     }
 
-    // zone resets
     if (name === "home") onEnterHome();
     if (name === "media") onEnterMedia();
     if (name === "system") onEnterSystem();
@@ -430,7 +428,7 @@
   }
 
   // ==================== Home Focus Engine ====================
-  // ✅ global nav بالاست: 0 nav | 1 hero | 2 cards
+  // global nav: 0 nav | 1 hero | 2 cards
   let homeZone = 1;
   let heroIndex = 0;
   let homeNavIndex = 0;
@@ -480,27 +478,22 @@
     clearHomeCardFocus();
 
     if (homeZone === 0) {
-      // NAV
       focusHomeNav(homeNavIndex);
       return;
     }
-
     if (homeZone === 1) {
-      // HERO
       clearNavFocus();
       focusHomeHero(heroIndex);
       return;
     }
-
     if (homeZone === 2) {
-      // CARDS
       clearNavFocus();
       focusHomeCard(cardIndex);
     }
   }
 
   function onEnterHome() {
-    homeZone = 1; // start on hero
+    homeZone = 1;
     heroIndex = 0;
     homeNavIndex = getCurrentTabIndex();
     cardIndex = 0;
@@ -545,7 +538,7 @@
   }
   function onEnterMedia() {
     mediaZone = 0;
-    mediaNavIndex = getCurrentTabIndex(); // ✅ مهم
+    mediaNavIndex = getCurrentTabIndex();
     mediaCardIndex = 0;
     syncMediaZoneFocus();
   }
@@ -595,13 +588,11 @@
       focusSystemNav(systemNavIndex);
       return;
     }
-
     if (systemZone === 1) {
       clearNavFocus();
       focusSystemCard(systemCardIndex);
       return;
     }
-
     if (systemZone === 2) {
       clearNavFocus();
       focusSystemCard(systemCardIndex);
@@ -633,7 +624,7 @@
 
   function onEnterSystem() {
     systemZone = 0;
-    systemNavIndex = getCurrentTabIndex(); // ✅ مهم
+    systemNavIndex = getCurrentTabIndex();
     systemCardIndex = 0;
     systemBtnIndex = 0;
     syncSystemUI();
@@ -643,15 +634,36 @@
   function openSystemOnSound() {
     setActiveScreen("system");
     systemZone = 2;
-    systemCardIndex = 1; // Sound card index
+    systemCardIndex = 1;
     systemBtnIndex = 0;
     syncSystemZoneFocus();
   }
 
   // ==================== Pointer interactions ====================
   document.addEventListener("pointerdown", (e) => {
+    // ✅ Wi-Fi click
+    const wifiEl = e.target.closest("#wifiStatus");
+    if (wifiEl) {
+      e.preventDefault();
+      e.stopPropagation();
+      uiSound.move();
+      toggleWifi();
+      return;
+    }
+
+    // ✅ Controller click
+    const ctrlEl = e.target.closest("#controllerStatus");
+    if (ctrlEl) {
+      e.preventDefault();
+      e.stopPropagation();
+      uiSound.move();
+      toggleController();
+      return;
+    }
+
     // SND click (header)
-    if (sndStatusEl && e.target === sndStatusEl) {
+    const sndEl = e.target.closest("#sndStatus");
+    if (sndEl) {
       e.preventDefault();
       e.stopPropagation();
       toggleSound();
@@ -684,7 +696,6 @@
         if (c24) setClockFormat(true);
         if (sOn) setSoundEnabled(true);
         if (sOff) setSoundEnabled(false);
-
         return;
       }
     }
@@ -923,6 +934,22 @@
     }
   });
 
+  // Also allow Enter/Space on wifi/controller themselves
+  function bindHeaderToggleKeys() {
+    const wifiEl = document.getElementById("wifiStatus");
+    const ctrlEl = document.getElementById("controllerStatus");
+
+    const onKey = (handler) => (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      uiSound.move();
+      handler();
+    };
+
+    wifiEl?.addEventListener("keydown", onKey(toggleWifi));
+    ctrlEl?.addEventListener("keydown", onKey(toggleController));
+  }
+
   // ==================== Keyboard: Games Grid ====================
   document.addEventListener("keydown", (e) => {
     if (currentScreen !== "games") return;
@@ -963,7 +990,7 @@
       e.preventDefault();
       uiSound.move();
 
-      // ✅ اگر روی ردیف اول هستی، برو روی NAV
+      // اگر روی ردیف اول هستی، برو روی NAV
       if (index < cols) {
         navFocusIndex = getCurrentTabIndex();
         const name = getNavOrder()[navFocusIndex] || currentTab;
@@ -1369,8 +1396,8 @@
 
   // ==================== Init ====================
   function init() {
-    // SND header
     sndStatusEl = document.getElementById("sndStatus");
+
     if (sndStatusEl) {
       sndStatusEl.setAttribute("tabindex", "0");
       sndStatusEl.addEventListener("keydown", (e) => {
@@ -1379,6 +1406,9 @@
         toggleSound();
       });
     }
+
+    // ✅ Header toggle keys for wifi/controller elements
+    bindHeaderToggleKeys();
 
     // sync header
     syncSoundUI();
@@ -1393,6 +1423,9 @@
 
     // start
     setActiveScreen("home", { pushHistory: false });
+
+    // Optional small hint
+    // showToast("W: Wi-Fi  |  C: Controller  |  M: Sound");
   }
 
   if (document.readyState === "loading") {

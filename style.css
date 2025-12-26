@@ -944,3 +944,52 @@ body {
   opacity: 1;
   transform: translateY(0) scale(1);
 }
+/* =========================
+   Wi-Fi / Controller (Clickable + Visible)
+   ========================= */
+.wifi,
+.controller {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 6px;
+  cursor: pointer;
+  user-select: none;
+
+  transition: transform 180ms ease-out, opacity 180ms ease-out,
+    filter 180ms ease-out, box-shadow 180ms ease-out, background 180ms ease-out;
+}
+
+.wifi:hover,
+.controller:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.wifi:focus-visible,
+.controller:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px rgba(184, 220, 255, 0.28),
+    0 0 0 6px rgba(184, 220, 255, 0.1);
+}
+
+/* ON حالت: یه glow لطیف */
+.wifi:not(.is-off),
+.controller:not(.is-off) {
+  box-shadow: 0 0 24px rgba(184, 220, 255, 0.12);
+}
+
+/* OFF حالت: خیلی واضح */
+.wifi.is-off,
+.controller.is-off {
+  opacity: 0.35;
+  filter: grayscale(1) saturate(70%);
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+.wifi.is-off img,
+.controller.is-off img {
+  opacity: 0.35;
+  filter: grayscale(1) saturate(70%);
+}
