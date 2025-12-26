@@ -17,6 +17,12 @@
 
   let currentTab = "home";
 
+  function getCurrentTabIndex() {
+    const order = getNavOrder();
+    const i = order.indexOf(currentTab);
+    return i >= 0 ? i : 0;
+  }
+
   // ==================== SETTINGS (single source of truth) ====================
   const SETTINGS = {
     soundKey: "nexora_sound_enabled", // "1" | "0"
@@ -348,7 +354,10 @@
     setTimeout(() => {
       hideOverlay();
       setActiveScreen("in-game");
-      setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
+      setTimeout(
+        () => document.getElementById("openNowPlayingBtn")?.focus(),
+        0
+      );
     }, 900);
   }
 
@@ -361,6 +370,7 @@
     }
 
     currentScreen = name;
+    if (getNavOrder().includes(name)) currentTab = name;
     updateTabFromScreen(name);
 
     screens.forEach((s) => s.classList.remove("is-active"));
@@ -490,7 +500,7 @@
   }
   function onEnterMedia() {
     mediaZone = 0;
-    mediaNavIndex = 0;
+    mediaNavIndex = getCurrentTabIndex(); // ✅ به جای 0
     mediaCardIndex = 0;
     syncMediaZoneFocus();
   }
@@ -586,7 +596,7 @@
 
   function onEnterSystem() {
     systemZone = 0;
-    systemNavIndex = 0;
+    systemNavIndex = getCurrentTabIndex(); // ✅ به جای 0
     systemCardIndex = 0;
     systemBtnIndex = 0;
     syncSystemUI();
@@ -735,7 +745,8 @@
         e.stopPropagation();
 
         const title =
-          document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
+          document.getElementById("detailsTitle")?.textContent?.trim() ||
+          "Game";
 
         if (playBtn) {
           uiSound.ok();
@@ -907,7 +918,8 @@
     const cards = getGameCards();
     if (!cards.length) return;
 
-    const isOnGameCard = document.activeElement?.classList?.contains("game-card");
+    const isOnGameCard =
+      document.activeElement?.classList?.contains("game-card");
     if (!isOnGameCard) return;
 
     const grid = document.getElementById("gamesGrid");
@@ -1049,7 +1061,8 @@
     if (e.key === "Enter") {
       e.preventDefault();
       const title =
-        document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
+        document.getElementById("nowPlayingTitle")?.textContent?.trim() ||
+        "Game";
 
       if (document.activeElement === resumeBtn) {
         if (!runningGame) return;
@@ -1157,8 +1170,9 @@
       }
       if (homeZone === 2) {
         const title =
-          cards[cardIndex]?.querySelector(".context-title")?.textContent?.trim() ||
-          "Card";
+          cards[cardIndex]
+            ?.querySelector(".context-title")
+            ?.textContent?.trim() || "Card";
         showOverlay("Opening", title);
         setTimeout(() => hideOverlay(), 600);
       }
