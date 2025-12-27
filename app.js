@@ -1,9 +1,9 @@
 /* =========================
-   Nexora OS - app.js (BOOT + FULL)
+   Nexora OS - app.js (BOOT + POWER MENU + FULL)
    - Boot Sequence (Splash + Fake progress + sound + lock input)
-   - Wi-Fi/Controller click + keyboard focus works
-   - Toast visible feedback
-   - Global nav + Home/Games/Media/System focus logic preserved
+   - Global nav + Home/Games/Media/System focus logic
+   - Wi-Fi/Controller + Toast
+   - Power Menu (P): Sleep / Restart / Power Off
    ========================= */
 
 (() => {
@@ -41,11 +41,6 @@
     clockKey: "nexora_use24h", // "1" | "0"
     wifiKey: "nexora_wifi_on", // "1" | "0"
     controllerKey: "nexora_controller_on", // "1" | "0"
-
-    // اضافه‌شده‌ها اگر داری (اختیاری):
-    // volumeKey: "nexora_volume",
-    // reduceMotionKey: "nexora_reduce_motion",
-    // contrastKey: "nexora_high_contrast",
   };
 
   function loadBool(key, defaultValue) {
@@ -133,9 +128,7 @@
     const el = document.getElementById("controllerStatus");
     if (!el) return;
     el.classList.toggle("is-off", !controllerOn);
-    el.title = `Controller: ${
-      controllerOn ? "Connected" : "Disconnected"
-    } (C)`;
+    el.title = `Controller: ${controllerOn ? "Connected" : "Disconnected"} (C)`;
   }
 
   function toggleWifi() {
@@ -296,8 +289,130 @@
     setSoundEnabled(!soundEnabled);
   }
 
+  // ==================== POWER MENU (NEW) ====================
+  const powerOverlay = document.getElementById("powerOverlay");
+  const powerOptions = document.getElementById("powerOptions");
+  const sleepOverlay = document.getElementById("sleepOverlay");
+  const offOverlay = document.getElementById("offOverlay");
+
+  let powerMenuOpen = false;
+  let sleeping = false;
+  let poweredOff = false;
+  let powerIndex = 0; // 0 sleep, 1 restart, 2 off
+  let lastFocusedBeforePower = null;
+
+  function getPowerItems() {
+    return Array.from(document.querySelectorAll(".power-item"));
+  }
+
+  function setPowerFocus(i) {
+    const items = getPowerItems();
+    if (!items.length) return;
+    powerIndex = Math.max(0, Math.min(i, items.length - 1));
+    items.forEach((b) => b.classList.remove("is-focused"));
+    items[powerIndex].classList.add("is-focused");
+    items[powerIndex].focus?.();
+  }
+
+  function openPowerMenu() {
+    if (!powerOverlay) return;
+    if (booting || sleeping || poweredOff) return;
+
+    powerMenuOpen = true;
+    lastFocusedBeforePower = document.activeElement;
+
+    powerOverlay.classList.add("is-active");
+    powerOverlay.setAttribute("aria-hidden", "false");
+
+    uiSound.ok();
+    setPowerFocus(0);
+  }
+
+  function closePowerMenu() {
+    if (!powerOverlay) return;
+
+    powerMenuOpen = false;
+    powerOverlay.classList.remove("is-active");
+    powerOverlay.setAttribute("aria-hidden", "true");
+
+    uiSound.back();
+
+    // برگردون فوکوس
+    if (lastFocusedBeforePower && lastFocusedBeforePower.focus) {
+      setTimeout(() => lastFocusedBeforePower.focus(), 0);
+    }
+  }
+
+  function enterSleep() {
+    if (!sleepOverlay) return;
+    sleeping = true;
+    powerMenuOpen = false;
+
+    powerOverlay?.classList.remove("is-active");
+    powerOverlay?.setAttribute("aria-hidden", "true");
+
+    sleepOverlay.classList.add("is-active");
+    sleepOverlay.setAttribute("aria-hidden", "false");
+
+    uiSound.ok();
+  }
+
+  function wakeFromSleep() {
+    if (!sleepOverlay) return;
+    sleeping = false;
+
+    sleepOverlay.classList.remove("is-active");
+    sleepOverlay.setAttribute("aria-hidden", "true");
+
+    uiSound.ok();
+
+    // بعد از بیدار شدن، فوکوس رو منطقی برگردون
+    setTimeout(() => {
+      if (currentScreen === "home") onEnterHome();
+      else syncNavUI();
+    }, 0);
+  }
+
+  function powerOff() {
+    if (!offOverlay) return;
+    poweredOff = true;
+    powerMenuOpen = false;
+
+    powerOverlay?.classList.remove("is-active");
+    powerOverlay?.setAttribute("aria-hidden", "true");
+
+    offOverlay.classList.add("is-active");
+    offOverlay.setAttribute("aria-hidden", "false");
+
+    // صدا قطع/کم حس خاموشی
+    uiSound.quit();
+  }
+
+  function powerOn() {
+    if (!offOverlay) return;
+    poweredOff = false;
+
+    offOverlay.classList.remove("is-active");
+    offOverlay.setAttribute("aria-hidden", "true");
+
+    uiSound.launch();
+
+    // برگرد به Home (مثل کنسول)
+    setActiveScreen("home", { pushHistory: false });
+    onEnterHome();
+  }
+
+  function selectPowerAction() {
+    const items = getPowerItems();
+    const item = items[powerIndex];
+    const action = item?.dataset?.power;
+
+    if (action === "sleep") enterSleep();
+    else if (action === "restart") location.reload();
+    else if (action === "off") powerOff();
+  }
+
   // ==================== BOOT (NEW) ====================
-  // در زمان Boot همه inputها قفل می‌شوند
   let booting = true;
 
   function showBoot() {
@@ -313,7 +428,6 @@
   }
 
   function runBootSequence() {
-    // اگر Boot Screen تو HTML نیست، سریع ادامه بده
     const bootEl = document.getElementById("bootScreen");
     if (!bootEl) {
       booting = false;
@@ -327,13 +441,12 @@
     const fill = document.getElementById("bootBarFill");
     const percentEl = document.getElementById("bootPercent");
 
-    // صدای بوت کوتاه
     uiSound.launch?.();
 
     let p = 0;
 
     const tick = () => {
-      const add = Math.random() * 12 + 6; // 6 تا 18
+      const add = Math.random() * 12 + 6;
       p = Math.min(100, Math.floor(p + add));
 
       if (fill) fill.style.width = `${p}%`;
@@ -343,8 +456,6 @@
         setTimeout(() => {
           hideBoot();
           booting = false;
-
-          // بعد از Boot وارد Home شو (بدون history)
           setActiveScreen("home", { pushHistory: false });
         }, 450);
         return;
@@ -356,10 +467,16 @@
     setTimeout(tick, 250);
   }
 
-  // قفل input در Boot (capture)
+  // قفل input در Boot / Sleep / Off / PowerMenu
+  function shouldBlockGlobalInput() {
+    return booting || sleeping || poweredOff || powerMenuOpen;
+  }
+
   document.addEventListener(
     "keydown",
     (e) => {
+      // وقتی power menu بازه، خودمون مدیریت می‌کنیم (پس اینجا prevent نکن)
+      if (powerMenuOpen || sleeping || poweredOff) return;
       if (!booting) return;
       e.preventDefault();
       e.stopPropagation();
@@ -370,6 +487,7 @@
   document.addEventListener(
     "pointerdown",
     (e) => {
+      if (powerMenuOpen || sleeping || poweredOff) return;
       if (!booting) return;
       e.preventDefault();
       e.stopPropagation();
@@ -408,7 +526,6 @@
 
     currentScreen = name;
 
-    // ✅ هر صفحه‌ای که جزو nav هست، active-tab هم همون بشه
     if (getNavOrder().includes(name)) currentTab = name;
 
     screens.forEach((s) => s.classList.remove("is-active"));
@@ -505,12 +622,14 @@
     setTimeout(() => {
       hideOverlay();
       setActiveScreen("in-game");
-      setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
+      setTimeout(
+        () => document.getElementById("openNowPlayingBtn")?.focus(),
+        0
+      );
     }, 900);
   }
 
   // ==================== Home Focus Engine ====================
-  // global nav: 0 nav | 1 hero | 2 cards
   let homeZone = 1;
   let heroIndex = 0;
   let homeNavIndex = 0;
@@ -583,7 +702,7 @@
   }
 
   // ==================== MEDIA Zone/Focus ====================
-  let mediaZone = 0; // 0 nav | 1 cards
+  let mediaZone = 0;
   let mediaNavIndex = 0;
   let mediaCardIndex = 0;
 
@@ -626,7 +745,7 @@
   }
 
   // ==================== SYSTEM Zone/Focus + Settings ====================
-  let systemZone = 0; // 0 nav | 1 cards | 2 inner buttons
+  let systemZone = 0;
   let systemNavIndex = 0;
   let systemCardIndex = 0;
   let systemBtnIndex = 0;
@@ -723,6 +842,39 @@
 
   // ==================== Pointer interactions ====================
   document.addEventListener("pointerdown", (e) => {
+    // اگر Sleep یا Off فعال هستند، هیچ کلیکی نپذیر
+    if (sleeping || poweredOff) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    // اگر Power menu بازه: فقط داخل خودش کلیک‌ها رو بگیر
+    if (powerMenuOpen) {
+      const item = e.target.closest(".power-item");
+      const outside = !e.target.closest(".power-modal");
+
+      if (outside) {
+        e.preventDefault();
+        e.stopPropagation();
+        closePowerMenu();
+        return;
+      }
+
+      if (item) {
+        e.preventDefault();
+        e.stopPropagation();
+        uiSound.ok();
+        const items = getPowerItems();
+        const i = items.indexOf(item);
+        if (i >= 0) setPowerFocus(i);
+        selectPowerAction();
+        return;
+      }
+
+      return;
+    }
+
     // ✅ Wi-Fi click
     const wifiEl = e.target.closest("#wifiStatus");
     if (wifiEl) {
@@ -922,7 +1074,7 @@
     true
   );
 
-  // ==================== Keyboard: universal helpers ====================
+  // ==================== Keyboard: helpers ====================
   function isTypingContext() {
     const tag = document.activeElement?.tagName?.toLowerCase();
     return (
@@ -932,8 +1084,72 @@
     );
   }
 
-  // ✅ NAV keyboard always works when nav-item focused
+  // ====== POWER MENU / SLEEP / OFF keyboard handling ======
   document.addEventListener("keydown", (e) => {
+    if (booting) return;
+
+    // اگر Off هستی: فقط P روشن کن
+    if (poweredOff) {
+      if (e.key === "p" || e.key === "P") {
+        e.preventDefault();
+        powerOn();
+      } else {
+        e.preventDefault();
+      }
+      return;
+    }
+
+    // اگر Sleep هستی: هر کلیدی بیدار
+    if (sleeping) {
+      e.preventDefault();
+      wakeFromSleep();
+      return;
+    }
+
+    // باز/بسته Power Menu با P
+    if (e.key === "p" || e.key === "P") {
+      if (isTypingContext()) return;
+      e.preventDefault();
+      if (powerMenuOpen) closePowerMenu();
+      else openPowerMenu();
+      return;
+    }
+
+    // وقتی Power Menu بازه، همینجا کنترلش کن
+    if (powerMenuOpen) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closePowerMenu();
+        return;
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        uiSound.move();
+        setPowerFocus(powerIndex + 1);
+        return;
+      }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        uiSound.move();
+        setPowerFocus(powerIndex - 1);
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        uiSound.ok();
+        selectPowerAction();
+        return;
+      }
+
+      // بقیه کلیدها داخل Power Menu نباید به OS برن
+      e.preventDefault();
+      return;
+    }
+  });
+
+  // ✅ NAV keyboard when nav-item focused
+  document.addEventListener("keydown", (e) => {
+    if (powerMenuOpen || sleeping || poweredOff || booting) return;
     const active = document.activeElement;
     if (!active || !active.classList?.contains("nav-item")) return;
     if (isTypingContext()) return;
@@ -970,6 +1186,7 @@
 
   // Back (ESC / Backspace)
   document.addEventListener("keydown", (e) => {
+    if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (e.key !== "Escape" && e.key !== "Backspace") return;
     if (isTypingContext()) return;
     uiSound.back();
@@ -978,6 +1195,7 @@
 
   // Mute toggle (M) + Shift+M
   document.addEventListener("keydown", (e) => {
+    if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (e.key !== "m" && e.key !== "M") return;
     if (isTypingContext()) return;
 
@@ -992,6 +1210,7 @@
 
   // T toggle clock
   document.addEventListener("keydown", (e) => {
+    if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (e.key !== "t" && e.key !== "T") return;
     if (isTypingContext()) return;
     e.preventDefault();
@@ -1001,6 +1220,7 @@
 
   // W / C toggle wifi/controller
   document.addEventListener("keydown", (e) => {
+    if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (isTypingContext()) return;
 
     if (e.key === "w" || e.key === "W") {
@@ -1022,6 +1242,7 @@
     const ctrlEl = document.getElementById("controllerStatus");
 
     const onKey = (handler) => (e) => {
+      if (powerMenuOpen || sleeping || poweredOff || booting) return;
       if (e.key !== "Enter" && e.key !== " ") return;
       e.preventDefault();
       uiSound.move();
@@ -1034,6 +1255,7 @@
 
   // ==================== Keyboard: Games Grid ====================
   document.addEventListener("keydown", (e) => {
+    if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "games") return;
     if (isTypingContext()) return;
 
@@ -1072,7 +1294,6 @@
       e.preventDefault();
       uiSound.move();
 
-      // اگر روی ردیف اول هستی، برو روی NAV
       if (index < cols) {
         navFocusIndex = getCurrentTabIndex();
         const name = getNavOrder()[navFocusIndex] || currentTab;
@@ -1093,6 +1314,7 @@
 
   // Keyboard: Game Details
   document.addEventListener("keydown", (e) => {
+    if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "game-details") return;
     if (isTypingContext()) return;
 
@@ -1133,6 +1355,7 @@
 
   // Keyboard: In-Game
   document.addEventListener("keydown", (e) => {
+    if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "in-game") return;
     if (isTypingContext()) return;
 
@@ -1173,6 +1396,7 @@
 
   // Keyboard: Now Playing
   document.addEventListener("keydown", (e) => {
+    if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "now-playing") return;
     if (isTypingContext()) return;
 
@@ -1195,7 +1419,8 @@
     if (e.key === "Enter") {
       e.preventDefault();
       const title =
-        document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
+        document.getElementById("nowPlayingTitle")?.textContent?.trim() ||
+        "Game";
 
       if (document.activeElement === resumeBtn) {
         if (!runningGame) return;
@@ -1204,7 +1429,10 @@
         setTimeout(() => {
           hideOverlay();
           setActiveScreen("in-game");
-          setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
+          setTimeout(
+            () => document.getElementById("openNowPlayingBtn")?.focus(),
+            0
+          );
         }, 500);
       } else {
         uiSound.quit();
@@ -1221,6 +1449,7 @@
 
   // Keyboard: HOME Engine
   document.addEventListener("keydown", (e) => {
+    if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "home") return;
     if (isTypingContext()) return;
 
@@ -1299,8 +1528,9 @@
 
       if (homeZone === 2) {
         const title =
-          cards[cardIndex]?.querySelector(".context-title")?.textContent?.trim() ||
-          "Card";
+          cards[cardIndex]
+            ?.querySelector(".context-title")
+            ?.textContent?.trim() || "Card";
         showOverlay("Opening", title);
         setTimeout(() => hideOverlay(), 600);
       }
@@ -1309,6 +1539,7 @@
 
   // Keyboard: MEDIA Engine
   document.addEventListener("keydown", (e) => {
+    if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "media") return;
     if (isTypingContext()) return;
 
@@ -1381,6 +1612,7 @@
 
   // Keyboard: SYSTEM Engine
   document.addEventListener("keydown", (e) => {
+    if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "system") return;
     if (isTypingContext()) return;
 
@@ -1478,13 +1710,13 @@
     if (sndStatusEl) {
       sndStatusEl.setAttribute("tabindex", "0");
       sndStatusEl.addEventListener("keydown", (e) => {
+        if (powerMenuOpen || sleeping || poweredOff || booting) return;
         if (e.key !== "Enter" && e.key !== " ") return;
         e.preventDefault();
         toggleSound();
       });
     }
 
-    // ✅ Header toggle keys for wifi/controller elements
     bindHeaderToggleKeys();
 
     // sync header
@@ -1498,8 +1730,17 @@
     // system ui sync
     syncSystemUI();
 
-    // ✅ NEW: Boot instead of direct Home
+    // Boot
     runBootSequence();
+
+    // Power menu button mouse focus sync
+    powerOptions?.addEventListener("focusin", (e) => {
+      const item = e.target.closest(".power-item");
+      if (!item) return;
+      const items = getPowerItems();
+      const i = items.indexOf(item);
+      if (i >= 0) setPowerFocus(i);
+    });
   }
 
   if (document.readyState === "loading") {

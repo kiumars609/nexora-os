@@ -363,6 +363,52 @@
       </div>
     </div>
     <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
+    <!-- POWER MENU OVERLAY -->
+    <div class="power-overlay" id="powerOverlay" aria-hidden="true">
+      <div
+        class="power-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Power menu"
+      >
+        <div class="power-title">POWER</div>
+
+        <div class="power-options" id="powerOptions">
+          <button class="power-item is-focused" data-power="sleep" tabindex="0">
+            Sleep
+          </button>
+
+          <button class="power-item" data-power="restart" tabindex="0">
+            Restart
+          </button>
+
+          <button class="power-item" data-power="off" tabindex="0">
+            Power Off
+          </button>
+        </div>
+
+        <div class="power-hint">
+          ← → Navigate • Enter Select • Esc Back • P Close
+        </div>
+      </div>
+    </div>
+
+    <!-- SLEEP OVERLAY -->
+    <div class="sleep-overlay" id="sleepOverlay" aria-hidden="true">
+      <div class="sleep-text">
+        <div class="sleep-title">SLEEP</div>
+        <div class="sleep-sub">Press any key to wake</div>
+      </div>
+    </div>
+
+    <!-- POWER OFF OVERLAY -->
+    <div class="off-overlay" id="offOverlay" aria-hidden="true">
+      <div class="off-text">
+        <div class="off-title">POWER OFF</div>
+        <div class="off-sub">Press P to power on</div>
+      </div>
+    </div>
+
     <script src="./app.js"></script>
   </body>
 </html>
