@@ -1,8 +1,8 @@
 /* =========================
-   Nexora OS - app.js (FULL FIXED v2)
-   - Wi-Fi/Controller click + keyboard focus works
-   - Toast visible feedback
-   - Global nav + Home/Games/Media/System focus logic preserved
+   Nexora OS - app.js (SETTINGS CORE + Volume + Motion + Contrast)
+   - Central settings object
+   - Volume slider (0..100) affects WebAudio gain
+   - Reduce Motion + High Contrast saved + applied to body
    ========================= */
 
 (() => {
@@ -34,12 +34,15 @@
     toastTimer = setTimeout(() => el.classList.remove("is-show"), 1000);
   }
 
-  // ==================== SETTINGS ====================
+  // ==================== STORAGE KEYS ====================
   const SETTINGS = {
     soundKey: "nexora_sound_enabled", // "1" | "0"
+    volumeKey: "nexora_volume", // "0..100"
     clockKey: "nexora_use24h", // "1" | "0"
     wifiKey: "nexora_wifi_on", // "1" | "0"
     controllerKey: "nexora_controller_on", // "1" | "0"
+    reduceMotionKey: "nexora_reduce_motion", // "1" | "0"
+    contrastKey: "nexora_high_contrast", // "1" | "0"
   };
 
   function loadBool(key, defaultValue) {
@@ -57,6 +60,38 @@
     try {
       localStorage.setItem(key, value ? "1" : "0");
     } catch (_) {}
+  }
+
+  function loadNumber(key, defaultValue, { min = -Infinity, max = Infinity } = {}) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw == null) return defaultValue;
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return defaultValue;
+      return Math.max(min, Math.min(max, n));
+    } catch (_) {
+      return defaultValue;
+    }
+  }
+
+  function saveNumber(key, value) {
+    try {
+      localStorage.setItem(key, String(value));
+    } catch (_) {}
+  }
+
+  // ==================== CENTRAL SETTINGS ====================
+  const settings = {
+    soundEnabled: loadBool(SETTINGS.soundKey, true),
+    volume: loadNumber(SETTINGS.volumeKey, 60, { min: 0, max: 100 }),
+    clock24: loadBool(SETTINGS.clockKey, false),
+    reduceMotion: loadBool(SETTINGS.reduceMotionKey, false),
+    highContrast: loadBool(SETTINGS.contrastKey, false),
+  };
+
+  function applyAccessibilityModes() {
+    document.body.classList.toggle("reduce-motion", !!settings.reduceMotion);
+    document.body.classList.toggle("high-contrast", !!settings.highContrast);
   }
 
   // ==================== NAV helpers ====================
@@ -127,9 +162,7 @@
     const el = document.getElementById("controllerStatus");
     if (!el) return;
     el.classList.toggle("is-off", !controllerOn);
-    el.title = `Controller: ${
-      controllerOn ? "Connected" : "Disconnected"
-    } (C)`;
+    el.title = `Controller: ${controllerOn ? "Connected" : "Disconnected"} (C)`;
   }
 
   function toggleWifi() {
@@ -143,14 +176,10 @@
     controllerOn = !controllerOn;
     saveBool(SETTINGS.controllerKey, controllerOn);
     syncControllerUI();
-    showToast(
-      `Controller: ${controllerOn ? "Connected" : "Disconnected"}`
-    );
+    showToast(`Controller: ${controllerOn ? "Connected" : "Disconnected"}`);
   }
 
   // ==================== Clock ====================
-  let use24h = loadBool(SETTINGS.clockKey, false);
-
   function pad2(n) {
     return String(n).padStart(2, "0");
   }
@@ -159,7 +188,7 @@
     const h = date.getHours();
     const m = date.getMinutes();
 
-    if (use24h) return `${pad2(h)}:${pad2(m)}`;
+    if (settings.clock24) return `${pad2(h)}:${pad2(m)}`;
 
     const hour12 = h % 12 || 12;
     const ampm = h < 12 ? "AM" : "PM";
@@ -181,27 +210,33 @@
   }
 
   function setClockFormat(nextUse24h) {
-    use24h = !!nextUse24h;
-    saveBool(SETTINGS.clockKey, use24h);
+    settings.clock24 = !!nextUse24h;
+    saveBool(SETTINGS.clockKey, settings.clock24);
     renderClock();
     syncSystemUI();
-    showToast(`Clock: ${use24h ? "24H" : "12H"}`);
+    showToast(`Clock: ${settings.clock24 ? "24H" : "12H"}`);
   }
 
   function toggleClockFormat() {
-    setClockFormat(!use24h);
+    setClockFormat(!settings.clock24);
   }
 
   // ==================== UI Sounds (WebAudio) ====================
   let audioCtx = null;
-  let soundEnabled = loadBool(SETTINGS.soundKey, true);
+  let masterGain = null;
   let sndStatusEl = null;
 
   function ensureAudio() {
-    if (!soundEnabled) return null;
+    if (!settings.soundEnabled) return null;
 
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    if (!masterGain) {
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = settings.volume / 100;
+      masterGain.connect(audioCtx.destination);
     }
 
     if (audioCtx.state === "suspended") {
@@ -229,7 +264,7 @@
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(masterGain || ctx.destination);
 
     osc.start(t0);
     osc.stop(t0 + dur + 0.02);
@@ -259,37 +294,69 @@
 
   uiSound.launch = () => chord([520, 660, 820], 0.05, 0.01);
   uiSound.quit = () => chord([420, 320], 0.06, 0.02);
-  uiSound.overlay = () =>
-    beep({ freq: 640, dur: 0.03, type: "sine", vol: 0.04 });
+  uiSound.overlay = () => beep({ freq: 640, dur: 0.03, type: "sine", vol: 0.04 });
 
   function syncSoundUI() {
     if (!sndStatusEl) return;
-    sndStatusEl.textContent = `SND: ${soundEnabled ? "ON" : "OFF"}`;
-    sndStatusEl.classList.toggle("is-off", !soundEnabled);
+    sndStatusEl.textContent = `SND: ${settings.soundEnabled ? "ON" : "OFF"}`;
+    sndStatusEl.classList.toggle("is-off", !settings.soundEnabled);
   }
 
   function setSoundEnabled(next) {
-    soundEnabled = !!next;
-    saveBool(SETTINGS.soundKey, soundEnabled);
+    settings.soundEnabled = !!next;
+    saveBool(SETTINGS.soundKey, settings.soundEnabled);
 
-    if (!soundEnabled && audioCtx && audioCtx.state !== "closed") {
+    if (!settings.soundEnabled && audioCtx && audioCtx.state !== "closed") {
       try {
         audioCtx.suspend?.();
       } catch (_) {}
     }
 
-    if (soundEnabled) {
+    if (settings.soundEnabled) {
       ensureAudio();
       setTimeout(() => uiSound.ok(), 0);
     }
 
     syncSoundUI();
     syncSystemUI();
-    showToast(`Sound: ${soundEnabled ? "ON" : "OFF"}`);
+    showToast(`Sound: ${settings.soundEnabled ? "ON" : "OFF"}`);
   }
 
   function toggleSound() {
-    setSoundEnabled(!soundEnabled);
+    setSoundEnabled(!settings.soundEnabled);
+  }
+
+  function setVolume(next) {
+    const v = Math.max(0, Math.min(100, Number(next)));
+    settings.volume = Number.isFinite(v) ? v : settings.volume;
+
+    saveNumber(SETTINGS.volumeKey, settings.volume);
+
+    if (masterGain) {
+      masterGain.gain.value = settings.volume / 100;
+    }
+
+    // UI sync only (no toast in slider spam)
+    const volValue = document.getElementById("volumeValue");
+    const volSlider = document.getElementById("volumeSlider");
+    if (volValue) volValue.textContent = String(settings.volume);
+    if (volSlider) volSlider.value = String(settings.volume);
+  }
+
+  function setReduceMotion(next) {
+    settings.reduceMotion = !!next;
+    saveBool(SETTINGS.reduceMotionKey, settings.reduceMotion);
+    applyAccessibilityModes();
+    syncSystemUI();
+    showToast(`Motion: ${settings.reduceMotion ? "Reduced" : "Normal"}`);
+  }
+
+  function setHighContrast(next) {
+    settings.highContrast = !!next;
+    saveBool(SETTINGS.contrastKey, settings.highContrast);
+    applyAccessibilityModes();
+    syncSystemUI();
+    showToast(`Contrast: ${settings.highContrast ? "High" : "Normal"}`);
   }
 
   // -------------------- Overlay --------------------
@@ -420,10 +487,7 @@
     setTimeout(() => {
       hideOverlay();
       setActiveScreen("in-game");
-      setTimeout(
-        () => document.getElementById("openNowPlayingBtn")?.focus(),
-        0
-      );
+      setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
     }, 900);
   }
 
@@ -544,7 +608,7 @@
   }
 
   // ==================== SYSTEM Zone/Focus + Settings ====================
-  let systemZone = 0; // 0 nav | 1 cards | 2 inner buttons
+  let systemZone = 0; // 0 nav | 1 cards | 2 inner controls
   let systemNavIndex = 0;
   let systemCardIndex = 0;
   let systemBtnIndex = 0;
@@ -554,17 +618,20 @@
   }
   function getSystemButtonsInCard(cardEl) {
     if (!cardEl) return [];
-    return Array.from(cardEl.querySelectorAll("button.hero-btn"));
+    return Array.from(cardEl.querySelectorAll("button.hero-btn, input[type='range']"));
   }
+
   function clearSystemCardFocus() {
     getSystemCards().forEach((c) => c.classList.remove("is-focused"));
   }
+
   function focusSystemNav(i = 0) {
     const order = getNavOrder();
     systemNavIndex = Math.max(0, Math.min(i, order.length - 1));
     const name = order[systemNavIndex] || "home";
     focusNavDomByName(name);
   }
+
   function focusSystemCard(i = 0) {
     const cards = getSystemCards();
     if (!cards.length) return;
@@ -573,14 +640,16 @@
     cards[systemCardIndex].classList.add("is-focused");
     cards[systemCardIndex].focus?.();
   }
-  function focusSystemButton(i = 0) {
+
+  function focusSystemControl(i = 0) {
     const cards = getSystemCards();
     const card = cards[systemCardIndex];
-    const btns = getSystemButtonsInCard(card);
-    if (!btns.length) return;
-    systemBtnIndex = Math.max(0, Math.min(i, btns.length - 1));
-    btns[systemBtnIndex].focus();
+    const controls = getSystemButtonsInCard(card);
+    if (!controls.length) return;
+    systemBtnIndex = Math.max(0, Math.min(i, controls.length - 1));
+    controls[systemBtnIndex].focus?.();
   }
+
   function syncSystemZoneFocus() {
     clearSystemCardFocus();
 
@@ -596,29 +665,59 @@
     if (systemZone === 2) {
       clearNavFocus();
       focusSystemCard(systemCardIndex);
-      focusSystemButton(systemBtnIndex);
+      focusSystemControl(systemBtnIndex);
     }
   }
 
   function syncSystemUI() {
+    // Clock value + buttons
     const clockValue = document.getElementById("clockFormatValue");
-    if (clockValue) clockValue.textContent = use24h ? "24H" : "12H";
-
-    const sysSoundValue = document.getElementById("systemSoundValue");
-    if (sysSoundValue) sysSoundValue.textContent = soundEnabled ? "ON" : "OFF";
+    if (clockValue) clockValue.textContent = settings.clock24 ? "24H" : "12H";
 
     const clock12Btn = document.getElementById("clock12Btn");
     const clock24Btn = document.getElementById("clock24Btn");
     if (clock12Btn && clock24Btn) {
-      clock12Btn.classList.toggle("primary", !use24h);
-      clock24Btn.classList.toggle("primary", use24h);
+      clock12Btn.classList.toggle("primary", !settings.clock24);
+      clock24Btn.classList.toggle("primary", settings.clock24);
     }
+
+    // Sound value + buttons
+    const sysSoundValue = document.getElementById("systemSoundValue");
+    if (sysSoundValue) sysSoundValue.textContent = settings.soundEnabled ? "ON" : "OFF";
 
     const soundOnBtn = document.getElementById("soundOnBtn");
     const soundOffBtn = document.getElementById("soundOffBtn");
     if (soundOnBtn && soundOffBtn) {
-      soundOnBtn.classList.toggle("primary", soundEnabled);
-      soundOffBtn.classList.toggle("primary", !soundEnabled);
+      soundOnBtn.classList.toggle("primary", settings.soundEnabled);
+      soundOffBtn.classList.toggle("primary", !settings.soundEnabled);
+    }
+
+    // Volume
+    const volValue = document.getElementById("volumeValue");
+    const volSlider = document.getElementById("volumeSlider");
+    if (volValue) volValue.textContent = String(settings.volume);
+    if (volSlider) volSlider.value = String(settings.volume);
+
+    // Reduce Motion
+    const rmValue = document.getElementById("reduceMotionValue");
+    if (rmValue) rmValue.textContent = settings.reduceMotion ? "ON" : "OFF";
+
+    const motionOffBtn = document.getElementById("motionOffBtn");
+    const motionOnBtn = document.getElementById("motionOnBtn");
+    if (motionOffBtn && motionOnBtn) {
+      motionOffBtn.classList.toggle("primary", !settings.reduceMotion);
+      motionOnBtn.classList.toggle("primary", settings.reduceMotion);
+    }
+
+    // High Contrast
+    const cValue = document.getElementById("contrastValue");
+    if (cValue) cValue.textContent = settings.highContrast ? "ON" : "OFF";
+
+    const contrastOffBtn = document.getElementById("contrastOffBtn");
+    const contrastOnBtn = document.getElementById("contrastOnBtn");
+    if (contrastOffBtn && contrastOnBtn) {
+      contrastOffBtn.classList.toggle("primary", !settings.highContrast);
+      contrastOnBtn.classList.toggle("primary", settings.highContrast);
     }
   }
 
@@ -634,7 +733,7 @@
   function openSystemOnSound() {
     setActiveScreen("system");
     systemZone = 2;
-    systemCardIndex = 1;
+    systemCardIndex = 1; // Sound card (after Clock)
     systemBtnIndex = 0;
     syncSystemZoneFocus();
   }
@@ -687,15 +786,29 @@
       const sOn = e.target.closest("#soundOnBtn");
       const sOff = e.target.closest("#soundOffBtn");
 
-      if (c12 || c24 || sOn || sOff) {
+      const motionOff = e.target.closest("#motionOffBtn");
+      const motionOn = e.target.closest("#motionOnBtn");
+
+      const contrastOff = e.target.closest("#contrastOffBtn");
+      const contrastOn = e.target.closest("#contrastOnBtn");
+
+      if (c12 || c24 || sOn || sOff || motionOff || motionOn || contrastOff || contrastOn) {
         e.preventDefault();
         e.stopPropagation();
         uiSound.ok();
 
         if (c12) setClockFormat(false);
         if (c24) setClockFormat(true);
+
         if (sOn) setSoundEnabled(true);
         if (sOff) setSoundEnabled(false);
+
+        if (motionOff) setReduceMotion(false);
+        if (motionOn) setReduceMotion(true);
+
+        if (contrastOff) setHighContrast(false);
+        if (contrastOn) setHighContrast(true);
+
         return;
       }
     }
@@ -737,8 +850,7 @@
         e.stopPropagation();
 
         const title =
-          document.getElementById("nowPlayingTitle")?.textContent?.trim() ||
-          "Game";
+          document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
 
         if (resume) {
           if (!runningGame) return;
@@ -747,10 +859,7 @@
           setTimeout(() => {
             hideOverlay();
             setActiveScreen("in-game");
-            setTimeout(
-              () => document.getElementById("openNowPlayingBtn")?.focus(),
-              0
-            );
+            setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
           }, 500);
         } else {
           uiSound.quit();
@@ -791,8 +900,7 @@
         e.stopPropagation();
 
         const title =
-          document.getElementById("detailsTitle")?.textContent?.trim() ||
-          "Game";
+          document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
 
         if (playBtn) {
           uiSound.ok();
@@ -934,7 +1042,7 @@
     }
   });
 
-  // Also allow Enter/Space on wifi/controller themselves
+  // Allow Enter/Space on wifi/controller themselves
   function bindHeaderToggleKeys() {
     const wifiEl = document.getElementById("wifiStatus");
     const ctrlEl = document.getElementById("controllerStatus");
@@ -950,6 +1058,28 @@
     ctrlEl?.addEventListener("keydown", onKey(toggleController));
   }
 
+  // Volume slider: keyboard left/right when focused
+  document.addEventListener("keydown", (e) => {
+    if (currentScreen !== "system") return;
+    if (isTypingContext()) return;
+
+    const active = document.activeElement;
+    if (!active || active.id !== "volumeSlider") return;
+
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      uiSound.move();
+      setVolume(Number(active.value) + 1);
+      active.value = String(settings.volume);
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      uiSound.move();
+      setVolume(Number(active.value) - 1);
+      active.value = String(settings.volume);
+    }
+  });
+
   // ==================== Keyboard: Games Grid ====================
   document.addEventListener("keydown", (e) => {
     if (currentScreen !== "games") return;
@@ -958,8 +1088,7 @@
     const cards = getGameCards();
     if (!cards.length) return;
 
-    const isOnGameCard =
-      document.activeElement?.classList?.contains("game-card");
+    const isOnGameCard = document.activeElement?.classList?.contains("game-card");
     if (!isOnGameCard) return;
 
     const grid = document.getElementById("gamesGrid");
@@ -1032,8 +1161,7 @@
 
     if (e.key === "Enter") {
       e.preventDefault();
-      const title =
-        document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
+      const title = document.getElementById("detailsTitle")?.textContent?.trim() || "Game";
 
       if (document.activeElement === playBtn) {
         uiSound.ok();
@@ -1112,9 +1240,7 @@
 
     if (e.key === "Enter") {
       e.preventDefault();
-      const title =
-        document.getElementById("nowPlayingTitle")?.textContent?.trim() ||
-        "Game";
+      const title = document.getElementById("nowPlayingTitle")?.textContent?.trim() || "Game";
 
       if (document.activeElement === resumeBtn) {
         if (!runningGame) return;
@@ -1123,10 +1249,7 @@
         setTimeout(() => {
           hideOverlay();
           setActiveScreen("in-game");
-          setTimeout(
-            () => document.getElementById("openNowPlayingBtn")?.focus(),
-            0
-          );
+          setTimeout(() => document.getElementById("openNowPlayingBtn")?.focus(), 0);
         }, 500);
       } else {
         uiSound.quit();
@@ -1221,9 +1344,7 @@
 
       if (homeZone === 2) {
         const title =
-          cards[cardIndex]
-            ?.querySelector(".context-title")
-            ?.textContent?.trim() || "Card";
+          cards[cardIndex]?.querySelector(".context-title")?.textContent?.trim() || "Card";
         showOverlay("Opening", title);
         setTimeout(() => hideOverlay(), 600);
       }
@@ -1302,14 +1423,14 @@
     }
   });
 
-  // Keyboard: SYSTEM Engine
+  // Keyboard: SYSTEM Engine (Nav/Card/Controls)
   document.addEventListener("keydown", (e) => {
     if (currentScreen !== "system") return;
     if (isTypingContext()) return;
 
     const order = getNavOrder();
     const cards = getSystemCards();
-    const btns = getSystemButtonsInCard(cards[systemCardIndex]);
+    const controls = getSystemButtonsInCard(cards[systemCardIndex]);
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -1339,9 +1460,9 @@
         systemCardIndex = (systemCardIndex + 1) % cards.length;
         focusSystemCard(systemCardIndex);
       }
-      if (systemZone === 2 && btns.length) {
-        systemBtnIndex = (systemBtnIndex + 1) % btns.length;
-        focusSystemButton(systemBtnIndex);
+      if (systemZone === 2 && controls.length) {
+        systemBtnIndex = (systemBtnIndex + 1) % controls.length;
+        focusSystemControl(systemBtnIndex);
       }
       return;
     }
@@ -1358,9 +1479,9 @@
         systemCardIndex = (systemCardIndex - 1 + cards.length) % cards.length;
         focusSystemCard(systemCardIndex);
       }
-      if (systemZone === 2 && btns.length) {
-        systemBtnIndex = (systemBtnIndex - 1 + btns.length) % btns.length;
-        focusSystemButton(systemBtnIndex);
+      if (systemZone === 2 && controls.length) {
+        systemBtnIndex = (systemBtnIndex - 1 + controls.length) % controls.length;
+        focusSystemControl(systemBtnIndex);
       }
       return;
     }
@@ -1382,15 +1503,20 @@
         return;
       }
 
-      if (systemZone === 2) {
-        const focusedId = document.activeElement?.id;
+      // systemZone === 2
+      const focusedId = document.activeElement?.id;
 
-        if (focusedId === "clock12Btn") setClockFormat(false);
-        if (focusedId === "clock24Btn") setClockFormat(true);
+      if (focusedId === "clock12Btn") setClockFormat(false);
+      if (focusedId === "clock24Btn") setClockFormat(true);
 
-        if (focusedId === "soundOnBtn") setSoundEnabled(true);
-        if (focusedId === "soundOffBtn") setSoundEnabled(false);
-      }
+      if (focusedId === "soundOnBtn") setSoundEnabled(true);
+      if (focusedId === "soundOffBtn") setSoundEnabled(false);
+
+      if (focusedId === "motionOffBtn") setReduceMotion(false);
+      if (focusedId === "motionOnBtn") setReduceMotion(true);
+
+      if (focusedId === "contrastOffBtn") setHighContrast(false);
+      if (focusedId === "contrastOnBtn") setHighContrast(true);
     }
   });
 
@@ -1407,8 +1533,20 @@
       });
     }
 
-    // ✅ Header toggle keys for wifi/controller elements
+    // Volume slider input
+    const volSlider = document.getElementById("volumeSlider");
+    if (volSlider) {
+      volSlider.addEventListener("input", (e) => {
+        uiSound.move();
+        setVolume(e.target.value);
+      });
+    }
+
+    // Header toggle keys for wifi/controller elements
     bindHeaderToggleKeys();
+
+    // Apply modes (reduce motion / contrast)
+    applyAccessibilityModes();
 
     // sync header
     syncSoundUI();
@@ -1418,14 +1556,15 @@
     // clock
     startClock();
 
+    // Set volume + gain (no toast)
+    ensureAudio();
+    setVolume(settings.volume);
+
     // system ui sync
     syncSystemUI();
 
     // start
     setActiveScreen("home", { pushHistory: false });
-
-    // Optional small hint
-    // showToast("W: Wi-Fi  |  C: Controller  |  M: Sound");
   }
 
   if (document.readyState === "loading") {
