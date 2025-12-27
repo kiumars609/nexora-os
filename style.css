@@ -1177,6 +1177,15 @@ body.reduce-motion .boot-bar-fill {
   animation: pOverlayIn 180ms ease-out;
 }
 
+/* اگر JS فقط aria-hidden رو عوض کرد هم overlay بیاد بالا */
+.power-overlay[aria-hidden="false"] {
+  display: flex;
+}
+
+.power-overlay[aria-hidden="false"] .power-modal {
+  animation: pModalIn 220ms ease-out forwards;
+}
+
 @keyframes pOverlayIn {
   from {
     opacity: 0;
@@ -1299,7 +1308,8 @@ body.reduce-motion .boot-bar-fill {
   color: rgba(230, 237, 245, 0.62);
 }
 
-.power-item.is-focused {
+.power-item.is-focused,
+.power-option.is-focused {
   transform: translateY(-2px) scale(1.01);
   border-color: rgba(184, 220, 255, 0.72);
   background: rgba(184, 220, 255, 0.1);
@@ -1321,7 +1331,8 @@ body.reduce-motion .boot-bar-fill {
   box-shadow: 0 0 26px rgba(255, 120, 120, 0.12);
 }
 
-.power-item.danger.is-focused {
+.power-item.danger.is-focused,
+.power-option.danger.is-focused {
   border-color: rgba(255, 150, 150, 0.72);
   background: rgba(255, 120, 120, 0.08);
   box-shadow: 0 26px 60px rgba(0, 0, 0, 0.55),
