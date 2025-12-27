@@ -364,6 +364,7 @@
     </div>
     <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
     <!-- POWER MENU OVERLAY -->
+    <!-- POWER MENU OVERLAY -->
     <div class="power-overlay" id="powerOverlay" aria-hidden="true">
       <div
         class="power-modal"
@@ -372,18 +373,62 @@
         aria-label="Power menu"
       >
         <div class="power-title">POWER</div>
+        <div class="power-subtitle">Choose an action</div>
 
         <div class="power-options" id="powerOptions">
+          <!-- Sleep -->
           <button class="power-item is-focused" data-power="sleep" tabindex="0">
-            Sleep
+            <span class="p-icon" aria-hidden="true">
+              <!-- Moon -->
+              <svg viewBox="0 0 24 24" width="22" height="22">
+                <path
+                  fill="currentColor"
+                  d="M21 14.5A8.5 8.5 0 0 1 9.5 3a7 7 0 1 0 11.5 11.5Z"
+                />
+              </svg>
+            </span>
+            <span class="p-meta">
+              <span class="p-label">Sleep</span>
+              <span class="p-desc"
+                >Instant standby. Press any key to wake.</span
+              >
+            </span>
           </button>
 
+          <!-- Restart -->
           <button class="power-item" data-power="restart" tabindex="0">
-            Restart
+            <span class="p-icon" aria-hidden="true">
+              <!-- Restart -->
+              <svg viewBox="0 0 24 24" width="22" height="22">
+                <path
+                  fill="currentColor"
+                  d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5a5 5 0 1 1-9.58-2H5.26A7 7 0 1 0 12 6Z"
+                />
+              </svg>
+            </span>
+            <span class="p-meta">
+              <span class="p-label">Restart</span>
+              <span class="p-desc">Reboot the OS (reload page).</span>
+            </span>
           </button>
 
-          <button class="power-item" data-power="off" tabindex="0">
-            Power Off
+          <!-- Power Off -->
+          <button class="power-item danger" data-power="off" tabindex="0">
+            <span class="p-icon" aria-hidden="true">
+              <!-- Power -->
+              <svg viewBox="0 0 24 24" width="22" height="22">
+                <path
+                  fill="currentColor"
+                  d="M11 2h2v10h-2V2Zm6.36 3.64 1.41 1.41A9 9 0 1 1 5.23 7.05l1.41-1.41a7 7 0 1 0 10.72 0Z"
+                />
+              </svg>
+            </span>
+            <span class="p-meta">
+              <span class="p-label">Power Off</span>
+              <span class="p-desc"
+                >Turn off completely. Press P to power on.</span
+              >
+            </span>
           </button>
         </div>
 
