@@ -993,3 +993,73 @@ body {
   opacity: 0.35;
   filter: grayscale(1) saturate(70%);
 }
+
+/* =========================
+   System Slider (Volume)
+   ========================= */
+.slider-row {
+  width: 100%;
+}
+
+#volumeSlider {
+  width: 100%;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(220, 235, 255, 0.18);
+  outline: none;
+}
+
+#volumeSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(184, 220, 255, 0.95);
+  border: 1px solid rgba(220, 235, 255, 0.22);
+  box-shadow: 0 0 0 6px rgba(184, 220, 255, 0.12);
+  cursor: pointer;
+}
+
+#volumeSlider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 8px rgba(184, 220, 255, 0.16);
+}
+
+/* =========================
+   High Contrast Mode
+   ========================= */
+body.high-contrast .main-os {
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.65),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+body.high-contrast .context-card,
+body.high-contrast .setting-card,
+body.high-contrast .hero,
+body.high-contrast .game-card,
+body.high-contrast .loading-box {
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+body.high-contrast .context-title,
+body.high-contrast .games-title,
+body.high-contrast .nav-item {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+body.high-contrast .context-value,
+body.high-contrast .details-title,
+body.high-contrast .hero .hero-title {
+  color: #ffffff !important;
+}
+/* =========================
+   Reduce Motion (Manual)
+   ========================= */
+body.reduce-motion * {
+  transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+}
