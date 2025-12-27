@@ -1057,9 +1057,31 @@ body.high-contrast .hero .hero-title {
 /* =========================
    Reduce Motion (Manual)
    ========================= */
-body.reduce-motion * {
+/* body.reduce-motion * {
   transition-duration: 0.01ms !important;
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   scroll-behavior: auto !important;
+} */
+/* =========================
+   Reduce Motion (Manual) - STRONG
+   ========================= */
+body.reduce-motion *,
+body.reduce-motion *::before,
+body.reduce-motion *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* اگر blur/backdrop-filter باعث حس motion میشه */
+body.reduce-motion .loading-overlay {
+  backdrop-filter: none !important;
+}
+
+/* مخصوص بک‌گراند aurora */
+body.reduce-motion .blob,
+body.reduce-motion .grain,
+body.reduce-motion .os-bg::before {
+  animation: none !important;
 }
