@@ -1006,55 +1006,69 @@
   }
 
   function renderGamesGrid() {
-    if (!gamesGrid) return;
+  if (!gamesGrid) return;
 
-    const list = getVisibleGames();
-    gamesGrid.innerHTML = "";
+  const list = getVisibleGames();
+  gamesGrid.innerHTML = "";
 
-    list.forEach((g) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "game-card";
-      btn.dataset.id = g.id;
-      btn.setAttribute("aria-selected", "false");
-      btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
+  list.forEach((g) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "game-card";
+    btn.dataset.id = g.id;
+    btn.setAttribute("aria-selected", "false");
+    btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
 
-      btn.innerHTML = `
-        <span style="display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;">
-          <span style="text-align:left;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:78%;">
-            ${g.title}
-          </span>
-          <span style="opacity:${
-            g.installed ? "0.85" : "0.35"
-          };letter-spacing:.12em;font-size:11px;">
+    // اگر کاور نداری، یه کاور ژنریک خیلی خوشگل بساز
+    const coverStyle = g.cover
+      ? `background-image:url("${g.cover}")`
+      : `background-image:
+          radial-gradient(800px 420px at 20% 20%, rgba(124,195,255,0.22), transparent 60%),
+          radial-gradient(700px 420px at 85% 25%, rgba(255,77,230,0.14), transparent 60%),
+          radial-gradient(900px 520px at 55% 95%, rgba(169,255,107,0.10), transparent 65%),
+          linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.35))`;
+
+    btn.innerHTML = `
+      <span class="gc-cover" style='${coverStyle}' aria-hidden="true"></span>
+
+      <span class="gc-info">
+        <span class="gc-title">${g.title}</span>
+
+        <span class="gc-meta">
+          <span class="gc-chip ${g.installed ? "" : "is-get"}">
             ${g.installed ? "INST" : "GET"}
           </span>
         </span>
-      `;
+      </span>
+    `;
 
-      btn.addEventListener("click", () => {
-        uiSound.ok();
-        openGameDetails(g.id);
-      });
-
-      btn.addEventListener("focus", () => {
-        markFocused(btn);
-        const cards = getGameCards();
-        const idx = cards.indexOf(btn);
-        if (idx >= 0) state.gamesUI.lastGridFocus = idx;
-      });
-
-      gamesGrid.appendChild(btn);
+    btn.addEventListener("click", () => {
+      uiSound.ok();
+      openGameDetails(g.id);
     });
 
-    if (!list.length) {
-      const empty = document.createElement("div");
-      empty.style.cssText =
-        "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
-      empty.textContent = "No games found";
-      gamesGrid.appendChild(empty);
-    }
+    btn.addEventListener("focus", () => {
+      markFocused(btn);
+      const cards = getGameCards();
+      const idx = cards.indexOf(btn);
+      if (idx >= 0) state.gamesUI.lastGridFocus = idx;
+    });
+
+    gamesGrid.appendChild(btn);
+  });
+
+  if (!list.length) {
+    const empty = document.createElement("div");
+    empty.style.cssText =
+      "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
+    empty.textContent = "No games found";
+    gamesGrid.appendChild(empty);
   }
+
+  // بعد از رندر، parallax رو بایند کن
+  bindGamesParallax();
+}
+
 
   // -------------------- Details (Phase 5.3) --------------------
   function fmtSize(gb) {
