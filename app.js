@@ -908,22 +908,25 @@
   }
 
   function applyCardCover(coverEl, url, cardEl) {
-    // اگر اصلاً url نداریم
+    cardEl?.classList.remove("cover-loaded");
+    cardEl?.classList.remove("cover-failed");
+
     if (!url) {
       cardEl?.classList.add("cover-failed");
       return;
     }
 
-    // تست لود شدن تصویر (اگر fail شد fallback)
     const img = new Image();
-    img.referrerPolicy = "no-referrer"; // بعضی CDNها حساسن
+    img.referrerPolicy = "no-referrer";
     img.onload = () => {
       coverEl.style.backgroundImage = `url("${url}")`;
+      cardEl?.classList.add("cover-loaded"); // ✅ جدید
       cardEl?.classList.remove("cover-failed");
     };
     img.onerror = () => {
       cardEl?.classList.add("cover-failed");
-      coverEl.style.backgroundImage = ""; // بذار CSS fallback اعمال بشه
+      cardEl?.classList.remove("cover-loaded");
+      coverEl.style.backgroundImage = "";
     };
     img.src = url;
   }
@@ -953,6 +956,10 @@
       btn.innerHTML = `
   <span class="gc-cover" aria-hidden="true"></span>
 
+  <span class="gc-badge ${g.installed ? "is-installed" : "is-store"}">
+    ${g.installed ? "INSTALLED" : "STORE"}
+  </span>
+
   <span class="gc-info">
     <span>
       <span class="gc-title">${g.title}</span>
@@ -970,6 +977,10 @@
       }</span>
     </span>
   </span>
+
+  <span class="gc-hint" aria-hidden="true">
+  ${g.installed ? "PRESS ENTER TO PLAY" : "PRESS ENTER TO GET"}
+</span>
 `;
 
       const coverEl = btn.querySelector(".gc-cover");

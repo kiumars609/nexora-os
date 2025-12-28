@@ -1941,6 +1941,31 @@ body.reduce-motion .game-card,
 body.reduce-motion .game-card .gc-cover {
   transition: none !important;
 }
+
+/* ===== Console Hint on Focus ===== */
+.game-card .gc-hint {
+  position: absolute;
+  left: 14px;
+  bottom: 14px; /* ✅ پایین کارت */
+  top: auto; /* ✅ مطمئن شو top اثر نکنه */
+
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+
+  opacity: 0;
+  transform: translateY(2px); /* از پایین بیاد بالا */
+  transition: opacity 180ms var(--ease), transform 180ms var(--ease);
+
+  z-index: 3; /* ✅ بالاتر از gc-info (که 2 بود) */
+  pointer-events: none;
+}
+
+.game-card.is-focused .gc-hint {
+  opacity: 0.78;
+  transform: translateY(0);
+}
 /* =========================
    Themes (next-gen)
    ========================= */
@@ -2191,4 +2216,66 @@ body.reduce-motion .game-card .gc-cover {
 }
 .game-card .gc-info {
   z-index: 2;
+}
+/* قبل از load: کمی blur/gloss برای حس stream */
+.game-card .gc-cover {
+  filter: saturate(1.05) contrast(1.02) blur(8px);
+  opacity: 0.65;
+}
+
+.game-card.cover-loaded .gc-cover {
+  filter: saturate(1.12) contrast(1.06) blur(0px);
+  opacity: 1;
+}
+
+/* یک pulse ریز وقتی cover آماده شد */
+.game-card.cover-loaded {
+  animation: coverReady 220ms ease-out 1;
+}
+@keyframes coverReady {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  60% {
+    transform: translateY(-2px) scale(1.01);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* scanlines خیلی subtle برای حس کنسول */
+.game-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02) 0px,
+    rgba(255, 255, 255, 0.02) 1px,
+    rgba(0, 0, 0, 0) 3px,
+    rgba(0, 0, 0, 0) 6px
+  );
+  opacity: 0.25;
+  pointer-events: none;
+  z-index: 1;
+}
+.gc-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: 1px solid rgba(210, 230, 255, 0.18);
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 2;
+}
+.gc-badge.is-installed {
+  opacity: 0.95;
+}
+.gc-badge.is-store {
+  opacity: 0.55;
 }
