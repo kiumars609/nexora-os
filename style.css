@@ -2018,3 +2018,145 @@ body.reduce-motion .loading-overlay {
   transition: none !important;
   animation: none !important;
 }
+/* =========================
+   Games Cards - Next Gen (FULL)
+   ========================= */
+
+#gamesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+@media (max-width: 1100px) {
+  #gamesGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  #gamesGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.game-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(210, 230, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  min-height: 180px;
+  padding: 0;
+  cursor: pointer;
+  transform: translate3d(0, 0, 0);
+  transition: transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1),
+    box-shadow 220ms cubic-bezier(0.2, 0.9, 0.2, 1),
+    border-color 220ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.game-card .gc-cover {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.08);
+  filter: saturate(1.08) contrast(1.02);
+  transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.game-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+      900px 360px at 50% 10%,
+      rgba(255, 255, 255, 0.1),
+      transparent 62%
+    ),
+    radial-gradient(
+      900px 360px at 50% 110%,
+      rgba(0, 0, 0, 0.78),
+      rgba(0, 0, 0, 0.35) 55%,
+      transparent 75%
+    ),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.62));
+  pointer-events: none;
+}
+
+.game-card .gc-info {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 2;
+}
+
+.game-card .gc-title {
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 13px;
+  line-height: 1.15;
+  color: rgba(245, 250, 255, 0.95);
+  text-shadow: 0 10px 20px rgba(0, 0, 0, 0.55);
+  max-width: 78%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.game-card .gc-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.game-card .gc-chip {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid rgba(210, 230, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(230, 237, 245, 0.86);
+}
+
+.game-card .gc-chip.is-get {
+  opacity: 0.55;
+}
+
+/* Details line */
+.game-card .gc-line {
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.7;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Focus */
+.game-card.is-focused {
+  border-color: rgba(124, 195, 255, 0.42);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 0 0 3px rgba(124, 195, 255, 0.45),
+    0 0 30px rgba(124, 195, 255, 0.25), 0 30px 80px rgba(0, 0, 0, 0.65) !important;
+}
+.game-card.is-focused .gc-cover {
+  transform: scale(1.14);
+  filter: saturate(1.18) contrast(1.06);
+}
+
+body.reduce-motion .game-card,
+body.reduce-motion .game-card .gc-cover {
+  transition: none !important;
+}

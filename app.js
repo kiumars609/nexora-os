@@ -246,7 +246,10 @@
     osc.frequency.setValueAtTime(freq, t0);
 
     gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, finalVol), t0 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(
+      Math.max(0.0002, finalVol),
+      t0 + 0.01
+    );
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
 
     osc.connect(gain);
@@ -267,16 +270,24 @@
 
   // -------------------- Apply Settings (DOM) --------------------
   function applyReduceMotion() {
-    document.body.classList.toggle("reduce-motion", !!state.settings.reduceMotion);
+    document.body.classList.toggle(
+      "reduce-motion",
+      !!state.settings.reduceMotion
+    );
     if (reduceMotionValue)
-      reduceMotionValue.textContent = state.settings.reduceMotion ? "ON" : "OFF";
+      reduceMotionValue.textContent = state.settings.reduceMotion
+        ? "ON"
+        : "OFF";
     motionOffBtn?.classList.toggle("primary", !state.settings.reduceMotion);
     motionOnBtn?.classList.toggle("primary", !!state.settings.reduceMotion);
     saveBool(STORAGE.reduceMotion, !!state.settings.reduceMotion);
   }
 
   function applyHighContrast() {
-    document.body.classList.toggle("high-contrast", !!state.settings.highContrast);
+    document.body.classList.toggle(
+      "high-contrast",
+      !!state.settings.highContrast
+    );
     if (contrastValue)
       contrastValue.textContent = state.settings.highContrast ? "ON" : "OFF";
     contrastOffBtn?.classList.toggle("primary", !state.settings.highContrast);
@@ -285,7 +296,8 @@
   }
 
   function applyClockFormat() {
-    if (clockValue) clockValue.textContent = state.settings.clock24 ? "24H" : "12H";
+    if (clockValue)
+      clockValue.textContent = state.settings.clock24 ? "24H" : "12H";
     clock12Btn?.classList.toggle("primary", !state.settings.clock24);
     clock24Btn?.classList.toggle("primary", !!state.settings.clock24);
     saveBool(STORAGE.clock24, !!state.settings.clock24);
@@ -293,14 +305,19 @@
   }
 
   function applySoundUI() {
-    if (soundValue) soundValue.textContent = state.settings.soundEnabled ? "ON" : "OFF";
+    if (soundValue)
+      soundValue.textContent = state.settings.soundEnabled ? "ON" : "OFF";
     soundOnBtn?.classList.toggle("primary", !!state.settings.soundEnabled);
     soundOffBtn?.classList.toggle("primary", !state.settings.soundEnabled);
 
     if (sndStatus) {
-      sndStatus.textContent = `SND: ${state.settings.soundEnabled ? "ON" : "OFF"}`;
+      sndStatus.textContent = `SND: ${
+        state.settings.soundEnabled ? "ON" : "OFF"
+      }`;
       sndStatus.classList.toggle("is-off", !state.settings.soundEnabled);
-      sndStatus.title = `Toggle sound (M) • ${state.settings.soundEnabled ? "ON" : "OFF"}`;
+      sndStatus.title = `Toggle sound (M) • ${
+        state.settings.soundEnabled ? "ON" : "OFF"
+      }`;
     }
 
     saveBool(STORAGE.sound, !!state.settings.soundEnabled);
@@ -381,7 +398,9 @@
   function syncControllerUI() {
     if (!controllerStatus) return;
     controllerStatus.style.opacity = state.controllerOn ? "1" : "0.35";
-    controllerStatus.title = `Controller: ${state.controllerOn ? "Connected" : "Disconnected"} (C)`;
+    controllerStatus.title = `Controller: ${
+      state.controllerOn ? "Connected" : "Disconnected"
+    } (C)`;
     controllerStatus.setAttribute("aria-label", controllerStatus.title);
     saveBool(STORAGE.controller, state.controllerOn);
   }
@@ -393,7 +412,9 @@
   function toggleController() {
     state.controllerOn = !state.controllerOn;
     syncControllerUI();
-    showToast(`Controller: ${state.controllerOn ? "Connected" : "Disconnected"}`);
+    showToast(
+      `Controller: ${state.controllerOn ? "Connected" : "Disconnected"}`
+    );
   }
 
   // -------------------- Real Clock --------------------
@@ -513,7 +534,12 @@
     // nav underline rules:
     // - if we enter a main tab screen => currentTab = that screen
     // - if we enter detail/in-game => keep currentTab as previous main tab
-    if (name === "home" || name === "games" || name === "media" || name === "system") {
+    if (
+      name === "home" ||
+      name === "games" ||
+      name === "media" ||
+      name === "system"
+    ) {
       setActiveTab(name);
     }
 
@@ -531,7 +557,13 @@
   }
 
   function goBack() {
-    if (state.powerMenuOpen || state.sleeping || state.poweredOff || state.booting) return;
+    if (
+      state.powerMenuOpen ||
+      state.sleeping ||
+      state.poweredOff ||
+      state.booting
+    )
+      return;
 
     const prev = state.historyStack.pop();
     if (!prev) {
@@ -555,7 +587,8 @@
     if (!el) return;
     clearAllFocusClasses();
     el.classList.add("is-focused");
-    if (el.classList.contains("nav-item")) el.setAttribute("aria-selected", "true");
+    if (el.classList.contains("nav-item"))
+      el.setAttribute("aria-selected", "true");
   }
 
   function focusEl(el) {
@@ -583,7 +616,14 @@
     if (ctx === "games") {
       const backBtn = $(".games-screen .back-btn");
       const cards = getGameCards();
-      return [backBtn, filterBtn, sortBtn, searchInput, applyFiltersBtn, ...cards].filter(Boolean);
+      return [
+        backBtn,
+        filterBtn,
+        sortBtn,
+        searchInput,
+        applyFiltersBtn,
+        ...cards,
+      ].filter(Boolean);
     }
 
     if (ctx === "media") {
@@ -796,12 +836,14 @@
   function getVisibleGames() {
     let list = [...state.games];
 
-    if (state.gamesUI.filter === "installed") list = list.filter((g) => !!g.installed);
+    if (state.gamesUI.filter === "installed")
+      list = list.filter((g) => !!g.installed);
 
     const q = (state.gamesUI.search || "").trim().toLowerCase();
     if (q) list = list.filter((g) => g.title.toLowerCase().includes(q));
 
-    if (state.gamesUI.sort === "az") list.sort((a, b) => a.title.localeCompare(b.title));
+    if (state.gamesUI.sort === "az")
+      list.sort((a, b) => a.title.localeCompare(b.title));
     else list.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
 
     return list;
@@ -830,18 +872,26 @@
           linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.35))`;
 
       btn.innerHTML = `
-        <span class="gc-cover" style='${coverStyle}' aria-hidden="true"></span>
+  <span class="gc-cover" style='${coverStyle}' aria-hidden="true"></span>
 
-        <span class="gc-info">
-          <span class="gc-title">${g.title}</span>
+  <span class="gc-info">
+    <span>
+      <span class="gc-title">${g.title}</span>
+      <div class="gc-line">${(g.genre || "—").toUpperCase()} • ${
+        g.installed ? "INSTALLED" : "NOT INSTALLED"
+      }</div>
+    </span>
 
-          <span class="gc-meta">
-            <span class="gc-chip ${g.installed ? "" : "is-get"}">
-              ${g.installed ? "INST" : "GET"}
-            </span>
-          </span>
-        </span>
-      `;
+    <span class="gc-meta">
+      <span class="gc-chip ${g.installed ? "" : "is-get"}">
+        ${g.installed ? "PLAY" : "GET"}
+      </span>
+      <span class="gc-chip" style="opacity:.7">
+        ${g.size ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB` : "--"}
+      </span>
+    </span>
+  </span>
+`;
 
       btn.addEventListener("click", () => {
         uiSound.ok();
@@ -868,7 +918,8 @@
   }
 
   function updateGamesFiltersUI() {
-    if (filterValue) filterValue.textContent = state.gamesUI.filter.toUpperCase();
+    if (filterValue)
+      filterValue.textContent = state.gamesUI.filter.toUpperCase();
     if (sortValue) sortValue.textContent = state.gamesUI.sort.toUpperCase();
     if (searchInput && searchInput.value !== state.gamesUI.search)
       searchInput.value = state.gamesUI.search || "";
@@ -902,7 +953,11 @@
   function fmtLastPlayed(ts) {
     if (!ts) return "Never";
     const d = new Date(ts);
-    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
   }
 
   function getGameById(id) {
@@ -933,7 +988,8 @@
 
     detailsGenre && (detailsGenre.textContent = game.genre || "--");
     detailsSize && (detailsSize.textContent = fmtSize(game.size));
-    detailsLastPlayed && (detailsLastPlayed.textContent = fmtLastPlayed(game.lastPlayed));
+    detailsLastPlayed &&
+      (detailsLastPlayed.textContent = fmtLastPlayed(game.lastPlayed));
 
     if (detailsCover) {
       detailsCover.style.backgroundImage = game.cover
@@ -970,7 +1026,7 @@
           showOverlay("Installing", game.title);
           setTimeout(() => {
             game.installed = true;
-            game.size = clamp(game.size || (Math.random() * 60 + 8), 2, 120);
+            game.size = clamp(game.size || Math.random() * 60 + 8, 2, 120);
             game.lastPlayed = game.lastPlayed || now();
             saveGamesState();
             renderGamesGrid();
@@ -1055,7 +1111,8 @@
   let powerIndex = 0;
 
   function showPowerMenu() {
-    if (!powerOverlay || state.poweredOff || state.sleeping || state.booting) return;
+    if (!powerOverlay || state.poweredOff || state.sleeping || state.booting)
+      return;
     state.powerMenuOpen = true;
     powerOverlay.classList.add("is-active");
     powerOverlay.setAttribute("aria-hidden", "false");
@@ -1076,7 +1133,8 @@
     else if (state.currentScreen === "media") setFocusContext("media");
     else if (state.currentScreen === "system") setFocusContext("system");
     else if (state.currentScreen === "game-details") setFocusContext("details");
-    else if (state.currentScreen === "now-playing") setFocusContext("nowPlaying");
+    else if (state.currentScreen === "now-playing")
+      setFocusContext("nowPlaying");
     else if (state.currentScreen === "in-game") setFocusContext("inGame");
 
     focusFirstInContext();
@@ -1085,7 +1143,9 @@
 
   function updatePowerFocus() {
     const items = getContextItems("power");
-    items.forEach((el, i) => el.classList.toggle("is-focused", i === powerIndex));
+    items.forEach((el, i) =>
+      el.classList.toggle("is-focused", i === powerIndex)
+    );
     const el = items[powerIndex];
     el?.focus?.();
   }
@@ -1143,23 +1203,56 @@
 
   // -------------------- System UI bindings --------------------
   function bindSystemUI() {
-    clock12Btn?.addEventListener("click", () => (uiSound.ok(), setClockFormat(false)));
-    clock24Btn?.addEventListener("click", () => (uiSound.ok(), setClockFormat(true)));
+    clock12Btn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setClockFormat(false))
+    );
+    clock24Btn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setClockFormat(true))
+    );
 
-    soundOnBtn?.addEventListener("click", () => (uiSound.ok(), setSoundEnabled(true)));
-    soundOffBtn?.addEventListener("click", () => (uiSound.ok(), setSoundEnabled(false)));
+    soundOnBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setSoundEnabled(true))
+    );
+    soundOffBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setSoundEnabled(false))
+    );
 
     volumeSlider?.addEventListener("input", (e) => setVolume(e.target.value));
 
-    motionOffBtn?.addEventListener("click", () => (uiSound.ok(), setReduceMotion(false)));
-    motionOnBtn?.addEventListener("click", () => (uiSound.ok(), setReduceMotion(true)));
+    motionOffBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setReduceMotion(false))
+    );
+    motionOnBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setReduceMotion(true))
+    );
 
-    contrastOffBtn?.addEventListener("click", () => (uiSound.ok(), setHighContrast(false)));
-    contrastOnBtn?.addEventListener("click", () => (uiSound.ok(), setHighContrast(true)));
+    contrastOffBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setHighContrast(false))
+    );
+    contrastOnBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setHighContrast(true))
+    );
 
-    themeDarkBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("dark")));
-    themeIceBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("ice")));
-    themeNeonBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("neon")));
+    themeDarkBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("dark"))
+    );
+    themeIceBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("ice"))
+    );
+    themeNeonBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("neon"))
+    );
   }
 
   // -------------------- Screen enter helpers --------------------
@@ -1417,7 +1510,9 @@
     // whenever screen changes via nav clicks we call onEnter* through setActiveScreen,
     // but for safety keep this small observer:
     const observer = new MutationObserver(() => onScreenChange());
-    screens.forEach((s) => observer.observe(s, { attributes: true, attributeFilter: ["class"] }));
+    screens.forEach((s) =>
+      observer.observe(s, { attributes: true, attributeFilter: ["class"] })
+    );
   }
 
   init();
