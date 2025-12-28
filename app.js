@@ -752,6 +752,44 @@
     }, 0);
   }
 
+  let parallaxBound = false;
+
+  function bindGamesParallax() {
+    if (parallaxBound) return;
+    if (!gamesGrid) return;
+
+    parallaxBound = true;
+
+    gamesGrid.addEventListener("pointermove", (e) => {
+      if (state.settings.reduceMotion) return;
+
+      const card = e.target.closest?.(".game-card");
+      if (!card || !card.classList.contains("is-focused")) return;
+
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width; // 0..1
+      const y = (e.clientY - r.top) / r.height; // 0..1
+
+      // حرکت خیلی ظریف (کنسولی)
+      const px = (x - 0.5) * 10; // -5..+5
+      const py = (y - 0.5) * 10;
+
+      card.dataset.parallax = "1";
+      card.style.setProperty("--px", `${px}px`);
+      card.style.setProperty("--py", `${py}px`);
+    });
+
+    gamesGrid.addEventListener("pointerleave", () => {
+      const focused = document.activeElement?.classList?.contains("game-card")
+        ? document.activeElement
+        : null;
+      if (!focused) return;
+      focused.dataset.parallax = "0";
+      focused.style.removeProperty("--px");
+      focused.style.removeProperty("--py");
+    });
+  }
+
   // -------------------- Games Data --------------------
   const DEFAULT_GAMES = [
     {
@@ -1006,29 +1044,29 @@
   }
 
   function renderGamesGrid() {
-  if (!gamesGrid) return;
+    if (!gamesGrid) return;
 
-  const list = getVisibleGames();
-  gamesGrid.innerHTML = "";
+    const list = getVisibleGames();
+    gamesGrid.innerHTML = "";
 
-  list.forEach((g) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "game-card";
-    btn.dataset.id = g.id;
-    btn.setAttribute("aria-selected", "false");
-    btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
+    list.forEach((g) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "game-card";
+      btn.dataset.id = g.id;
+      btn.setAttribute("aria-selected", "false");
+      btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
 
-    // اگر کاور نداری، یه کاور ژنریک خیلی خوشگل بساز
-    const coverStyle = g.cover
-      ? `background-image:url("${g.cover}")`
-      : `background-image:
+      // اگر کاور نداری، یه کاور ژنریک خیلی خوشگل بساز
+      const coverStyle = g.cover
+        ? `background-image:url("${g.cover}")`
+        : `background-image:
           radial-gradient(800px 420px at 20% 20%, rgba(124,195,255,0.22), transparent 60%),
           radial-gradient(700px 420px at 85% 25%, rgba(255,77,230,0.14), transparent 60%),
           radial-gradient(900px 520px at 55% 95%, rgba(169,255,107,0.10), transparent 65%),
           linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.35))`;
 
-    btn.innerHTML = `
+      btn.innerHTML = `
       <span class="gc-cover" style='${coverStyle}' aria-hidden="true"></span>
 
       <span class="gc-info">
@@ -1042,33 +1080,32 @@
       </span>
     `;
 
-    btn.addEventListener("click", () => {
-      uiSound.ok();
-      openGameDetails(g.id);
+      btn.addEventListener("click", () => {
+        uiSound.ok();
+        openGameDetails(g.id);
+      });
+
+      btn.addEventListener("focus", () => {
+        markFocused(btn);
+        const cards = getGameCards();
+        const idx = cards.indexOf(btn);
+        if (idx >= 0) state.gamesUI.lastGridFocus = idx;
+      });
+
+      gamesGrid.appendChild(btn);
     });
 
-    btn.addEventListener("focus", () => {
-      markFocused(btn);
-      const cards = getGameCards();
-      const idx = cards.indexOf(btn);
-      if (idx >= 0) state.gamesUI.lastGridFocus = idx;
-    });
+    if (!list.length) {
+      const empty = document.createElement("div");
+      empty.style.cssText =
+        "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
+      empty.textContent = "No games found";
+      gamesGrid.appendChild(empty);
+    }
 
-    gamesGrid.appendChild(btn);
-  });
-
-  if (!list.length) {
-    const empty = document.createElement("div");
-    empty.style.cssText =
-      "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
-    empty.textContent = "No games found";
-    gamesGrid.appendChild(empty);
+    // بعد از رندر، parallax رو بایند کن
+    bindGamesParallax();
   }
-
-  // بعد از رندر، parallax رو بایند کن
-  bindGamesParallax();
-}
-
 
   // -------------------- Details (Phase 5.3) --------------------
   function fmtSize(gb) {
