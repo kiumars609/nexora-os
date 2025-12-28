@@ -670,6 +670,10 @@
     document.body.classList.remove("theme-dark", "theme-ice", "theme-neon");
     const t = state.settings.theme || "dark";
     document.body.classList.add(`theme-${t}`);
+    document.body.classList.remove("theme-pulse");
+    void document.body.offsetWidth; // reflow trick
+    document.body.classList.add("theme-pulse");
+    setTimeout(() => document.body.classList.remove("theme-pulse"), 700);
     saveJson(STORAGE.theme, t);
 
     if (themeValue) themeValue.textContent = t[0].toUpperCase() + t.slice(1);
