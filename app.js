@@ -1,12 +1,11 @@
 /* =========================
-   Nexora OS - app.js (FULL)
+   Nexora OS - app.js (FULL, FIXED)
    - Boot + Power + Sleep/Off
    - Central settings + localStorage
    - Real clock + wifi/controller status
    - Unified Focus Manager (contexts)
    - Games library: data JSON + render + filters/sort/search
-   - Game details: real + install/uninstall
-   - Quick Resume (symbolic) + XP/Achievements (simple)
+   - Game details: play/options/install/uninstall
    - Media placeholders
    - Accessibility: aria-selected, aria-live updates
    ========================= */
@@ -86,36 +85,140 @@
     return false;
   }
 
-  function bindBackButtons() {
-    // هر چیزی که data-action="back" داره
-    const backs = $$('[data-action="back"]');
+  // -------------------- DOM --------------------
+  const screens = $$(".screen");
+  const navItems = $$(".nav-item");
 
-    backs.forEach((btn) => {
-      // اگر div هست، قابل فوکوسش کن
-      if (!btn.hasAttribute("tabindex")) btn.setAttribute("tabindex", "0");
-      btn.setAttribute("role", "button");
-      btn.setAttribute("aria-label", "Back");
+  const timeEl = $("#timeEl");
+  const sndStatus = $("#sndStatus");
+  const wifiStatus = $("#wifiStatus");
+  const controllerStatus = $("#controllerStatus");
 
-      // جلوگیری از چندبار بایند شدن
-      if (btn.dataset.boundBack === "1") return;
-      btn.dataset.boundBack = "1";
+  const toastEl = $("#toast");
 
-      btn.addEventListener("click", (e) => {
-        if (shouldBlockGlobalInput()) return;
-        e.preventDefault();
-        uiSound.back();
-        goBack();
-      });
+  // Boot
+  const bootScreen = $("#bootScreen");
+  const bootBarFill = $("#bootBarFill");
+  const bootPercent = $("#bootPercent");
 
-      btn.addEventListener("keydown", (e) => {
-        if (shouldBlockGlobalInput()) return;
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          uiSound.back();
-          goBack();
-        }
-      });
-    });
+  // Loading overlay
+  const loadingOverlay = $("#loadingOverlay");
+  const loadingTitle = $("#loadingTitle");
+  const loadingSub = $("#loadingSub");
+
+  // Sleep/Off overlays (if exist)
+  const sleepOverlay = $("#sleepOverlay");
+  const offOverlay = $("#offOverlay");
+
+  // Power menu
+  const powerOverlay = $("#powerOverlay");
+  const powerOptions = $("#powerOptions");
+
+  // Games screen
+  const gamesGrid = $("#gamesGrid");
+  const filterBtn = $("#filterBtn");
+  const sortBtn = $("#sortBtn");
+  const applyFiltersBtn = $("#applyFiltersBtn");
+  const filterValue = $("#filterValue");
+  const sortValue = $("#sortValue");
+  const searchInput = $("#searchInput");
+
+  // Details screen
+  const detailsTitle = $("#detailsTitle");
+  const detailsSub = $("#detailsSub");
+  const detailsCover = $("#detailsCover");
+  const detailsGenre = $("#detailsGenre");
+  const detailsSize = $("#detailsSize");
+  const detailsLastPlayed = $("#detailsLastPlayed");
+  const playBtn = $("#playBtn");
+  const optionsBtn = $("#optionsBtn");
+
+  // Now Playing / In-Game
+  const nowPlayingTitle = $("#nowPlayingTitle");
+  const nowPlayingSub = $("#nowPlayingSub");
+  const resumeBtn = $("#resumeBtn");
+  const quitBtn = $("#quitBtn");
+
+  const inGameTitle = $("#inGameTitle");
+  const inGameSub = $("#inGameSub");
+  const openNowPlayingBtn = $("#openNowPlayingBtn");
+  const quitFromGameBtn = $("#quitFromGameBtn");
+
+  // System Screen
+  const clock12Btn = $("#clock12Btn");
+  const clock24Btn = $("#clock24Btn");
+  const clockValue = $("#clockValue");
+
+  const soundOnBtn = $("#soundOnBtn");
+  const soundOffBtn = $("#soundOffBtn");
+  const soundValue = $("#soundValue");
+
+  const volumeSlider = $("#volumeSlider");
+  const volumeValue = $("#volumeValue");
+
+  const motionOffBtn = $("#motionOffBtn");
+  const motionOnBtn = $("#motionOnBtn");
+  const reduceMotionValue = $("#reduceMotionValue");
+
+  const contrastOffBtn = $("#contrastOffBtn");
+  const contrastOnBtn = $("#contrastOnBtn");
+  const contrastValue = $("#contrastValue");
+
+  const themeValue = $("#themeValue");
+  const themeDarkBtn = $("#themeDarkBtn");
+  const themeIceBtn = $("#themeIceBtn");
+  const themeNeonBtn = $("#themeNeonBtn");
+
+  // -------------------- Central State --------------------
+  const state = {
+    booting: true,
+    powerMenuOpen: false,
+    sleeping: false,
+    poweredOff: false,
+
+    currentScreen: "home",
+    currentTab: "home",
+    historyStack: [],
+
+    focus: {
+      context: "home", // home | nav | games | media | system | details | nowPlaying | inGame | power
+      index: 0,
+    },
+
+    settings: {
+      soundEnabled: loadBool(STORAGE.sound, true),
+      volume: clamp(loadNum(STORAGE.volume, 70), 0, 100),
+      clock24: loadBool(STORAGE.clock24, false),
+      reduceMotion: loadBool(STORAGE.reduceMotion, false),
+      highContrast: loadBool(STORAGE.contrast, false),
+      theme: loadJson(STORAGE.theme, "dark") || "dark",
+    },
+
+    wifiOn: loadBool(STORAGE.wifi, true),
+    controllerOn: loadBool(STORAGE.controller, true),
+
+    games: [],
+    gamesUI: {
+      filter: "all", // all | installed
+      sort: "recent", // recent | az
+      search: "",
+      lastGridFocus: 0,
+    },
+
+    quickResume: loadJson(STORAGE.quickResume, []), // [{id, ts}]
+    xp: clamp(loadNum(STORAGE.xp, 0), 0, 999999),
+    achievements: loadJson(STORAGE.achievements, {}),
+    runningGameId: null,
+  };
+
+  // -------------------- Toast --------------------
+  let toastTimer = null;
+  function showToast(msg = "OK") {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.add("is-show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("is-show"), 950);
   }
 
   // -------------------- Sound Engine (volume + enabled) --------------------
@@ -143,10 +246,7 @@
     osc.frequency.setValueAtTime(freq, t0);
 
     gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.exponentialRampToValueAtTime(
-      Math.max(0.0002, finalVol),
-      t0 + 0.01
-    );
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, finalVol), t0 + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
 
     osc.connect(gain);
@@ -165,166 +265,173 @@
     quit: () => beep({ freq: 160, dur: 0.1, vol: 0.09, type: "triangle" }),
   };
 
-  // -------------------- State (Central) --------------------
-  const state = {
-    booting: true,
-    powerMenuOpen: false,
-    sleeping: false,
-    poweredOff: false,
-
-    currentScreen: "home",
-    historyStack: [],
-    currentTab: "home",
-
-    focus: {
-      context: "home", // home | nav | games | media | system | details | nowPlaying | inGame | power
-      index: 0,
-    },
-
-    wifiOn: loadBool(STORAGE.wifi, true),
-    controllerOn: loadBool(STORAGE.controller, true),
-
-    settings: {
-      soundEnabled: loadBool(STORAGE.sound, true),
-      volume: clamp(loadNum(STORAGE.volume, 60), 0, 100),
-      clock24: loadBool(STORAGE.clock24, false),
-      reduceMotion: loadBool(STORAGE.reduceMotion, false),
-      highContrast: loadBool(STORAGE.contrast, false),
-      theme: loadJson(STORAGE.theme, "dark"), // dark | ice | neon
-    },
-
-    games: [],
-    gamesUI: {
-      filter: "all",
-      sort: "recent",
-      search: "",
-      lastGridFocus: 0,
-      selectedId: null,
-    },
-
-    running: loadJson(STORAGE.quickResume, []), // [{id, startedAt}]
-    runningActiveId: null,
-
-    xp: clamp(loadNum(STORAGE.xp, 0), 0, 999999),
-    achievements: loadJson(STORAGE.achievements, {}),
-  };
-
-  // -------------------- DOM refs --------------------
-  const screens = $$(".screen");
-  const navItems = $$(".nav-item");
-
-  const timeEl = $("#timeEl");
-  const sndStatusEl = $("#sndStatus");
-  const wifiEl = $("#wifiStatus");
-  const ctrlEl = $("#controllerStatus");
-
-  const bootScreen = $("#bootScreen");
-  const bootBarFill = $("#bootBarFill");
-  const bootPercent = $("#bootPercent");
-
-  const loadingOverlay = $("#loadingOverlay");
-  const loadingTitle = $("#loadingTitle");
-  const loadingSub = $("#loadingSub");
-
-  const powerOverlay = $("#powerOverlay");
-  const powerOptions = $("#powerOptions");
-  const sleepOverlay = $("#sleepOverlay");
-  const offOverlay = $("#offOverlay");
-
-  const gamesGrid = $("#gamesGrid");
-  const systemGrid = $("#systemGrid");
-
-  // details screen existing ids
-  const detailsTitle = $("#detailsTitle");
-  const detailsSub = $("#detailsSub");
-  const playBtn = $("#playBtn");
-  const optionsBtn = $("#optionsBtn");
-
-  const nowPlayingTitle = $("#nowPlayingTitle");
-  const nowPlayingSub = $("#nowPlayingSub");
-  const resumeBtn = $("#resumeBtn");
-  const quitBtn = $("#quitBtn");
-
-  const inGameTitle = $("#inGameTitle");
-  const inGameSub = $("#inGameSub");
-  const openNowPlayingBtn = $("#openNowPlayingBtn");
-  const quitFromGameBtn = $("#quitFromGameBtn");
-
-  // system controls existing ids
-  const clockFormatValue = $("#clockFormatValue");
-  const clock12Btn = $("#clock12Btn");
-  const clock24Btn = $("#clock24Btn");
-
-  const systemSoundValue = $("#systemSoundValue");
-  const soundOnBtn = $("#soundOnBtn");
-  const soundOffBtn = $("#soundOffBtn");
-
-  const volumeValue = $("#volumeValue");
-  const volumeSlider = $("#volumeSlider");
-
-  const reduceMotionValue = $("#reduceMotionValue");
-  const motionOffBtn = $("#motionOffBtn");
-  const motionOnBtn = $("#motionOnBtn");
-
-  const contrastValue = $("#contrastValue");
-  const contrastOffBtn = $("#contrastOffBtn");
-  const contrastOnBtn = $("#contrastOnBtn");
-
-  // optional theme area if exists
-  const themeValue = $("#themeValue");
-  const themeDarkBtn = $("#themeDarkBtn");
-  const themeIceBtn = $("#themeIceBtn");
-  const themeNeonBtn = $("#themeNeonBtn");
-
-  // -------------------- Toast --------------------
-  let toastTimer = null;
-  function showToast(msg = "OK") {
-    const el = $("#toast");
-    if (!el) return;
-    el.textContent = msg;
-    el.classList.add("is-show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove("is-show"), 1100);
+  // -------------------- Apply Settings (DOM) --------------------
+  function applyReduceMotion() {
+    document.body.classList.toggle("reduce-motion", !!state.settings.reduceMotion);
+    if (reduceMotionValue)
+      reduceMotionValue.textContent = state.settings.reduceMotion ? "ON" : "OFF";
+    motionOffBtn?.classList.toggle("primary", !state.settings.reduceMotion);
+    motionOnBtn?.classList.toggle("primary", !!state.settings.reduceMotion);
+    saveBool(STORAGE.reduceMotion, !!state.settings.reduceMotion);
   }
 
-  // -------------------- Loading Overlay --------------------
-  function showLoading(title = "Loading", sub = "") {
-    if (!loadingOverlay) return;
-    if (loadingTitle) loadingTitle.textContent = title;
-    if (loadingSub) loadingSub.textContent = sub || "";
-    loadingOverlay.classList.add("is-active");
-    loadingOverlay.setAttribute("aria-hidden", "false");
-  }
-  function hideLoading() {
-    if (!loadingOverlay) return;
-    loadingOverlay.classList.remove("is-active");
-    loadingOverlay.setAttribute("aria-hidden", "true");
+  function applyHighContrast() {
+    document.body.classList.toggle("high-contrast", !!state.settings.highContrast);
+    if (contrastValue)
+      contrastValue.textContent = state.settings.highContrast ? "ON" : "OFF";
+    contrastOffBtn?.classList.toggle("primary", !state.settings.highContrast);
+    contrastOnBtn?.classList.toggle("primary", !!state.settings.highContrast);
+    saveBool(STORAGE.contrast, !!state.settings.highContrast);
   }
 
-  // -------------------- Boot --------------------
+  function applyClockFormat() {
+    if (clockValue) clockValue.textContent = state.settings.clock24 ? "24H" : "12H";
+    clock12Btn?.classList.toggle("primary", !state.settings.clock24);
+    clock24Btn?.classList.toggle("primary", !!state.settings.clock24);
+    saveBool(STORAGE.clock24, !!state.settings.clock24);
+    syncClock();
+  }
+
+  function applySoundUI() {
+    if (soundValue) soundValue.textContent = state.settings.soundEnabled ? "ON" : "OFF";
+    soundOnBtn?.classList.toggle("primary", !!state.settings.soundEnabled);
+    soundOffBtn?.classList.toggle("primary", !state.settings.soundEnabled);
+
+    if (sndStatus) {
+      sndStatus.textContent = `SND: ${state.settings.soundEnabled ? "ON" : "OFF"}`;
+      sndStatus.classList.toggle("is-off", !state.settings.soundEnabled);
+      sndStatus.title = `Toggle sound (M) • ${state.settings.soundEnabled ? "ON" : "OFF"}`;
+    }
+
+    saveBool(STORAGE.sound, !!state.settings.soundEnabled);
+  }
+
+  function applyVolumeUI() {
+    if (volumeSlider) volumeSlider.value = String(state.settings.volume);
+    if (volumeValue) volumeValue.textContent = `${state.settings.volume}%`;
+    saveNum(STORAGE.volume, state.settings.volume);
+  }
+
+  function applyTheme() {
+    document.body.classList.remove("theme-dark", "theme-ice", "theme-neon");
+    const t = state.settings.theme || "dark";
+    document.body.classList.add(`theme-${t}`);
+
+    // pulse (premium apply feel)
+    document.body.classList.remove("theme-pulse");
+    void document.body.offsetWidth;
+    document.body.classList.add("theme-pulse");
+    setTimeout(() => document.body.classList.remove("theme-pulse"), 700);
+
+    saveJson(STORAGE.theme, t);
+
+    if (themeValue) themeValue.textContent = t[0].toUpperCase() + t.slice(1);
+    themeDarkBtn?.classList.toggle("primary", t === "dark");
+    themeIceBtn?.classList.toggle("primary", t === "ice");
+    themeNeonBtn?.classList.toggle("primary", t === "neon");
+  }
+
+  function setSoundEnabled(v) {
+    state.settings.soundEnabled = !!v;
+    applySoundUI();
+    showToast(`Sound: ${state.settings.soundEnabled ? "ON" : "OFF"}`);
+  }
+  function toggleSound() {
+    setSoundEnabled(!state.settings.soundEnabled);
+  }
+
+  function setVolume(v) {
+    const n = clamp(Number(v), 0, 100);
+    state.settings.volume = n;
+    applyVolumeUI();
+  }
+
+  function setClockFormat(clock24) {
+    state.settings.clock24 = !!clock24;
+    applyClockFormat();
+    showToast(`Clock: ${state.settings.clock24 ? "24H" : "12H"}`);
+  }
+
+  function setReduceMotion(v) {
+    state.settings.reduceMotion = !!v;
+    applyReduceMotion();
+    showToast(`Reduce Motion: ${state.settings.reduceMotion ? "ON" : "OFF"}`);
+  }
+
+  function setHighContrast(v) {
+    state.settings.highContrast = !!v;
+    applyHighContrast();
+    showToast(`Contrast: ${state.settings.highContrast ? "ON" : "OFF"}`);
+  }
+
+  function setTheme(next) {
+    state.settings.theme = String(next || "dark");
+    applyTheme();
+    showToast(`Theme: ${state.settings.theme.toUpperCase()}`);
+  }
+
+  // -------------------- Wi-Fi / Controller --------------------
+  function syncWifiUI() {
+    if (!wifiStatus) return;
+    wifiStatus.style.opacity = state.wifiOn ? "1" : "0.35";
+    wifiStatus.title = `Wi-Fi: ${state.wifiOn ? "ON" : "OFF"} (W)`;
+    wifiStatus.setAttribute("aria-label", wifiStatus.title);
+    saveBool(STORAGE.wifi, state.wifiOn);
+  }
+  function syncControllerUI() {
+    if (!controllerStatus) return;
+    controllerStatus.style.opacity = state.controllerOn ? "1" : "0.35";
+    controllerStatus.title = `Controller: ${state.controllerOn ? "Connected" : "Disconnected"} (C)`;
+    controllerStatus.setAttribute("aria-label", controllerStatus.title);
+    saveBool(STORAGE.controller, state.controllerOn);
+  }
+  function toggleWifi() {
+    state.wifiOn = !state.wifiOn;
+    syncWifiUI();
+    showToast(`Wi-Fi: ${state.wifiOn ? "ON" : "OFF"}`);
+  }
+  function toggleController() {
+    state.controllerOn = !state.controllerOn;
+    syncControllerUI();
+    showToast(`Controller: ${state.controllerOn ? "Connected" : "Disconnected"}`);
+  }
+
+  // -------------------- Real Clock --------------------
+  function formatTime(d) {
+    const opts = {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: !state.settings.clock24,
+    };
+    return d.toLocaleTimeString(undefined, opts);
+  }
+
+  function syncClock() {
+    if (!timeEl) return;
+    timeEl.textContent = formatTime(new Date());
+  }
+
+  // update every 30s (snappy)
+  setInterval(syncClock, 30000);
+
+  // -------------------- Boot Sequence --------------------
   function showBoot() {
-    bootScreen?.classList.add("is-active");
-    bootScreen?.setAttribute("aria-hidden", "false");
+    if (!bootScreen) return;
+    bootScreen.classList.add("is-active");
+    bootScreen.setAttribute("aria-hidden", "false");
   }
   function hideBoot() {
-    bootScreen?.classList.remove("is-active");
-    bootScreen?.setAttribute("aria-hidden", "true");
+    if (!bootScreen) return;
+    bootScreen.classList.remove("is-active");
+    bootScreen.setAttribute("aria-hidden", "true");
   }
 
   function runBootSequence() {
-    if (!bootScreen) {
-      state.booting = false;
-      setActiveScreen("home", { pushHistory: false });
-      onEnterHome();
-      return;
-    }
-
     showBoot();
     state.booting = true;
     uiSound.launch();
 
     let p = 0;
-
     const tick = () => {
       const add = Math.random() * 12 + 6;
       p = Math.min(100, Math.floor(p + add));
@@ -341,551 +448,344 @@
         }, 450);
         return;
       }
-
-      setTimeout(tick, 140 + Math.random() * 160);
+      setTimeout(tick, 180 + Math.random() * 160);
     };
 
-    setTimeout(tick, 250);
+    setTimeout(tick, 260);
   }
 
-  function shouldBlockGlobalInput() {
-    return (
-      state.booting || state.sleeping || state.poweredOff || state.powerMenuOpen
-    );
+  // -------------------- Loading Overlay --------------------
+  function showOverlay(title = "Loading", sub = "Please wait.") {
+    if (!loadingOverlay) return;
+    loadingTitle && (loadingTitle.textContent = title);
+    loadingSub && (loadingSub.textContent = sub);
+    loadingOverlay.classList.add("is-active");
+    loadingOverlay.setAttribute("aria-hidden", "false");
+  }
+
+  function hideOverlay() {
+    if (!loadingOverlay) return;
+    loadingOverlay.classList.remove("is-active");
+    loadingOverlay.setAttribute("aria-hidden", "true");
+  }
+
+  // -------------------- Routing / Screens --------------------
+  function screenNameOf(el) {
+    if (!el) return null;
+    if (el.classList.contains("home-screen")) return "home";
+    if (el.classList.contains("games-screen")) return "games";
+    if (el.classList.contains("media-screen")) return "media";
+    if (el.classList.contains("system-screen")) return "system";
+    if (el.classList.contains("game-details-screen")) return "game-details";
+    if (el.classList.contains("now-playing-screen")) return "now-playing";
+    if (el.classList.contains("in-game-screen")) return "in-game";
+    return null;
+  }
+
+  function setActiveTab(tab) {
+    state.currentTab = tab;
+    navItems.forEach((n) => {
+      const isActive = n.dataset.screen === tab;
+      n.classList.toggle("active", isActive);
+      n.setAttribute("aria-current", isActive ? "page" : "false");
+    });
+  }
+
+  function setActiveScreen(name, { pushHistory = true } = {}) {
+    if (!name) return;
+    if (state.booting || state.powerMenuOpen || state.poweredOff) return;
+
+    const prev = state.currentScreen;
+    if (pushHistory && prev && prev !== name) {
+      state.historyStack.push(prev);
+      // avoid unlimited growth
+      if (state.historyStack.length > 30) state.historyStack.shift();
+    }
+
+    state.currentScreen = name;
+
+    screens.forEach((s) => {
+      const sName = screenNameOf(s);
+      s.classList.toggle("is-active", sName === name);
+      s.setAttribute("aria-hidden", sName === name ? "false" : "true");
+    });
+
+    // nav underline rules:
+    // - if we enter a main tab screen => currentTab = that screen
+    // - if we enter detail/in-game => keep currentTab as previous main tab
+    if (name === "home" || name === "games" || name === "media" || name === "system") {
+      setActiveTab(name);
+    }
+
+    // set focus context per screen
+    if (name === "home") setFocusContext("home");
+    else if (name === "games") setFocusContext("games");
+    else if (name === "media") setFocusContext("media");
+    else if (name === "system") setFocusContext("system");
+    else if (name === "game-details") setFocusContext("details");
+    else if (name === "now-playing") setFocusContext("nowPlaying");
+    else if (name === "in-game") setFocusContext("inGame");
+
+    clearAllFocusClasses();
+    focusFirstInContext();
+  }
+
+  function goBack() {
+    if (state.powerMenuOpen || state.sleeping || state.poweredOff || state.booting) return;
+
+    const prev = state.historyStack.pop();
+    if (!prev) {
+      setActiveScreen(state.currentTab || "home", { pushHistory: false });
+      return;
+    }
+    setActiveScreen(prev, { pushHistory: false });
   }
 
   // -------------------- Focus Manager (Unified) --------------------
-  function setFocusContext(ctx, index = 0) {
+  function setFocusContext(ctx) {
     state.focus.context = ctx;
-    state.focus.index = index;
+    state.focus.index = 0;
+  }
+
+  function clearAllFocusClasses() {
+    $$(".is-focused").forEach((el) => el.classList.remove("is-focused"));
   }
 
   function markFocused(el) {
     if (!el) return;
-    // clear focus styling in same scope
-    const root =
-      el.closest(".screen") || el.closest(".power-modal") || document.body;
-
-    $$(".is-focused", root).forEach((n) => n.classList.remove("is-focused"));
+    clearAllFocusClasses();
     el.classList.add("is-focused");
-
-    // accessibility
-    if (el.hasAttribute("aria-selected"))
-      el.setAttribute("aria-selected", "true");
+    if (el.classList.contains("nav-item")) el.setAttribute("aria-selected", "true");
   }
 
-  function getNavOrder() {
-    return navItems.map((n) => n.dataset.screen).filter(Boolean);
-  }
-
-  function setNavActiveByName(name) {
-    const target = $(`.nav-item[data-screen="${name}"]`);
-    if (!target) return;
-    navItems.forEach((i) => i.classList.remove("active"));
-    target.classList.add("active");
-  }
-
-  function setNavFocusByName(name) {
-    navItems.forEach((i) => i.classList.remove("is-focused"));
-    $(`.nav-item[data-screen="${name}"]`)?.classList.add("is-focused");
-  }
-
-  function clearNavFocus() {
-    navItems.forEach((i) => i.classList.remove("is-focused"));
-  }
-
-  function focusNavDomByName(name) {
-    const el = $(`.nav-item[data-screen="${name}"]`);
+  function focusEl(el) {
     if (!el) return;
-    setNavFocusByName(name);
-    el.focus?.();
+    try {
+      el.focus?.();
+    } catch (_) {}
+    markFocused(el);
   }
 
-  function syncNavUI() {
-    setNavActiveByName(state.currentTab);
-
-    if (state.currentScreen !== "home") {
-      setNavFocusByName(state.currentTab);
-    } else {
-      clearNavFocus();
-    }
+  function getGameCards() {
+    return gamesGrid ? $$(".game-card", gamesGrid) : [];
   }
 
-  // -------------------- Routing + History --------------------
-  function setActiveScreen(name, { pushHistory = true } = {}) {
-    if (!name) return;
+  function getContextItems(ctx = state.focus.context) {
+    if (ctx === "nav") return navItems;
 
-    const prev = state.currentScreen;
-    if (prev === name) return;
-
-    // push history if needed
-    if (pushHistory) state.historyStack.push(prev);
-
-    state.currentScreen = name;
-
-    // tabs (active underline) only for main sections
-    if (["home", "games", "media", "system"].includes(name)) {
-      state.currentTab = name;
+    if (ctx === "home") {
+      const home = $(".home-screen");
+      const heroBtns = $$(".hero-btn", home);
+      const cards = $$(".context-card", home);
+      return [...heroBtns, ...cards].filter(Boolean);
     }
 
-    // switch screen classes
-    screens.forEach((s) => s.classList.remove("is-active"));
-    $(`.screen.${name}-screen`)?.classList.add("is-active");
+    if (ctx === "games") {
+      const backBtn = $(".games-screen .back-btn");
+      const cards = getGameCards();
+      return [backBtn, filterBtn, sortBtn, searchInput, applyFiltersBtn, ...cards].filter(Boolean);
+    }
 
-    syncNavUI();
+    if (ctx === "media") {
+      const m = $(".media-screen");
+      const backBtn = $(".media-screen .back-btn");
+      const cards = $$(".media-card", m);
+      return [backBtn, ...cards].filter(Boolean);
+    }
 
-    // focus contexts
-    if (name === "home") setFocusContext("home", 0);
-    else if (name === "games")
-      setFocusContext("games", state.gamesUI.lastGridFocus || 0);
-    else if (name === "media") setFocusContext("media", 0);
-    else if (name === "system") setFocusContext("system", 0);
-    else if (name === "game-details") setFocusContext("details", 0);
-    else if (name === "now-playing") setFocusContext("nowPlaying", 0);
-    else if (name === "in-game") setFocusContext("inGame", 0);
+    if (ctx === "system") {
+      const s = $(".system-screen");
+      const backBtn = $(".system-screen .back-btn");
+      const cards = $$("[data-setting-card]", s);
+      return [backBtn, ...cards, volumeSlider].filter(Boolean);
+    }
 
-    // screen-enter actions
-    if (name === "home") onEnterHome();
-    if (name === "games") onEnterGames();
-    if (name === "media") onEnterMedia();
-    if (name === "system") onEnterSystem();
-    if (name === "now-playing") onEnterNowPlaying();
-    if (name === "in-game") onEnterInGame();
-    if (name === "game-details") onEnterDetails();
+    if (ctx === "details") {
+      const d = $(".game-details-screen");
+      const backBtn = $(".game-details-screen .back-btn");
+      const actions = $$(".details-actions .hero-btn", d);
+      const uninstall = $("#uninstallBtn");
+      return [backBtn, ...actions, uninstall].filter(Boolean);
+    }
+
+    if (ctx === "nowPlaying") {
+      const s = $(".now-playing-screen");
+      const backBtn = $(".now-playing-screen .back-btn");
+      const btns = $$(".details-actions .hero-btn", s);
+      return [backBtn, ...btns].filter(Boolean);
+    }
+
+    if (ctx === "inGame") {
+      const s = $(".in-game-screen");
+      const backBtn = $(".in-game-screen .back-btn");
+      const btns = $$(".details-actions .hero-btn", s);
+      return [backBtn, ...btns].filter(Boolean);
+    }
+
+    if (ctx === "power") {
+      const opts = powerOptions ? $$(".power-option", powerOptions) : [];
+      return opts;
+    }
+
+    return [];
   }
 
-  function goBack() {
-    if (shouldBlockGlobalInput()) return;
+  function focusFirstInContext() {
+    const items = getContextItems();
+    if (!items.length) return;
 
-    // close media overlay if open
-    if (hideMediaOverlayIfOpen()) return;
-
-    // close power menu if open
-    if (state.powerMenuOpen) {
-      closePowerMenu();
-      uiSound.back();
-      return;
-    }
-
-    const prev = state.historyStack.pop();
-    if (!prev) {
-      // if no history, behave console-like: go to current tab root or home
-      if (state.currentScreen !== state.currentTab) {
-        setActiveScreen(state.currentTab, { pushHistory: false });
-      } else if (state.currentScreen !== "home") {
-        setActiveScreen("home", { pushHistory: false });
+    // restore games grid focus
+    if (state.focus.context === "games") {
+      const cards = getGameCards();
+      if (cards.length) {
+        const idx = clamp(state.gamesUI.lastGridFocus, 0, cards.length - 1);
+        state.focus.index = 5 + idx; // back + filter + sort + search + apply = 5
       }
-      return;
     }
-    setActiveScreen(prev, { pushHistory: false });
-    uiSound.back();
+
+    const el = items[clamp(state.focus.index, 0, items.length - 1)];
+    focusEl(el);
   }
 
-  // -------------------- Header status: WiFi / Controller --------------------
-  function applyWifiUI() {
-    if (!wifiEl) return;
-    wifiEl.classList.toggle("is-off", !state.wifiOn);
-    wifiEl.title = `Wi-Fi: ${state.wifiOn ? "ON" : "OFF"} (W)`;
-    wifiEl.setAttribute("tabindex", "0");
-    wifiEl.setAttribute("role", "button");
-    wifiEl.setAttribute("aria-label", wifiEl.title);
+  function moveFocus(delta) {
+    const items = getContextItems();
+    if (!items.length) return;
+
+    let i = clamp(state.focus.index + delta, 0, items.length - 1);
+    state.focus.index = i;
+
+    const el = items[i];
+    focusEl(el);
+
+    if (state.focus.context === "games") {
+      const cards = getGameCards();
+      const cardIdx = cards.indexOf(el);
+      if (cardIdx >= 0) state.gamesUI.lastGridFocus = cardIdx;
+    }
   }
 
-  function applyControllerUI() {
-    if (!ctrlEl) return;
-    ctrlEl.classList.toggle("is-off", !state.controllerOn);
-    ctrlEl.title = `Controller: ${
-      state.controllerOn ? "Connected" : "Disconnected"
-    } (C)`;
-    ctrlEl.setAttribute("tabindex", "0");
-    ctrlEl.setAttribute("role", "button");
-    ctrlEl.setAttribute("aria-label", ctrlEl.title);
+  // -------------------- Navigation (Tab switching) --------------------
+  function openTab(tab) {
+    uiSound.ok();
+    setActiveScreen(tab, { pushHistory: true });
+    showToast(tab.toUpperCase());
   }
 
-  function toggleWifi() {
-    state.wifiOn = !state.wifiOn;
-    saveBool(STORAGE.wifi, state.wifiOn);
-    applyWifiUI();
-    showToast(`Wi-Fi: ${state.wifiOn ? "ON" : "OFF"}`);
-  }
-
-  function toggleController() {
-    state.controllerOn = !state.controllerOn;
-    saveBool(STORAGE.controller, state.controllerOn);
-    applyControllerUI();
-    showToast(
-      `Controller: ${state.controllerOn ? "Connected" : "Disconnected"}`
-    );
-  }
-
-  function bindHeaderToggleKeys() {
-    const onKey = (handler) => (e) => {
-      if (shouldBlockGlobalInput()) return;
-      if (e.key !== "Enter" && e.key !== " ") return;
-      e.preventDefault();
-      uiSound.move();
-      handler();
-    };
-    wifiEl?.addEventListener("keydown", onKey(toggleWifi));
-    ctrlEl?.addEventListener("keydown", onKey(toggleController));
-
-    wifiEl?.addEventListener("click", () => {
-      if (shouldBlockGlobalInput()) return;
-      uiSound.move();
-      toggleWifi();
-    });
-    ctrlEl?.addEventListener("click", () => {
-      if (shouldBlockGlobalInput()) return;
-      uiSound.move();
-      toggleController();
+  function bindNav() {
+    navItems.forEach((item) => {
+      item.setAttribute("role", "button");
+      item.setAttribute("tabindex", "0");
+      item.addEventListener("click", () => openTab(item.dataset.screen));
+      item.addEventListener("focus", () => markFocused(item));
+      item.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openTab(item.dataset.screen);
+        }
+      });
     });
   }
 
-  // -------------------- Clock --------------------
-  function pad2(n) {
-    return String(n).padStart(2, "0");
-  }
+  // -------------------- Back buttons (FIX: always bind + keyboard) --------------------
+  function bindBackButtons() {
+    const backs = $$('[data-action="back"]');
+    backs.forEach((btn) => {
+      if (!btn.hasAttribute("tabindex")) btn.setAttribute("tabindex", "0");
+      btn.setAttribute("role", "button");
+      btn.setAttribute("aria-label", "Back");
 
-  function formatTime(d) {
-    const h = d.getHours();
-    const m = d.getMinutes();
-    const mm = pad2(m);
+      if (btn.dataset.boundBack === "1") return;
+      btn.dataset.boundBack = "1";
 
-    if (state.settings.clock24) return `${pad2(h)}:${mm}`;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        uiSound.back();
+        goBack();
+      });
 
-    const hh = h % 12 || 12;
-    const ampm = h >= 12 ? "PM" : "AM";
-    return `${hh}:${mm} ${ampm}`;
-  }
-
-  let clockInterval = null;
-  function renderClock() {
-    if (!timeEl) return;
-    timeEl.textContent = formatTime(new Date());
-  }
-  function startClock() {
-    renderClock();
-    if (clockInterval) clearInterval(clockInterval);
-    clockInterval = setInterval(renderClock, 60 * 1000);
-  }
-
-  function applyClockUI() {
-    if (clockFormatValue)
-      clockFormatValue.textContent = state.settings.clock24 ? "24H" : "12H";
-    clock12Btn?.classList.toggle("primary", !state.settings.clock24);
-    clock24Btn?.classList.toggle("primary", !!state.settings.clock24);
-    startClock();
-  }
-
-  function setClockFormat(use24) {
-    state.settings.clock24 = !!use24;
-    saveBool(STORAGE.clock24, state.settings.clock24);
-    applyClockUI();
-    showToast(`Clock: ${state.settings.clock24 ? "24H" : "12H"}`);
-  }
-
-  function toggleClockFormat() {
-    setClockFormat(!state.settings.clock24);
-  }
-
-  // -------------------- Sound / Volume --------------------
-  function applySoundUI() {
-    if (sndStatusEl)
-      sndStatusEl.textContent = state.settings.soundEnabled ? "ON" : "OFF";
-    if (systemSoundValue)
-      systemSoundValue.textContent = state.settings.soundEnabled ? "ON" : "OFF";
-
-    soundOnBtn?.classList.toggle("primary", !!state.settings.soundEnabled);
-    soundOffBtn?.classList.toggle("primary", !state.settings.soundEnabled);
-  }
-
-  function setSoundEnabled(v) {
-    state.settings.soundEnabled = !!v;
-    saveBool(STORAGE.sound, state.settings.soundEnabled);
-    applySoundUI();
-    showToast(`Sound: ${state.settings.soundEnabled ? "ON" : "OFF"}`);
-  }
-
-  function toggleSound() {
-    setSoundEnabled(!state.settings.soundEnabled);
-    if (state.settings.soundEnabled) uiSound.ok();
-  }
-
-  function applyVolumeUI() {
-    if (volumeValue)
-      volumeValue.textContent = String(Math.round(state.settings.volume));
-    if (volumeSlider)
-      volumeSlider.value = String(Math.round(state.settings.volume));
-  }
-
-  function setVolume(v) {
-    state.settings.volume = clamp(Number(v) || 0, 0, 100);
-    saveNum(STORAGE.volume, state.settings.volume);
-    applyVolumeUI();
-  }
-
-  function isVolumeSliderFocused() {
-    return document.activeElement === volumeSlider;
-  }
-
-  // -------------------- Motion / Contrast --------------------
-  function applyReduceMotion() {
-    document.body.classList.toggle(
-      "reduce-motion",
-      !!state.settings.reduceMotion
-    );
-    if (reduceMotionValue)
-      reduceMotionValue.textContent = state.settings.reduceMotion
-        ? "ON"
-        : "OFF";
-    motionOffBtn?.classList.toggle("primary", !state.settings.reduceMotion);
-    motionOnBtn?.classList.toggle("primary", !!state.settings.reduceMotion);
-  }
-  function setReduceMotion(v) {
-    state.settings.reduceMotion = !!v;
-    saveBool(STORAGE.reduceMotion, state.settings.reduceMotion);
-    applyReduceMotion();
-    showToast(`Reduce Motion: ${state.settings.reduceMotion ? "ON" : "OFF"}`);
-  }
-
-  function applyHighContrast() {
-    document.body.classList.toggle(
-      "high-contrast",
-      !!state.settings.highContrast
-    );
-    if (contrastValue)
-      contrastValue.textContent = state.settings.highContrast ? "ON" : "OFF";
-    contrastOffBtn?.classList.toggle("primary", !state.settings.highContrast);
-    contrastOnBtn?.classList.toggle("primary", !!state.settings.highContrast);
-  }
-  function setHighContrast(v) {
-    state.settings.highContrast = !!v;
-    saveBool(STORAGE.contrast, state.settings.highContrast);
-    applyHighContrast();
-    showToast(`High Contrast: ${state.settings.highContrast ? "ON" : "OFF"}`);
-  }
-
-  // -------------------- Themes (body class) --------------------
-  function applyTheme() {
-    document.body.classList.remove("theme-dark", "theme-ice", "theme-neon");
-    const t = state.settings.theme || "dark";
-    document.body.classList.add(`theme-${t}`);
-    document.body.classList.remove("theme-pulse");
-    void document.body.offsetWidth; // reflow trick
-    document.body.classList.add("theme-pulse");
-    setTimeout(() => document.body.classList.remove("theme-pulse"), 700);
-    saveJson(STORAGE.theme, t);
-
-    if (themeValue) themeValue.textContent = t[0].toUpperCase() + t.slice(1);
-
-    themeDarkBtn?.classList.toggle("primary", t === "dark");
-    themeIceBtn?.classList.toggle("primary", t === "ice");
-    themeNeonBtn?.classList.toggle("primary", t === "neon");
-  }
-
-  function setTheme(next) {
-    state.settings.theme = next;
-    applyTheme();
-    showToast(`Theme: ${String(next).toUpperCase()}`);
-  }
-
-  // -------------------- System Screen bindings --------------------
-  function bindSystemUI() {
-    clock12Btn?.addEventListener("click", () => {
-      uiSound.ok();
-      setClockFormat(false);
-    });
-    clock24Btn?.addEventListener("click", () => {
-      uiSound.ok();
-      setClockFormat(true);
-    });
-
-    soundOnBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      setSoundEnabled(true);
-    });
-    soundOffBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      setSoundEnabled(false);
-    });
-
-    volumeSlider?.addEventListener("input", (e) => {
-      setVolume(e.target.value);
-    });
-
-    motionOffBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      setReduceMotion(false);
-    });
-    motionOnBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      setReduceMotion(true);
-    });
-
-    contrastOffBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      setHighContrast(false);
-    });
-    contrastOnBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      setHighContrast(true);
-    });
-
-    themeDarkBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      setTheme("dark");
-    });
-    themeIceBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      setTheme("ice");
-    });
-    themeNeonBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      setTheme("neon");
-    });
-  }
-
-  function openSystemOnSound() {
-    setActiveScreen("system", { pushHistory: true });
-    setTimeout(() => {
-      soundOnBtn?.focus?.();
-    }, 0);
-  }
-
-  let parallaxBound = false;
-
-  function bindGamesParallax() {
-    if (parallaxBound) return;
-    if (!gamesGrid) return;
-
-    parallaxBound = true;
-
-    gamesGrid.addEventListener("pointermove", (e) => {
-      if (state.settings.reduceMotion) return;
-
-      const card = e.target.closest?.(".game-card");
-      if (!card || !card.classList.contains("is-focused")) return;
-
-      const r = card.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width; // 0..1
-      const y = (e.clientY - r.top) / r.height; // 0..1
-
-      // حرکت خیلی ظریف (کنسولی)
-      const px = (x - 0.5) * 10; // -5..+5
-      const py = (y - 0.5) * 10;
-
-      card.dataset.parallax = "1";
-      card.style.setProperty("--px", `${px}px`);
-      card.style.setProperty("--py", `${py}px`);
-    });
-
-    gamesGrid.addEventListener("pointerleave", () => {
-      const focused = document.activeElement?.classList?.contains("game-card")
-        ? document.activeElement
-        : null;
-      if (!focused) return;
-      focused.dataset.parallax = "0";
-      focused.style.removeProperty("--px");
-      focused.style.removeProperty("--py");
+      btn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          uiSound.back();
+          goBack();
+        }
+      });
     });
   }
 
   // -------------------- Games Data --------------------
-  const DEFAULT_GAMES = [
-    {
-      id: "tlou2",
-      title: "The Last of Us Part II",
-      genre: "Action / Drama",
-      installed: true,
-      size: 78.4,
-      lastPlayed: 0,
-      cover: "",
-      desc: "A gritty story-driven action experience.",
-    },
-    {
-      id: "gow",
-      title: "God of War",
-      genre: "Action / Adventure",
-      installed: true,
-      size: 45.2,
-      lastPlayed: 0,
-      cover: "",
-      desc: "Mythic battles and father-son journey.",
-    },
-    {
-      id: "hzd",
-      title: "Horizon Zero Dawn",
-      genre: "RPG / Open World",
-      installed: false,
-      size: 62.1,
-      lastPlayed: 0,
-      cover: "",
-      desc: "Machines. Mystery. A wild open world.",
-    },
-    {
-      id: "spiderman",
-      title: "Spider-Man",
-      genre: "Action / Open World",
-      installed: true,
-      size: 52.7,
-      lastPlayed: 0,
-      cover: "",
-      desc: "Swing through the city and save the day.",
-    },
-    {
-      id: "elden",
-      title: "Elden Ring",
-      genre: "Soulslike / RPG",
-      installed: false,
-      size: 58.2,
-      lastPlayed: 0,
-      cover: "",
-      desc: "A vast world of challenging battles.",
-    },
-    {
-      id: "re4",
-      title: "Resident Evil 4",
-      genre: "Horror / Action",
-      installed: false,
-      size: 39.6,
-      lastPlayed: 0,
-      cover: "",
-      desc: "Survival horror reimagined.",
-    },
-    {
-      id: "gt7",
-      title: "Gran Turismo 7",
-      genre: "Racing",
-      installed: true,
-      size: 96.3,
-      lastPlayed: 0,
-      cover: "",
-      desc: "Real driving simulator vibes.",
-    },
-    {
-      id: "stray",
-      title: "Stray",
-      genre: "Adventure",
-      installed: true,
-      size: 7.1,
-      lastPlayed: 0,
-      cover: "",
-      desc: "A cat’s journey through neon city.",
-    },
-  ];
+  function seedDefaultGames() {
+    return [
+      {
+        id: "tlou2",
+        title: "The Last of Us Part II",
+        genre: "Action",
+        installed: true,
+        size: 86.4,
+        lastPlayed: now() - 1000 * 60 * 60 * 24 * 2,
+        cover: "assets/images/covers/tlou2.jpg",
+        desc: "Survive. Adapt. Endure.",
+      },
+      {
+        id: "horizon",
+        title: "Horizon",
+        genre: "Adventure",
+        installed: true,
+        size: 54.1,
+        lastPlayed: now() - 1000 * 60 * 60 * 48,
+        cover: "assets/images/covers/horizon.jpg",
+        desc: "A wild world beyond.",
+      },
+      {
+        id: "cyberpunk",
+        title: "Cyberpunk",
+        genre: "RPG",
+        installed: false,
+        size: 0,
+        lastPlayed: 0,
+        cover: "assets/images/covers/cyberpunk.jpg",
+        desc: "Night City never sleeps.",
+      },
+      {
+        id: "gtavi",
+        title: "GTA VI",
+        genre: "Open World",
+        installed: false,
+        size: 0,
+        lastPlayed: 0,
+        cover: "assets/images/covers/gtavi.jpg",
+        desc: "Next-gen chaos.",
+      },
+      {
+        id: "eldenring",
+        title: "Elden Ring",
+        genre: "Soulslike",
+        installed: true,
+        size: 48.8,
+        lastPlayed: now() - 1000 * 60 * 60 * 24 * 12,
+        cover: "assets/images/covers/eldenring.jpg",
+        desc: "Rise, Tarnished.",
+      },
+      {
+        id: "minecraft",
+        title: "Minecraft",
+        genre: "Sandbox",
+        installed: true,
+        size: 2.1,
+        lastPlayed: now() - 1000 * 60 * 60 * 240,
+        cover: "assets/images/covers/minecraft.jpg",
+        desc: "Build anything. Survive anywhere.",
+      },
+    ];
+  }
 
   function loadGamesState() {
     const saved = loadJson(STORAGE.games, null);
     if (Array.isArray(saved) && saved.length) {
-      // merge defaults with saved by id (so you can update defaults later)
-      const map = new Map(saved.map((g) => [g.id, g]));
-      state.games = DEFAULT_GAMES.map((g) => ({
-        ...g,
-        ...(map.get(g.id) || {}),
-      }));
+      state.games = saved;
     } else {
-      state.games = DEFAULT_GAMES.map((g) => ({ ...g }));
-      saveGamesState();
+      state.games = seedDefaultGames();
+      saveJson(STORAGE.games, state.games);
     }
   }
 
@@ -893,131 +793,82 @@
     saveJson(STORAGE.games, state.games);
   }
 
-  // -------------------- Games UI (Filters/Sort/Search + Render) --------------------
   function getVisibleGames() {
     let list = [...state.games];
 
-    if (state.gamesUI.filter === "installed") {
-      list = list.filter((g) => !!g.installed);
-    }
+    if (state.gamesUI.filter === "installed") list = list.filter((g) => !!g.installed);
 
-    if (state.gamesUI.search) {
-      const q = state.gamesUI.search.trim().toLowerCase();
-      list = list.filter((g) => g.title.toLowerCase().includes(q));
-    }
+    const q = (state.gamesUI.search || "").trim().toLowerCase();
+    if (q) list = list.filter((g) => g.title.toLowerCase().includes(q));
 
-    if (state.gamesUI.sort === "recent") {
-      list.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
-    } else {
-      list.sort((a, b) => a.title.localeCompare(b.title));
-    }
+    if (state.gamesUI.sort === "az") list.sort((a, b) => a.title.localeCompare(b.title));
+    else list.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
 
     return list;
   }
 
-  function getGameCards() {
-    return $$(".game-card", gamesGrid || document);
-  }
+  function renderGamesGrid() {
+    if (!gamesGrid) return;
+    const list = getVisibleGames();
+    gamesGrid.innerHTML = "";
 
-  function focusGameByIndex(i) {
-    const cards = getGameCards();
-    if (!cards.length) return;
-    const idx = clamp(i, 0, cards.length - 1);
-    cards[idx].focus();
-    markFocused(cards[idx]);
-    state.gamesUI.lastGridFocus = idx;
-  }
+    list.forEach((g) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "game-card";
+      btn.dataset.id = g.id;
+      btn.setAttribute("aria-selected", "false");
+      btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
 
-  function injectGamesFiltersBar() {
-    const gamesScreen = $(".games-screen");
-    if (!gamesScreen) return;
-    if ($("#gamesFiltersBar")) return;
+      // cover style
+      const coverStyle = g.cover
+        ? `background-image:url("${g.cover}")`
+        : `background-image:
+          radial-gradient(800px 420px at 20% 20%, rgba(124,195,255,0.22), transparent 60%),
+          radial-gradient(700px 420px at 85% 25%, rgba(255,77,230,0.14), transparent 60%),
+          radial-gradient(900px 520px at 55% 95%, rgba(169,255,107,0.10), transparent 65%),
+          linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.35))`;
 
-    const bar = document.createElement("div");
-    bar.id = "gamesFiltersBar";
-    bar.style.cssText = `
-      width: min(980px, 92%);
-      margin: 18px auto 10px;
-      padding: 14px 14px;
-      border-radius: 16px;
-      border: 1px solid rgba(220,235,255,0.12);
-      background: rgba(255,255,255,0.02);
-      display:flex; gap:12px; align-items:center; justify-content:space-between;
-      flex-wrap: wrap;
-    `;
-    bar.innerHTML = `
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <div style="opacity:.65;letter-spacing:.12em;text-transform:uppercase;font-size:11px;">
-          Filter:
-        </div>
-        <div id="filterValue" style="font-weight:800;letter-spacing:.14em;">ALL</div>
+      btn.innerHTML = `
+        <span class="gc-cover" style='${coverStyle}' aria-hidden="true"></span>
 
-        <div style="opacity:.65;letter-spacing:.12em;text-transform:uppercase;font-size:11px;margin-left:12px;">
-          Sort:
-        </div>
-        <div id="sortValue" style="font-weight:800;letter-spacing:.14em;">RECENT</div>
-      </div>
+        <span class="gc-info">
+          <span class="gc-title">${g.title}</span>
 
-      <div style="display:flex;gap:10px;align-items:center;flex:1;justify-content:flex-end;min-width:260px;">
-        <input id="searchInput" type="text" placeholder="Search..."
-          style="
-            flex:1; min-width:180px;
-            background: rgba(255,255,255,0.03);
-            color: rgba(230,237,245,0.9);
-            border-radius: 12px;
-            border: 1px solid rgba(220,235,255,0.12);
-            padding: 10px 12px;
-            outline: none;
-            letter-spacing: 0.06em;
-          "/>
-        <button class="hero-btn primary" id="applyFiltersBtn" type="button" style="min-width:160px;">
-          APPLY
-        </button>
-      </div>
-    `;
+          <span class="gc-meta">
+            <span class="gc-chip ${g.installed ? "" : "is-get"}">
+              ${g.installed ? "INST" : "GET"}
+            </span>
+          </span>
+        </span>
+      `;
 
-    const titleEl = $(".games-title", gamesScreen);
-    if (titleEl && titleEl.parentElement)
-      titleEl.parentElement.insertBefore(bar, titleEl.nextSibling);
+      btn.addEventListener("click", () => {
+        uiSound.ok();
+        openGameDetails(g.id);
+      });
 
-    const hint = document.createElement("div");
-    hint.id = "gamesFiltersHint";
-    hint.style.cssText = `
-      width: 80%;
-      margin: 0 auto 10px;
-      opacity: 0.55;
-      letter-spacing: 0.12em;
-      font-size: 11px;
-      text-transform: uppercase;
-      text-align: center;
-    `;
-    hint.textContent =
-      "L/R: toggle Filter/Sort • Enter: open game • Esc: back • Search: type";
-    bar.parentElement?.insertBefore(hint, bar.nextSibling);
+      btn.addEventListener("focus", () => {
+        markFocused(btn);
+        const cards = getGameCards();
+        const idx = cards.indexOf(btn);
+        if (idx >= 0) state.gamesUI.lastGridFocus = idx;
+      });
 
-    // Bind
-    const applyBtn = $("#applyFiltersBtn");
-    const searchInput = $("#searchInput");
-
-    applyBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      applyGamesFilters();
+      gamesGrid.appendChild(btn);
     });
 
-    searchInput?.addEventListener("input", (e) => {
-      state.gamesUI.search = e.target.value || "";
-      // live update (optional) : for smoother feel, render live:
-      renderGamesGrid();
-      updateGamesFiltersUI();
-    });
+    if (!list.length) {
+      const empty = document.createElement("div");
+      empty.style.cssText =
+        "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
+      empty.textContent = "No games found";
+      gamesGrid.appendChild(empty);
+    }
   }
 
   function updateGamesFiltersUI() {
-    const filterValue = $("#filterValue");
-    const sortValue = $("#sortValue");
-    const searchInput = $("#searchInput");
-    if (filterValue)
-      filterValue.textContent = state.gamesUI.filter.toUpperCase();
+    if (filterValue) filterValue.textContent = state.gamesUI.filter.toUpperCase();
     if (sortValue) sortValue.textContent = state.gamesUI.sort.toUpperCase();
     if (searchInput && searchInput.value !== state.gamesUI.search)
       searchInput.value = state.gamesUI.search || "";
@@ -1043,85 +894,15 @@
     applyGamesFilters();
   }
 
-  function renderGamesGrid() {
-    if (!gamesGrid) return;
-
-    const list = getVisibleGames();
-    gamesGrid.innerHTML = "";
-
-    list.forEach((g) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "game-card";
-      btn.dataset.id = g.id;
-      btn.setAttribute("aria-selected", "false");
-      btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
-
-      // اگر کاور نداری، یه کاور ژنریک خیلی خوشگل بساز
-      const coverStyle = g.cover
-        ? `background-image:url("${g.cover}")`
-        : `background-image:
-          radial-gradient(800px 420px at 20% 20%, rgba(124,195,255,0.22), transparent 60%),
-          radial-gradient(700px 420px at 85% 25%, rgba(255,77,230,0.14), transparent 60%),
-          radial-gradient(900px 520px at 55% 95%, rgba(169,255,107,0.10), transparent 65%),
-          linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.35))`;
-
-      btn.innerHTML = `
-      <span class="gc-cover" style='${coverStyle}' aria-hidden="true"></span>
-
-      <span class="gc-info">
-        <span class="gc-title">${g.title}</span>
-
-        <span class="gc-meta">
-          <span class="gc-chip ${g.installed ? "" : "is-get"}">
-            ${g.installed ? "INST" : "GET"}
-          </span>
-        </span>
-      </span>
-    `;
-
-      btn.addEventListener("click", () => {
-        uiSound.ok();
-        openGameDetails(g.id);
-      });
-
-      btn.addEventListener("focus", () => {
-        markFocused(btn);
-        const cards = getGameCards();
-        const idx = cards.indexOf(btn);
-        if (idx >= 0) state.gamesUI.lastGridFocus = idx;
-      });
-
-      gamesGrid.appendChild(btn);
-    });
-
-    if (!list.length) {
-      const empty = document.createElement("div");
-      empty.style.cssText =
-        "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
-      empty.textContent = "No games found";
-      gamesGrid.appendChild(empty);
-    }
-
-    // بعد از رندر، parallax رو بایند کن
-    bindGamesParallax();
-  }
-
-  // -------------------- Details (Phase 5.3) --------------------
+  // -------------------- Details --------------------
   function fmtSize(gb) {
-    if (!Number.isFinite(gb)) return "--";
+    if (!Number.isFinite(gb) || gb <= 0) return "--";
     return `${gb.toFixed(gb >= 10 ? 0 : 1)} GB`;
   }
-
   function fmtLastPlayed(ts) {
     if (!ts) return "Never";
     const d = new Date(ts);
-    const dd = d.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-    });
-    return dd;
+    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
   }
 
   function getGameById(id) {
@@ -1130,7 +911,7 @@
 
   function ensureUninstallButton() {
     const actions = $(".game-details-screen .details-actions");
-    if (!actions) return null;
+    if (!actions) return;
 
     let btn = $("#uninstallBtn");
     if (!btn) {
@@ -1144,1133 +925,499 @@
     return btn;
   }
 
-  function injectDetailsPanel() {
-    const detailsScreen = $(".game-details-screen");
-    if (!detailsScreen) return;
-    if ($("#detailsPanel")) return;
+  function updateDetailsUI(game) {
+    if (!game) return;
 
-    const panel = document.createElement("div");
-    panel.id = "detailsPanel";
-    panel.style.cssText = `
-      width: min(860px, 92%);
-      margin: 18px auto 0;
-      padding: 18px 18px;
-      border-radius: 18px;
-      border: 1px solid rgba(220,235,255,0.12);
-      background: rgba(255,255,255,0.02);
-      display: grid;
-      grid-template-columns: 160px 1fr;
-      gap: 16px;
-      align-items: center;
-    `;
-    panel.innerHTML = `
-      <div style="width:160px;height:160px;border-radius:16px;overflow:hidden;border:1px solid rgba(220,235,255,0.12);background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;">
-        <img id="detailsCover" alt="Cover" style="width:100%;height:100%;object-fit:cover;display:block;" />
-      </div>
-      <div style="display:grid;gap:10px;">
-        <div style="display:flex;flex-wrap:wrap;gap:10px;">
-          <span id="detailsGenre" style="opacity:.75;letter-spacing:.12em;text-transform:uppercase;font-size:11px;"></span>
-          <span id="detailsSize" style="opacity:.75;letter-spacing:.12em;text-transform:uppercase;font-size:11px;"></span>
-          <span id="detailsLastPlayed" style="opacity:.75;letter-spacing:.12em;text-transform:uppercase;font-size:11px;"></span>
-          <span id="detailsInstall" style="opacity:.75;letter-spacing:.12em;text-transform:uppercase;font-size:11px;"></span>
-        </div>
-        <div id="detailsDesc" style="opacity:.7;letter-spacing:.04em;line-height:1.45;"></div>
-      </div>
-    `;
+    detailsTitle && (detailsTitle.textContent = game.title);
+    detailsSub && (detailsSub.textContent = game.desc || game.genre || "");
 
-    const sub = $("#detailsSub");
-    if (sub && sub.parentElement)
-      sub.parentElement.insertBefore(panel, sub.nextSibling);
-  }
+    detailsGenre && (detailsGenre.textContent = game.genre || "--");
+    detailsSize && (detailsSize.textContent = fmtSize(game.size));
+    detailsLastPlayed && (detailsLastPlayed.textContent = fmtLastPlayed(game.lastPlayed));
 
-  function openGameDetails(id) {
-    state.gamesUI.selectedId = id;
-    const g = getGameById(id);
-    if (!g) return;
-
-    if (detailsTitle) detailsTitle.textContent = g.title.toUpperCase();
-    if (detailsSub)
-      detailsSub.textContent = `${g.genre} • ${fmtSize(
-        g.size
-      )} • Last played: ${fmtLastPlayed(g.lastPlayed)}`;
-
-    const cover = $("#detailsCover");
-    if (cover) {
-      if (g.cover) {
-        cover.src = g.cover;
-        cover.style.display = "block";
-      } else {
-        cover.removeAttribute("src");
-        cover.style.display = "none";
-      }
+    if (detailsCover) {
+      detailsCover.style.backgroundImage = game.cover
+        ? `url("${game.cover}")`
+        : "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.35))";
     }
 
-    const genre = $("#detailsGenre");
-    const size = $("#detailsSize");
-    const last = $("#detailsLastPlayed");
-    const inst = $("#detailsInstall");
-    const desc = $("#detailsDesc");
-
-    if (genre) genre.textContent = `GENRE: ${g.genre}`;
-    if (size) size.textContent = `SIZE: ${fmtSize(g.size)}`;
-    if (last) last.textContent = `LAST: ${fmtLastPlayed(g.lastPlayed)}`;
-    if (inst)
-      inst.textContent = `STATUS: ${
-        g.installed ? "INSTALLED" : "NOT INSTALLED"
-      }`;
-    if (desc) desc.textContent = g.desc || "—";
-
+    // install/uninstall logic
     const uninstallBtn = ensureUninstallButton();
     if (uninstallBtn) {
-      uninstallBtn.style.display = g.installed ? "inline-flex" : "none";
+      uninstallBtn.style.display = game.installed ? "inline-flex" : "none";
       uninstallBtn.onclick = () => {
-        uiSound.ok();
-        uninstallGame(id);
+        if (!game.installed) return;
+        uiSound.error();
+        showOverlay("Uninstalling", game.title);
+        setTimeout(() => {
+          game.installed = false;
+          game.size = 0;
+          saveGamesState();
+          renderGamesGrid();
+          updateDetailsUI(game);
+          hideOverlay();
+          showToast("Uninstalled");
+        }, 700);
       };
     }
 
-    playBtn?.onclick && (playBtn.onclick = null);
-    optionsBtn?.onclick && (optionsBtn.onclick = null);
+    // Play button state
+    if (playBtn) {
+      playBtn.textContent = game.installed ? "Play" : "Install";
+      playBtn.onclick = () => {
+        if (!game.installed) {
+          uiSound.ok();
+          showOverlay("Installing", game.title);
+          setTimeout(() => {
+            game.installed = true;
+            game.size = clamp(game.size || (Math.random() * 60 + 8), 2, 120);
+            game.lastPlayed = game.lastPlayed || now();
+            saveGamesState();
+            renderGamesGrid();
+            updateDetailsUI(game);
+            hideOverlay();
+            showToast("Installed");
+          }, 850);
+          return;
+        }
 
-    playBtn?.addEventListener("click", () => onPlayPressed());
-    optionsBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      showLoading("Opening Options", g.title);
-      setTimeout(
-        () => {
-          hideLoading();
-          alert(`Options: ${g.title}`);
-        },
-        state.settings.reduceMotion ? 250 : 650
-      );
-    });
+        // Launch game
+        uiSound.launch();
+        state.runningGameId = game.id;
 
-    setActiveScreen("game-details", { pushHistory: true });
+        // XP tick
+        state.xp += 15;
+        saveNum(STORAGE.xp, state.xp);
 
-    setTimeout(() => {
-      playBtn?.focus?.();
-      markFocused(playBtn);
-    }, 0);
-  }
-
-  function installGame(id) {
-    const g = getGameById(id);
-    if (!g) return;
-    g.installed = true;
-    saveGamesState();
-    renderGamesGrid();
-    openGameDetails(id);
-    showToast("Installed");
-  }
-
-  function uninstallGame(id) {
-    const g = getGameById(id);
-    if (!g) return;
-    g.installed = false;
-    saveGamesState();
-    renderGamesGrid();
-    openGameDetails(id);
-    showToast("Uninstalled");
-  }
-
-  // -------------------- Quick Resume --------------------
-  function addToQuickResume(id) {
-    const exists = state.running.find((r) => r.id === id);
-    const item = { id, startedAt: now() };
-    if (exists) exists.startedAt = item.startedAt;
-    else {
-      state.running.unshift(item);
-      state.running = state.running.slice(0, 3);
-    }
-    saveJson(STORAGE.quickResume, state.running);
-  }
-
-  function setRunningGame(id) {
-    state.runningActiveId = id;
-    addToQuickResume(id);
-    renderHomeCards();
-  }
-
-  // -------------------- XP / Achievements --------------------
-  function addXP(amount) {
-    const a = clamp(Number(amount) || 0, 0, 999999);
-    if (a <= 0) return;
-    state.xp = clamp(state.xp + a, 0, 999999);
-    saveNum(STORAGE.xp, state.xp);
-  }
-
-  function unlockAchievement(key, title) {
-    if (state.achievements[key]) return;
-    state.achievements[key] = true;
-    saveJson(STORAGE.achievements, state.achievements);
-    showToast(`Achievement: ${title}`);
-  }
-
-  function onPlayPressed() {
-    const id = state.gamesUI.selectedId;
-    const g = getGameById(id);
-    if (!g) return;
-
-    if (!g.installed) {
-      uiSound.ok();
-      showLoading("Installing", g.title);
-      setTimeout(
-        () => {
-          hideLoading();
-          installGame(id);
-        },
-        state.settings.reduceMotion ? 350 : 900
-      );
-      return;
-    }
-
-    uiSound.ok();
-    showLoading("Launching", g.title);
-    setTimeout(
-      () => {
-        hideLoading();
-
-        g.lastPlayed = now();
+        game.lastPlayed = now();
         saveGamesState();
 
-        setRunningGame(id);
-
-        addXP(25);
-        unlockAchievement("first_play", "First Launch");
-
-        openInGame(id);
-        applyGamesFilters();
-      },
-      state.settings.reduceMotion ? 250 : 850
-    );
+        showOverlay("Launching", game.title);
+        setTimeout(() => {
+          hideOverlay();
+          openInGame(game.id);
+        }, 650);
+      };
+    }
   }
 
-  function openInGame(id) {
-    const g = getGameById(id);
+  function openGameDetails(gameId) {
+    const g = getGameById(gameId);
     if (!g) return;
-    if (inGameTitle) inGameTitle.textContent = `IN GAME`;
-    if (inGameSub) inGameSub.textContent = `${g.title} • Press Back to return`;
+
+    setActiveScreen("game-details", { pushHistory: true });
+    updateDetailsUI(g);
+
+    // focus play
+    setTimeout(() => playBtn?.focus?.(), 0);
+  }
+
+  // -------------------- In-Game / Now Playing --------------------
+  function openInGame(gameId) {
+    const g = getGameById(gameId);
+    if (!g) return;
+
+    inGameTitle && (inGameTitle.textContent = "IN GAME");
+    inGameSub && (inGameSub.textContent = g.title);
+
     setActiveScreen("in-game", { pushHistory: true });
+    setTimeout(() => openNowPlayingBtn?.focus?.(), 0);
   }
 
   function openNowPlaying() {
-    const id = state.runningActiveId;
-    const g = getGameById(id);
-    if (!g) return;
-    if (nowPlayingTitle) nowPlayingTitle.textContent = `NOW PLAYING`;
-    if (nowPlayingSub)
-      nowPlayingSub.textContent = `${g.title} • Running in Quick Resume`;
+    const g = getGameById(state.runningGameId);
+    nowPlayingTitle && (nowPlayingTitle.textContent = "NOW PLAYING");
+    nowPlayingSub && (nowPlayingSub.textContent = g ? g.title : "—");
+
     setActiveScreen("now-playing", { pushHistory: true });
+    setTimeout(() => resumeBtn?.focus?.(), 0);
   }
 
-  function quitRunningGame() {
-    const id = state.runningActiveId;
-    if (!id) return;
-    const g = getGameById(id);
-
-    state.runningActiveId = null;
-    state.running = state.running.filter((r) => r.id !== id);
-    saveJson(STORAGE.quickResume, state.running);
-
-    if (g) showToast(`Quit: ${g.title}`);
-    renderHomeCards();
-
-    setActiveScreen("games", { pushHistory: true });
+  function resumeGame() {
+    uiSound.ok();
+    setActiveScreen("in-game", { pushHistory: true });
+    setTimeout(() => openNowPlayingBtn?.focus?.(), 0);
   }
 
-  // -------------------- Home Cards --------------------
-  function renderHomeCards() {
-    const home = $(".home-screen");
-    if (!home) return;
-
-    const cards = $$(".context-card", home);
-    if (!cards.length) return;
-
-    const quick = cards[0];
-    const recent = cards[1];
-    const downloads = cards[2];
-    const friends = cards[3];
-
-    if (quick) {
-      $(".context-value", quick).textContent = `${state.running.length} Games`;
-      $(".context-sub", quick).textContent = state.running.length
-        ? "Ready to resume"
-        : "No running games";
-    }
-
-    const sorted = [...state.games].sort(
-      (a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0)
-    );
-    const last = sorted.find((g) => g.lastPlayed);
-    if (recent) {
-      $(".context-value", recent).textContent = last ? last.title : "—";
-      $(".context-sub", recent).textContent = last
-        ? `Last: ${fmtLastPlayed(last.lastPlayed)}`
-        : "No activity yet";
-    }
-
-    if (downloads) {
-      $(".context-value", downloads).textContent = "1 Active";
-      $(".context-sub", downloads).textContent = "45%";
-    }
-
-    if (friends) {
-      $(".context-value", friends).textContent = "Online";
-      $(".context-sub", friends).textContent = "2 friends available";
-    }
-  }
-
-  function onEnterHome() {
-    clearNavFocus();
-    const home = $(".home-screen");
-    const cards = home ? $$(".context-card", home) : [];
-    if (cards.length) {
-      setTimeout(() => {
-        cards[0].focus();
-        markFocused(cards[0]);
-        setFocusContext("home", 0);
-      }, 0);
-    }
-  }
-
-  function bindHomeCards() {
-    const home = $(".home-screen");
-    if (!home) return;
-    const cards = $$(".context-card", home);
-    if (!cards.length) return;
-
-    cards.forEach((c, idx) => {
-      c.addEventListener("focus", () => {
-        setFocusContext("home", idx);
-        markFocused(c);
-      });
-      c.addEventListener("click", () => {
-        uiSound.ok();
-        // 0 Quick Resume
-        if (idx === 0) {
-          if (state.runningActiveId) openNowPlaying();
-          else showToast("No running games");
-          return;
-        }
-        // 1 Recent -> games
-        if (idx === 1) {
-          setActiveScreen("games", { pushHistory: true });
-          return;
-        }
-        // 2 Downloads -> media placeholder
-        if (idx === 2) {
-          setActiveScreen("media", { pushHistory: true });
-          return;
-        }
-        // 3 Friends -> system for now
-        if (idx === 3) {
-          setActiveScreen("system", { pushHistory: true });
-          return;
-        }
-      });
-    });
-  }
-
-  // -------------------- Media Placeholder Overlay --------------------
-  let mediaOverlay = null;
-  function ensureMediaOverlay() {
-    if (mediaOverlay) return;
-    const overlay = document.createElement("div");
-    overlay.id = "mediaOverlay";
-    overlay.style.cssText = `
-      position: fixed; inset: 0; z-index: 9000;
-      display: none; align-items: center; justify-content: center;
-      background: rgba(5,6,7,0.72); backdrop-filter: blur(10px);
-    `;
-    overlay.innerHTML = `
-      <div style="
-        width:min(620px,92%); border-radius:22px; padding:26px 22px;
-        border:1px solid rgba(220,235,255,0.16); background: rgba(255,255,255,0.03);
-        box-shadow: 0 30px 60px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(220,235,255,0.04);
-        text-align:center;
-      ">
-        <div id="mediaOverlayTitle" style="color:#b8dcff;font-size:26px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;">
-          MEDIA
-        </div>
-        <div id="mediaOverlaySub" style="margin-top:10px;opacity:.7;letter-spacing:.06em;">
-          Coming soon.
-        </div>
-        <div style="margin-top:18px;display:flex;gap:12px;justify-content:center;">
-          <button class="hero-btn primary" id="mediaOverlayOkBtn" type="button" style="min-width:220px;">OK</button>
-        </div>
-        <div style="margin-top:12px;opacity:.55;letter-spacing:.12em;font-size:11px;text-transform:uppercase;">
-          Enter: OK • Esc: Close
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    mediaOverlay = overlay;
-
-    $("#mediaOverlayOkBtn")?.addEventListener("click", () => {
-      uiSound.ok();
-      hideMediaOverlayIfOpen(true);
-    });
-  }
-
-  function openMediaOverlay(title = "Media", sub = "Coming soon.") {
-    ensureMediaOverlay();
-    if (!mediaOverlay) return;
-    $("#mediaOverlayTitle").textContent = String(title).toUpperCase();
-    $("#mediaOverlaySub").textContent = sub;
-    mediaOverlay.style.display = "flex";
-    setTimeout(() => $("#mediaOverlayOkBtn")?.focus?.(), 0);
-  }
-
-  function hideMediaOverlayIfOpen(force = false) {
-    if (!mediaOverlay) return false;
-    if (mediaOverlay.style.display !== "flex" && !force) return false;
-    mediaOverlay.style.display = "none";
-    // restore focus to a safe place
+  function quitGame() {
+    uiSound.quit();
+    const g = getGameById(state.runningGameId);
+    showOverlay("Quitting", g ? g.title : "Game");
     setTimeout(() => {
-      if (state.currentScreen === "media") onEnterMedia();
-      else syncNavUI();
-    }, 0);
-    return true;
+      state.runningGameId = null;
+      hideOverlay();
+      setActiveScreen("games", { pushHistory: true });
+      setTimeout(() => focusFirstInContext(), 0);
+    }, 700);
   }
 
-  function bindMediaCards() {
-    const media = $(".media-screen");
-    if (!media) return;
-    const cards = $$(".media-card", media);
-    cards.forEach((c, idx) => {
-      c.addEventListener("focus", () => {
-        setFocusContext("media", idx);
-        markFocused(c);
-      });
-      c.addEventListener("click", () => {
-        uiSound.ok();
-        const name = c.dataset.media || "Media";
-        openMediaOverlay(name, "Coming soon.");
-      });
-    });
-  }
-
-  // -------------------- Screen enter hooks --------------------
-  function onEnterGames() {
-    setTimeout(() => {
-      // focus first game or restore last grid focus
-      const cards = getGameCards();
-      if (cards.length) {
-        focusGameByIndex(state.gamesUI.lastGridFocus || 0);
-      } else {
-        // if empty, focus nav
-        focusNavDomByName(state.currentTab);
-      }
-    }, 0);
-  }
-
-  function onEnterMedia() {
-    const media = $(".media-screen");
-    const cards = media ? $$(".media-card", media) : [];
-    setTimeout(() => {
-      if (cards.length) {
-        cards[0].focus();
-        markFocused(cards[0]);
-        setFocusContext("media", 0);
-      } else {
-        focusNavDomByName(state.currentTab);
-      }
-    }, 0);
-  }
-
-  function onEnterSystem() {
-    setTimeout(() => {
-      const cards = systemGrid ? $$("[data-setting-card]", systemGrid) : [];
-      if (cards.length) {
-        cards[0].focus();
-        markFocused(cards[0]);
-        setFocusContext("system", 0);
-      } else {
-        focusNavDomByName(state.currentTab);
-      }
-    }, 0);
-  }
-
-  function onEnterNowPlaying() {
-    setTimeout(() => {
-      resumeBtn?.focus?.();
-      markFocused(resumeBtn);
-      setFocusContext("nowPlaying", 0);
-    }, 0);
-  }
-
-  function onEnterInGame() {
-    setTimeout(() => {
-      openNowPlayingBtn?.focus?.();
-      markFocused(openNowPlayingBtn);
-      setFocusContext("inGame", 0);
-    }, 0);
-  }
-
-  function onEnterDetails() {
-    setTimeout(() => {
-      playBtn?.focus?.();
-      markFocused(playBtn);
-      setFocusContext("details", 0);
-    }, 0);
-  }
-
-  // -------------------- Power Menu + Sleep/Off --------------------
+  // -------------------- Power Menu (P) --------------------
   let powerIndex = 0;
 
-  function getPowerItems() {
-    return powerOptions ? $$("[data-power]", powerOptions) : [];
-  }
-
-  function setPowerFocus(i) {
-    const items = getPowerItems();
-    if (!items.length) return;
-    powerIndex = clamp(i, 0, items.length - 1);
-    const el = items[powerIndex];
-    items.forEach((x) => x.classList.remove("is-focused"));
-    el.classList.add("is-focused");
-    el.focus?.();
-  }
-
-  function openPowerMenu() {
-    if (!powerOverlay) return;
+  function showPowerMenu() {
+    if (!powerOverlay || state.poweredOff || state.sleeping || state.booting) return;
     state.powerMenuOpen = true;
-    setFocusContext("power", 0);
     powerOverlay.classList.add("is-active");
     powerOverlay.setAttribute("aria-hidden", "false");
-    setTimeout(() => setPowerFocus(0), 0);
+    setFocusContext("power");
+    powerIndex = 0;
+    updatePowerFocus();
+    uiSound.ok();
   }
 
-  function closePowerMenu() {
+  function hidePowerMenu() {
     if (!powerOverlay) return;
     state.powerMenuOpen = false;
     powerOverlay.classList.remove("is-active");
     powerOverlay.setAttribute("aria-hidden", "true");
-    // restore focus
-    setTimeout(() => {
-      if (state.currentScreen === "home") onEnterHome();
-      else syncNavUI();
-    }, 0);
+    // return focus to current screen context
+    if (state.currentScreen === "home") setFocusContext("home");
+    else if (state.currentScreen === "games") setFocusContext("games");
+    else if (state.currentScreen === "media") setFocusContext("media");
+    else if (state.currentScreen === "system") setFocusContext("system");
+    else if (state.currentScreen === "game-details") setFocusContext("details");
+    else if (state.currentScreen === "now-playing") setFocusContext("nowPlaying");
+    else if (state.currentScreen === "in-game") setFocusContext("inGame");
+
+    focusFirstInContext();
+    uiSound.back();
   }
 
-  function enterSleep() {
-    if (!sleepOverlay) return;
-    state.sleeping = true;
-    state.powerMenuOpen = false;
+  function updatePowerFocus() {
+    const items = getContextItems("power");
+    items.forEach((el, i) => el.classList.toggle("is-focused", i === powerIndex));
+    const el = items[powerIndex];
+    el?.focus?.();
+  }
 
-    powerOverlay?.classList.remove("is-active");
-    powerOverlay?.setAttribute("aria-hidden", "true");
+  function powerSelect() {
+    const items = getContextItems("power");
+    const el = items[powerIndex];
+    const action = el?.dataset?.power;
 
-    sleepOverlay.classList.add("is-active");
-    sleepOverlay.setAttribute("aria-hidden", "false");
+    if (!action) return;
 
-    uiSound.quit();
+    if (action === "sleep") {
+      uiSound.ok();
+      hidePowerMenu();
+      state.sleeping = true;
+      sleepOverlay?.classList.add("is-active");
+      sleepOverlay?.setAttribute("aria-hidden", "false");
+      return;
+    }
+
+    if (action === "restart") {
+      uiSound.launch();
+      location.reload();
+      return;
+    }
+
+    if (action === "off") {
+      uiSound.quit();
+      hidePowerMenu();
+      state.poweredOff = true;
+      offOverlay?.classList.add("is-active");
+      offOverlay?.setAttribute("aria-hidden", "false");
+      return;
+    }
   }
 
   function wakeFromSleep() {
-    if (!sleepOverlay) return;
     state.sleeping = false;
-
-    sleepOverlay.classList.remove("is-active");
-    sleepOverlay.setAttribute("aria-hidden", "true");
-
-    uiSound.launch();
-
-    setTimeout(() => {
-      if (state.currentScreen === "home") onEnterHome();
-      else syncNavUI();
-    }, 0);
+    sleepOverlay?.classList.remove("is-active");
+    sleepOverlay?.setAttribute("aria-hidden", "true");
+    showToast("Woke up");
+    uiSound.ok();
+    focusFirstInContext();
   }
 
-  function powerOff() {
-    if (!offOverlay) return;
-    state.poweredOff = true;
-    state.powerMenuOpen = false;
-
-    powerOverlay?.classList.remove("is-active");
-    powerOverlay?.setAttribute("aria-hidden", "true");
-
-    offOverlay.classList.add("is-active");
-    offOverlay.setAttribute("aria-hidden", "false");
-
-    uiSound.quit();
-  }
-
-  function powerOn() {
-    if (!offOverlay) return;
+  function powerOnFromOff() {
     state.poweredOff = false;
-
-    offOverlay.classList.remove("is-active");
-    offOverlay.setAttribute("aria-hidden", "true");
-
+    offOverlay?.classList.remove("is-active");
+    offOverlay?.setAttribute("aria-hidden", "true");
+    showToast("Power On");
     uiSound.launch();
     setActiveScreen("home", { pushHistory: false });
     onEnterHome();
   }
 
-  function selectPowerAction() {
-    const items = getPowerItems();
-    const item = items[powerIndex];
-    const action = item?.dataset?.power;
-    if (action === "sleep") enterSleep();
-    else if (action === "restart") location.reload();
-    else if (action === "off") powerOff();
+  // -------------------- System UI bindings --------------------
+  function bindSystemUI() {
+    clock12Btn?.addEventListener("click", () => (uiSound.ok(), setClockFormat(false)));
+    clock24Btn?.addEventListener("click", () => (uiSound.ok(), setClockFormat(true)));
+
+    soundOnBtn?.addEventListener("click", () => (uiSound.ok(), setSoundEnabled(true)));
+    soundOffBtn?.addEventListener("click", () => (uiSound.ok(), setSoundEnabled(false)));
+
+    volumeSlider?.addEventListener("input", (e) => setVolume(e.target.value));
+
+    motionOffBtn?.addEventListener("click", () => (uiSound.ok(), setReduceMotion(false)));
+    motionOnBtn?.addEventListener("click", () => (uiSound.ok(), setReduceMotion(true)));
+
+    contrastOffBtn?.addEventListener("click", () => (uiSound.ok(), setHighContrast(false)));
+    contrastOnBtn?.addEventListener("click", () => (uiSound.ok(), setHighContrast(true)));
+
+    themeDarkBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("dark")));
+    themeIceBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("ice")));
+    themeNeonBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("neon")));
   }
 
-  // -------------------- Nav click binding --------------------
-  function bindNavClicks() {
-    navItems.forEach((n) => {
-      n.addEventListener("click", () => {
-        if (shouldBlockGlobalInput()) return;
-        uiSound.ok();
-        const screen = n.dataset.screen;
-        if (screen) setActiveScreen(screen, { pushHistory: true });
-      });
-      n.addEventListener("focus", () => {
-        if (state.currentScreen === "home") return; // home keeps nav unfocused
-        setNavFocusByName(n.dataset.screen);
-        markFocused(n);
-        setFocusContext("nav", getNavOrder().indexOf(n.dataset.screen));
-      });
-    });
+  // -------------------- Screen enter helpers --------------------
+  function onEnterHome() {
+    // underline stays HOME anyway, focus first hero
+    setTimeout(() => {
+      const home = $(".home-screen");
+      const firstHero = $(".hero-btn", home);
+      firstHero?.focus?.();
+      markFocused(firstHero);
+    }, 0);
   }
 
-  // -------------------- Details buttons bind (Now Playing/InGame) --------------------
-  function bindNowPlayingButtons() {
-    resumeBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      // resume -> go back in-game
-      if (state.runningActiveId) openInGame(state.runningActiveId);
-      else showToast("Nothing running");
-    });
-
-    quitBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      quitRunningGame();
-    });
+  function onEnterGames() {
+    renderGamesGrid();
+    updateGamesFiltersUI();
+    setTimeout(() => focusFirstInContext(), 0);
   }
 
-  function bindInGameButtons() {
-    openNowPlayingBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      openNowPlaying();
-    });
-
-    quitFromGameBtn?.addEventListener("click", () => {
-      uiSound.ok();
-      quitRunningGame();
-    });
+  function onEnterMedia() {
+    setTimeout(() => focusFirstInContext(), 0);
   }
 
-  // -------------------- Keyboard (Single unified handler) --------------------
-  document.addEventListener("keydown", (e) => {
-    // PowerOff: only P turns on
-    if (state.poweredOff) {
-      if (e.key === "p" || e.key === "P") {
-        e.preventDefault();
-        powerOn();
-      }
-      return;
-    }
+  function onEnterSystem() {
+    applySoundUI();
+    applyVolumeUI();
+    applyClockFormat();
+    applyReduceMotion();
+    applyHighContrast();
+    applyTheme();
+    setTimeout(() => focusFirstInContext(), 0);
+  }
 
-    // Sleep: any key wakes
-    if (state.sleeping) {
-      e.preventDefault();
-      wakeFromSleep();
-      return;
-    }
-
-    // Boot: block input
-    if (state.booting) return;
-
-    // Power menu open: only handle inside it
-    if (state.powerMenuOpen) {
-      if (e.key === "p" || e.key === "P" || e.key === "Escape") {
-        e.preventDefault();
-        uiSound.back();
-        closePowerMenu();
-        return;
-      }
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        uiSound.move();
-        setPowerFocus(powerIndex + 1);
-        return;
-      }
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        uiSound.move();
-        setPowerFocus(powerIndex - 1);
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        uiSound.ok();
-        selectPowerAction();
-        return;
-      }
-      e.preventDefault();
-      return;
-    }
-
-    // Global: P open power menu
-    if (e.key === "p" || e.key === "P") {
-      if (isTypingContext() && !isVolumeSliderFocused()) return;
-      e.preventDefault();
-      uiSound.ok();
-      openPowerMenu();
-      return;
-    }
-
-    // Back
-    if (e.key === "Escape" || e.key === "Backspace") {
-      if (isTypingContext() && !isVolumeSliderFocused()) return;
-      e.preventDefault();
-      goBack();
-      return;
-    }
-
-    // M mute toggle / Shift+M open system on sound
-    if (e.key === "m" || e.key === "M") {
-      if (isTypingContext() && !isVolumeSliderFocused()) return;
-      e.preventDefault();
-      if (e.shiftKey) {
-        uiSound.ok();
-        openSystemOnSound();
-      } else {
-        toggleSound();
-      }
-      return;
-    }
-
-    // T toggle clock format
-    if (e.key === "t" || e.key === "T") {
-      if (isTypingContext() && !isVolumeSliderFocused()) return;
-      e.preventDefault();
-      uiSound.ok();
-      toggleClockFormat();
-      return;
-    }
-
-    // W / C header toggles
-    if (e.key === "w" || e.key === "W") {
-      if (isTypingContext() && !isVolumeSliderFocused()) return;
+  // -------------------- Global Click Delegation --------------------
+  document.addEventListener("click", (e) => {
+    // Header toggles
+    const wifiEl = e.target.closest("#wifiStatus");
+    if (wifiEl) {
       e.preventDefault();
       uiSound.move();
       toggleWifi();
       return;
     }
-    if (e.key === "c" || e.key === "C") {
-      if (isTypingContext() && !isVolumeSliderFocused()) return;
+
+    const ctrlEl = e.target.closest("#controllerStatus");
+    if (ctrlEl) {
       e.preventDefault();
       uiSound.move();
       toggleController();
       return;
     }
 
-    // System: volume slider arrows
-    if (
-      document.activeElement === volumeSlider &&
-      (e.key === "ArrowLeft" || e.key === "ArrowRight")
-    ) {
+    const sndEl = e.target.closest("#sndStatus");
+    if (sndEl) {
       e.preventDefault();
-      const delta = e.key === "ArrowRight" ? 2 : -2;
-      setVolume(state.settings.volume + delta);
+      toggleSound();
+      return;
+    }
+
+    const backEl = e.target.closest('[data-action="back"]');
+    if (backEl) {
+      e.preventDefault();
+      uiSound.back();
+      goBack();
+      return;
+    }
+  });
+
+  // -------------------- Keyboard Shortcuts (Console feel) --------------------
+  document.addEventListener("keydown", (e) => {
+    // Wake / power-on overrides
+    if (state.sleeping) {
+      wakeFromSleep();
+      return;
+    }
+    if (state.poweredOff) {
+      // only P wakes when off (console-like)
+      if (e.key.toLowerCase() === "p") powerOnFromOff();
+      return;
+    }
+
+    if (state.booting) return;
+
+    // Sound toggle (M)
+    if (!e.repeat && e.key.toLowerCase() === "m" && !e.shiftKey) {
+      if (isTypingContext()) return;
+      toggleSound();
+      uiSound.ok();
+      return;
+    }
+
+    // Shift+M => open System on sound
+    if (!e.repeat && e.key.toLowerCase() === "m" && e.shiftKey) {
+      if (isTypingContext()) return;
+      setActiveScreen("system", { pushHistory: true });
+      onEnterSystem();
+      setTimeout(() => soundOnBtn?.focus?.(), 0);
+      return;
+    }
+
+    // T => clock toggle
+    if (!e.repeat && e.key.toLowerCase() === "t") {
+      if (isTypingContext()) return;
+      setClockFormat(!state.settings.clock24);
       uiSound.move();
       return;
     }
 
-    // NAV keyboard when nav-item focused
-    const active = document.activeElement;
-    if (active && active.classList?.contains("nav-item")) {
-      if (isTypingContext() && !isVolumeSliderFocused()) return;
+    // W => wifi toggle
+    if (!e.repeat && e.key.toLowerCase() === "w") {
+      if (isTypingContext()) return;
+      toggleWifi();
+      uiSound.move();
+      return;
+    }
 
-      const order = getNavOrder();
-      const currentName = active.dataset.screen;
-      let i = order.indexOf(currentName);
-      if (i < 0) i = 0;
+    // C => controller toggle
+    if (!e.repeat && e.key.toLowerCase() === "c") {
+      if (isTypingContext()) return;
+      toggleController();
+      uiSound.move();
+      return;
+    }
 
-      if (e.key === "ArrowRight") {
+    // P => power menu toggle
+    if (!e.repeat && e.key.toLowerCase() === "p") {
+      if (state.powerMenuOpen) hidePowerMenu();
+      else showPowerMenu();
+      return;
+    }
+
+    // If power menu open => handle arrows/enter/esc
+    if (state.powerMenuOpen) {
+      const items = getContextItems("power");
+      if (!items.length) return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         e.preventDefault();
+        powerIndex = clamp(powerIndex - 1, 0, items.length - 1);
         uiSound.move();
-        i = (i + 1) % order.length;
-        focusNavDomByName(order[i]);
+        updatePowerFocus();
         return;
       }
-      if (e.key === "ArrowLeft") {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         e.preventDefault();
+        powerIndex = clamp(powerIndex + 1, 0, items.length - 1);
         uiSound.move();
-        i = (i - 1 + order.length) % order.length;
-        focusNavDomByName(order[i]);
+        updatePowerFocus();
         return;
       }
       if (e.key === "Enter") {
         e.preventDefault();
-        uiSound.ok();
-        if (currentName) setActiveScreen(currentName, { pushHistory: true });
+        powerSelect();
         return;
       }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        hidePowerMenu();
+        return;
+      }
+      return;
     }
 
-    // Games: L/R quick filter/sort while not typing search
-    if (state.currentScreen === "games") {
-      const si = $("#searchInput");
-      if (document.activeElement === si) {
-        // typing allowed
-      } else {
-        if (e.key === "l" || e.key === "L") {
-          e.preventDefault();
-          cycleFilter();
-          return;
-        }
-        if (e.key === "r" || e.key === "R") {
-          e.preventDefault();
-          cycleSort();
-          return;
-        }
-      }
-
-      // Enter on game card -> open details
-      if (e.key === "Enter") {
-        const onCard = document.activeElement?.classList?.contains("game-card");
-        if (onCard) {
-          e.preventDefault();
-          uiSound.ok();
-          const id = document.activeElement.dataset.id;
-          if (id) openGameDetails(id);
-          return;
-        }
-      }
-
-      // Arrow navigation inside grid
-      const cards = getGameCards();
-      if (
-        cards.length &&
-        document.activeElement?.classList?.contains("game-card")
-      ) {
-        const grid = $("#gamesGrid");
-        const style = grid ? getComputedStyle(grid) : null;
-        const cols = style ? style.gridTemplateColumns.split(" ").length : 4;
-        const idx = cards.indexOf(document.activeElement);
-
-        if (e.key === "ArrowRight") {
-          e.preventDefault();
-          uiSound.move();
-          focusGameByIndex(idx + 1);
-          return;
-        }
-        if (e.key === "ArrowLeft") {
-          e.preventDefault();
-          uiSound.move();
-          focusGameByIndex(idx - 1);
-          return;
-        }
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          uiSound.move();
-          focusGameByIndex(idx + cols);
-          return;
-        }
-        if (e.key === "ArrowUp") {
-          e.preventDefault();
-          uiSound.move();
-
-          if (idx < cols) {
-            // go to nav
-            focusNavDomByName(state.currentTab);
-            return;
-          }
-          focusGameByIndex(idx - cols);
-          return;
-        }
-      }
+    // Global Back: Esc
+    if (e.key === "Escape") {
+      if (isTypingContext()) return;
+      e.preventDefault();
+      uiSound.back();
+      goBack();
+      return;
     }
 
-    // Details screen: left/right between Play/Options/Uninstall (if visible)
-    if (state.currentScreen === "game-details") {
-      const uninstallBtn = $("#uninstallBtn");
-      const btns = [playBtn, optionsBtn, uninstallBtn].filter(
-        (b) => b && b.style.display !== "none"
-      );
+    // Focus movement (console style): arrows
+    if (isTypingContext()) {
+      // allow typing in inputs
+      return;
+    }
 
-      if (!btns.length) return;
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      uiSound.move();
+      moveFocus(-1);
+      return;
+    }
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      uiSound.move();
+      moveFocus(+1);
+      return;
+    }
 
-      const a = document.activeElement;
-      let i = btns.indexOf(a);
-      if (i < 0) {
-        btns[0].focus();
-        markFocused(btns[0]);
-        i = 0;
-      }
-
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        uiSound.move();
-        const ni = (i + 1) % btns.length;
-        btns[ni].focus();
-        markFocused(btns[ni]);
-        return;
-      }
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        uiSound.move();
-        const ni = (i - 1 + btns.length) % btns.length;
-        btns[ni].focus();
-        markFocused(btns[ni]);
-        return;
-      }
-      if (e.key === "Enter") {
+    if (e.key === "Enter") {
+      // simulate click on focused element
+      const items = getContextItems();
+      const el = items[state.focus.index];
+      if (el) {
         e.preventDefault();
         uiSound.ok();
-        a?.click?.();
-        return;
+        el.click?.();
       }
-    }
-
-    // Now playing screen: left/right between Resume/Quit
-    if (state.currentScreen === "now-playing") {
-      if (!resumeBtn || !quitBtn) return;
-      const btns = [resumeBtn, quitBtn];
-      const a = document.activeElement;
-      let i = btns.indexOf(a);
-      if (i < 0) {
-        resumeBtn.focus();
-        markFocused(resumeBtn);
-        i = 0;
-      }
-
-      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-        e.preventDefault();
-        uiSound.move();
-        const ni = i === 0 ? 1 : 0;
-        btns[ni].focus();
-        markFocused(btns[ni]);
-        return;
-      }
-
-      if (e.key === "Enter") {
-        e.preventDefault();
-        uiSound.ok();
-        document.activeElement?.click?.();
-        return;
-      }
-    }
-
-    // In-game screen: left/right between NowPlaying/Quit
-    if (state.currentScreen === "in-game") {
-      if (!openNowPlayingBtn || !quitFromGameBtn) return;
-      const btns = [openNowPlayingBtn, quitFromGameBtn];
-      const a = document.activeElement;
-      let i = btns.indexOf(a);
-      if (i < 0) {
-        openNowPlayingBtn.focus();
-        markFocused(openNowPlayingBtn);
-        i = 0;
-      }
-
-      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-        e.preventDefault();
-        uiSound.move();
-        const ni = i === 0 ? 1 : 0;
-        btns[ni].focus();
-        markFocused(btns[ni]);
-        return;
-      }
-
-      if (e.key === "Enter") {
-        e.preventDefault();
-        uiSound.ok();
-        document.activeElement?.click?.();
-        return;
-      }
-    }
-
-    // System screen: grid navigation (simple)
-    if (state.currentScreen === "system" && systemGrid) {
-      const cards = $$("[data-setting-card]", systemGrid);
-      if (!cards.length) return;
-
-      const a = document.activeElement;
-      const idx = cards.indexOf(a);
-
-      // if focus not on a card, force focus first
-      if (idx < 0 && (e.key.startsWith("Arrow") || e.key === "Enter")) {
-        e.preventDefault();
-        cards[0].focus();
-        markFocused(cards[0]);
-        return;
-      }
-
-      // navigation (2 columns if CSS grid is 2col, else approximate)
-      const style = getComputedStyle(systemGrid);
-      const cols = style ? style.gridTemplateColumns.split(" ").length : 2;
-
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        uiSound.move();
-        const ni = clamp(idx + 1, 0, cards.length - 1);
-        cards[ni].focus();
-        markFocused(cards[ni]);
-        return;
-      }
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        uiSound.move();
-        const ni = clamp(idx - 1, 0, cards.length - 1);
-        cards[ni].focus();
-        markFocused(cards[ni]);
-        return;
-      }
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        uiSound.move();
-        const ni = clamp(idx + cols, 0, cards.length - 1);
-        cards[ni].focus();
-        markFocused(cards[ni]);
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        uiSound.move();
-        if (idx < cols) {
-          focusNavDomByName(state.currentTab);
-          return;
-        }
-        const ni = clamp(idx - cols, 0, cards.length - 1);
-        cards[ni].focus();
-        markFocused(cards[ni]);
-        return;
-      }
-    }
-
-    // Home screen: left/right between context cards
-    if (state.currentScreen === "home") {
-      const home = $(".home-screen");
-      const cards = home ? $$(".context-card", home) : [];
-      if (!cards.length) return;
-
-      const a = document.activeElement;
-      let idx = cards.indexOf(a);
-      if (idx < 0) return;
-
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        uiSound.move();
-        idx = (idx + 1) % cards.length;
-        cards[idx].focus();
-        markFocused(cards[idx]);
-        setFocusContext("home", idx);
-        return;
-      }
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        uiSound.move();
-        idx = (idx - 1 + cards.length) % cards.length;
-        cards[idx].focus();
-        markFocused(cards[idx]);
-        setFocusContext("home", idx);
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        // home keeps nav unfocused; ignore
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        uiSound.ok();
-        a.click();
-        return;
-      }
-    }
-
-    // Media screen: left/right between media cards
-    if (state.currentScreen === "media") {
-      const media = $(".media-screen");
-      const cards = media ? $$(".media-card", media) : [];
-      if (!cards.length) return;
-
-      const a = document.activeElement;
-      let idx = cards.indexOf(a);
-      if (idx < 0) return;
-
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        uiSound.move();
-        idx = (idx + 1) % cards.length;
-        cards[idx].focus();
-        markFocused(cards[idx]);
-        return;
-      }
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        uiSound.move();
-        idx = (idx - 1 + cards.length) % cards.length;
-        cards[idx].focus();
-        markFocused(cards[idx]);
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        uiSound.move();
-        focusNavDomByName(state.currentTab);
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        uiSound.ok();
-        a.click();
-        return;
-      }
-    }
-
-    // Media overlay: Enter closes
-    if (mediaOverlay && mediaOverlay.style.display === "flex") {
-      if (e.key === "Enter" || e.key === "Escape") {
-        e.preventDefault();
-        uiSound.ok();
-        hideMediaOverlayIfOpen(true);
-        return;
-      }
+      return;
     }
   });
 
-  // -------------------- Init --------------------
+  // -------------------- Bind games filters buttons --------------------
+  function bindGamesUI() {
+    filterBtn?.addEventListener("click", () => cycleFilter());
+    sortBtn?.addEventListener("click", () => cycleSort());
+    applyFiltersBtn?.addEventListener("click", () => applyGamesFilters());
+    searchInput?.addEventListener("input", (e) => {
+      state.gamesUI.search = e.target.value || "";
+      renderGamesGrid();
+      updateGamesFiltersUI();
+    });
+  }
+
+  // -------------------- Buttons in now playing / in game --------------------
+  resumeBtn?.addEventListener("click", () => resumeGame());
+  quitBtn?.addEventListener("click", () => quitGame());
+  openNowPlayingBtn?.addEventListener("click", () => openNowPlaying());
+  quitFromGameBtn?.addEventListener("click", () => quitGame());
+
+  // -------------------- Initial Apply --------------------
   function init() {
-    // initial UI apply
-    applyWifiUI();
-    applyControllerUI();
-    bindHeaderToggleKeys();
-
-    applyTheme();
-    applyReduceMotion();
-    applyHighContrast();
-    applyClockUI();
-
+    // Apply settings to DOM
     applySoundUI();
     applyVolumeUI();
+    applyClockFormat();
+    applyReduceMotion();
+    applyHighContrast();
+    applyTheme();
 
-    // load games and UI
+    syncWifiUI();
+    syncControllerUI();
+    syncClock();
+
     loadGamesState();
-    injectGamesFiltersBar();
-    injectDetailsPanel();
-    renderGamesGrid();
-    updateGamesFiltersUI();
 
-    // binds
-    bindNavClicks();
+    bindNav();
     bindBackButtons();
-    bindHomeCards();
-    bindMediaCards();
+    bindGamesUI();
     bindSystemUI();
-    bindNowPlayingButtons();
-    bindInGameButtons();
 
-    // set initial screen to home but boot will reveal
-    setActiveScreen("home", { pushHistory: false });
-    renderHomeCards();
+    // Screen enter hooks
+    const onScreenChange = () => {
+      if (state.currentScreen === "home") onEnterHome();
+      if (state.currentScreen === "games") onEnterGames();
+      if (state.currentScreen === "media") onEnterMedia();
+      if (state.currentScreen === "system") onEnterSystem();
+    };
 
-    // run boot
+    // run boot then enter home
     runBootSequence();
+
+    // whenever screen changes via nav clicks we call onEnter* through setActiveScreen,
+    // but for safety keep this small observer:
+    const observer = new MutationObserver(() => onScreenChange());
+    screens.forEach((s) => observer.observe(s, { attributes: true, attributeFilter: ["class"] }));
   }
 
   init();

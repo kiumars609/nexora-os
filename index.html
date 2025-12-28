@@ -119,7 +119,7 @@
 
         <!-- GAMES -->
         <section class="screen games-screen">
-          <button class="back-btn" data-action="back">← Back</button>
+          <button class="back-btn" data-action="back" type="button">← Back</button>
 
           <div style="height: 24px"></div>
           <div class="games-title">GAMES LIBRARY</div>
@@ -144,7 +144,7 @@
 
         <!-- MEDIA -->
         <section class="screen media-screen">
-          <button class="back-btn" data-action="back">← Back</button>
+          <button class="back-btn" data-action="back" type="button">← Back</button>
 
           <div style="height: 24px"></div>
           <div class="games-title">MEDIA</div>
@@ -194,7 +194,7 @@
 
         <!-- SYSTEM -->
         <section class="screen system-screen">
-          <button class="back-btn" data-action="back">← Back</button>
+          <button class="back-btn" data-action="back" type="button">← Back</button>
 
           <div style="height: 24px"></div>
           <div class="games-title">SYSTEM</div>
@@ -279,10 +279,27 @@
             </div>
 
             <!-- Placeholder -->
-            <div class="context-card" tabindex="0">
+            <!-- Theme -->
+            <div class="setting-card" data-setting-card tabindex="0">
               <div class="context-title">Theme</div>
-              <div class="context-value">Default</div>
-              <div class="context-sub">Coming soon</div>
+              <div class="context-value" id="themeValue">Dark</div>
+              <div class="context-sub">Dark / Ice / Neon</div>
+
+              <div class="details-actions" style="margin-top: 12px">
+                <button
+                  class="hero-btn primary"
+                  id="themeDarkBtn"
+                  type="button"
+                >
+                  Dark
+                </button>
+                <button class="hero-btn" id="themeIceBtn" type="button">
+                  Ice
+                </button>
+                <button class="hero-btn" id="themeNeonBtn" type="button">
+                  Neon
+                </button>
+              </div>
             </div>
 
             <div class="context-card" tabindex="0">
@@ -295,7 +312,7 @@
 
         <!-- GAME DETAILS -->
         <section class="screen game-details-screen">
-          <button class="back-btn" data-action="back">← Back</button>
+          <button class="back-btn" data-action="back" type="button">← Back</button>
 
           <div style="height: 24px"></div>
           <div class="details-title" id="detailsTitle">GAME TITLE</div>
@@ -309,7 +326,7 @@
 
         <!-- NOW PLAYING -->
         <section class="screen now-playing-screen">
-          <button class="back-btn" data-action="back">← Back</button>
+          <button class="back-btn" data-action="back" type="button">← Back</button>
 
           <div style="height: 24px"></div>
 
@@ -324,7 +341,7 @@
 
         <!-- IN GAME -->
         <section class="screen in-game-screen">
-          <button class="back-btn" data-action="back">← Back</button>
+          <button class="back-btn" data-action="back" type="button">← Back</button>
 
           <div style="height: 24px"></div>
 
@@ -377,7 +394,12 @@
 
         <div class="power-options" id="powerOptions">
           <!-- Sleep -->
-          <button class="power-item power-option is-focused" data-power="sleep" tabindex="0" type="button">
+          <button
+            class="power-item power-option is-focused"
+            data-power="sleep"
+            tabindex="0"
+            type="button"
+          >
             <span class="p-icon" aria-hidden="true">
               <!-- Moon -->
               <svg viewBox="0 0 24 24" width="22" height="22">
@@ -396,7 +418,12 @@
           </button>
 
           <!-- Restart -->
-          <button class="power-item power-option" data-power="restart" tabindex="0" type="button">
+          <button
+            class="power-item power-option"
+            data-power="restart"
+            tabindex="0"
+            type="button"
+          >
             <span class="p-icon" aria-hidden="true">
               <!-- Restart -->
               <svg viewBox="0 0 24 24" width="22" height="22">
@@ -413,7 +440,12 @@
           </button>
 
           <!-- Power Off -->
-          <button class="power-item power-option danger" data-power="off" tabindex="0" type="button">
+          <button
+            class="power-item power-option danger"
+            data-power="off"
+            tabindex="0"
+            type="button"
+          >
             <span class="p-icon" aria-hidden="true">
               <!-- Power -->
               <svg viewBox="0 0 24 24" width="22" height="22">
