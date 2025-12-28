@@ -753,6 +753,24 @@
     });
   }
 
+  // -------------------- Covers (Internet) - migration safe --------------------
+  const COVER_LIBRARY = {
+    tlou2:
+      "https://cdn.cloudflare.steamstatic.com/steam/apps/253131/capsule_616x353.jpg",
+    gowr: "https://cdn.cloudflare.steamstatic.com/steam/apps/2322010/capsule_616x353.jpg",
+    sm2: "https://cdn.cloudflare.steamstatic.com/steam/apps/2651280/capsule_616x353.jpg",
+    horizon:
+      "https://cdn.cloudflare.steamstatic.com/steam/apps/1151640/capsule_616x353.jpg",
+    cyberpunk:
+      "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg",
+    eldenring:
+      "https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/capsule_616x353.jpg",
+    minecraft:
+      "https://cdn.cloudflare.steamstatic.com/steam/apps/1672970/capsule_616x353.jpg",
+    gtavi:
+      "https://images.unsplash.com/photo-1520975958225-5a3b8c3f7f76?auto=format&fit=crop&w=1400&q=70",
+  };
+
   // -------------------- Games Data --------------------
   function seedDefaultGames() {
     return [
@@ -833,6 +851,38 @@
       state.games = saved;
     } else {
       state.games = seedDefaultGames();
+      saveJson(STORAGE.games, state.games);
+    }
+  }
+
+  function migrateGameCoversIfNeeded() {
+    if (!Array.isArray(state.games) || !state.games.length) return;
+
+    let changed = false;
+
+    state.games = state.games.map((g) => {
+      const id = g?.id;
+      let cover = (g?.cover || "").trim();
+
+      const looksLocal =
+        cover.startsWith("assets/") ||
+        cover.startsWith("./") ||
+        cover.startsWith("../") ||
+        (cover.endsWith(".jpg") && !cover.startsWith("http"));
+
+      const missing = !cover;
+
+      if ((missing || looksLocal) && COVER_LIBRARY[id]) {
+        cover = COVER_LIBRARY[id];
+        changed = true;
+        return { ...g, cover };
+      }
+
+      // اگر id کاور خاصی نداشت، همون رو نگه دار (یا خالی)
+      return g;
+    });
+
+    if (changed) {
       saveJson(STORAGE.games, state.games);
     }
   }
@@ -1522,6 +1572,8 @@
     syncClock();
 
     loadGamesState();
+    migrateGameCoversIfNeeded();
+    renderGamesGrid();
 
     bindNav();
     bindBackButtons();

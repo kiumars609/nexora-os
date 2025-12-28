@@ -2183,3 +2183,12 @@ body.reduce-motion .game-card .gc-cover {
 .game-card.cover-failed .gc-chip {
   border-color: rgba(255, 77, 230, 0.22);
 }
+.game-card .gc-cover {
+  z-index: 0;
+}
+.game-card::after {
+  z-index: 1;
+}
+.game-card .gc-info {
+  z-index: 2;
+}
