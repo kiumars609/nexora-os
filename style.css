@@ -1810,3 +1810,125 @@ body.theme-pulse::before {
     opacity: 0.85;
   }
 }
+/* =========================
+   Games Cards - Next Gen (PS5+)
+   ========================= */
+
+#gamesGrid{
+  gap: 18px;
+}
+
+.game-card{
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(210,230,255,0.14);
+  background: rgba(255,255,255,0.02);
+  box-shadow: 0 26px 60px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.03);
+  backdrop-filter: blur(10px);
+
+  /* cinematic height */
+  min-height: 160px;
+
+  /* smooth */
+  transition: transform var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease);
+  transform: translate3d(0,0,0);
+}
+
+/* cover layer */
+.game-card .gc-cover{
+  position:absolute;
+  inset:0;
+  background-size: cover;
+  background-position: center;
+  filter: saturate(1.05) contrast(1.02);
+  transform: scale(1.06);
+  transition: transform var(--t-slow) var(--ease-soft), filter var(--t-slow) var(--ease-soft);
+}
+
+/* cinematic gradient + vignette */
+.game-card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(900px 360px at 50% 10%, rgba(255,255,255,0.10), transparent 62%),
+    radial-gradient(900px 360px at 50% 110%, rgba(0,0,0,0.78), rgba(0,0,0,0.35) 55%, transparent 75%),
+    linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.55));
+  pointer-events:none;
+}
+
+/* info bar */
+.game-card .gc-info{
+  position:absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 12px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap: 12px;
+  z-index: 2;
+}
+
+.game-card .gc-title{
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: 13px;
+  line-height: 1.15;
+  color: rgba(245,250,255,0.95);
+  text-shadow: 0 10px 20px rgba(0,0,0,0.55);
+  max-width: 78%;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+
+.game-card .gc-meta{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap: 6px;
+}
+
+.game-card .gc-chip{
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  border: 1px solid rgba(210,230,255,0.14);
+  background: rgba(255,255,255,0.02);
+  color: rgba(230,237,245,0.86);
+}
+
+.game-card .gc-chip.is-get{
+  opacity: .55;
+}
+
+/* focused = cinematic lift + glow + cover zoom */
+.game-card.is-focused{
+  border-color: rgba(124,195,255,0.42);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow:
+    0 0 0 3px rgba(124,195,255,0.45),
+    0 0 30px var(--glow),
+    0 30px 80px rgba(0,0,0,0.65) !important;
+}
+
+.game-card.is-focused .gc-cover{
+  transform: scale(1.12);
+  filter: saturate(1.15) contrast(1.06);
+}
+
+/* Parallax: CSS vars from JS */
+.game-card[data-parallax="1"] .gc-cover{
+  transform: translate3d(var(--px, 0px), var(--py, 0px), 0) scale(1.12);
+}
+
+/* Reduce motion respects */
+body.reduce-motion .game-card,
+body.reduce-motion .game-card .gc-cover{
+  transition: none !important;
+}
