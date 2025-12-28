@@ -1432,3 +1432,381 @@ body.reduce-motion .sleep-overlay,
 body.reduce-motion .off-overlay {
   backdrop-filter: none !important;
 }
+
+/* =========================
+   NEXORA NEXT-GEN THEME ENGINE
+   - PS5 vibe, but newer
+   - Aurora background + glass panels + edge glow
+   - Focus = console glow
+   - Works with reduce-motion + high-contrast
+   ========================= */
+
+/* ---------- Base tokens ---------- */
+:root {
+  /* layout */
+  --radius-xl: 26px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+
+  /* typography */
+  --text: rgba(235, 245, 255, 0.92);
+  --muted: rgba(235, 245, 255, 0.64);
+
+  /* surfaces */
+  --bg: #07080c;
+  --bg2: #05060a;
+  --panel: rgba(255, 255, 255, 0.03);
+  --panel2: rgba(255, 255, 255, 0.05);
+  --border: rgba(210, 230, 255, 0.14);
+
+  /* accents */
+  --accent: #7cc3ff; /* primary */
+  --accent2: #b8dcff; /* secondary */
+  --neon: #ff4de6; /* neon hint */
+  --ok: #8cff7a;
+
+  /* glow */
+  --glow: rgba(124, 195, 255, 0.42);
+  --glow2: rgba(184, 220, 255, 0.3);
+  --shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
+
+  /* motion */
+  --t-fast: 140ms;
+  --t-mid: 220ms;
+  --t-slow: 420ms;
+  --ease: cubic-bezier(0.2, 0.9, 0.2, 1);
+  --ease-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* ambient */
+  --aurora-a: rgba(124, 195, 255, 0.22);
+  --aurora-b: rgba(255, 77, 230, 0.12);
+  --aurora-c: rgba(169, 255, 107, 0.1);
+}
+
+/* ---------- Global background: aurora + subtle noise ---------- */
+body {
+  background: radial-gradient(
+      1200px 900px at 20% 10%,
+      rgba(124, 195, 255, 0.14),
+      transparent 60%
+    ),
+    radial-gradient(
+      1000px 700px at 80% 20%,
+      rgba(255, 77, 230, 0.1),
+      transparent 58%
+    ),
+    radial-gradient(
+      900px 700px at 55% 95%,
+      rgba(169, 255, 107, 0.08),
+      transparent 58%
+    ),
+    linear-gradient(180deg, var(--bg), var(--bg2));
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* aurora animated layer */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -40px;
+  z-index: -2;
+  background: radial-gradient(
+      700px 500px at 20% 30%,
+      var(--aurora-a),
+      transparent 65%
+    ),
+    radial-gradient(700px 500px at 85% 25%, var(--aurora-b), transparent 62%),
+    radial-gradient(900px 650px at 60% 95%, var(--aurora-c), transparent 66%);
+  filter: blur(18px);
+  transform: translate3d(0, 0, 0);
+  animation: nexora-aurora 14s var(--ease-soft) infinite alternate;
+  opacity: 0.85;
+}
+
+@keyframes nexora-aurora {
+  0% {
+    transform: translate3d(-12px, -10px, 0) scale(1.02);
+    opacity: 0.78;
+  }
+  50% {
+    transform: translate3d(10px, 6px, 0) scale(1.06);
+    opacity: 0.92;
+  }
+  100% {
+    transform: translate3d(-6px, 12px, 0) scale(1.03);
+    opacity: 0.82;
+  }
+}
+
+/* subtle noise overlay */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+}
+
+/* ---------- Glass panels + edges unify ---------- */
+.screen,
+.context-card,
+.setting-card,
+.media-card,
+.hero-btn,
+.power-modal,
+#loadingOverlay .loading-box,
+#bootScreen .boot-box {
+  border-radius: var(--radius-lg);
+}
+
+.context-card,
+.setting-card,
+.media-card,
+.power-modal,
+#loadingOverlay .loading-box,
+#bootScreen .boot-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+}
+
+/* premium edge highlight */
+.context-card::before,
+.setting-card::before,
+.media-card::before,
+.power-modal::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.02),
+    rgba(124, 195, 255, 0.12),
+    rgba(255, 77, 230, 0.07)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+/* ---------- Buttons: console feel ---------- */
+.hero-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(210, 230, 255, 0.16);
+  color: var(--text);
+  transition: transform var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+.hero-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(210, 230, 255, 0.26);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.hero-btn.primary {
+  border-color: rgba(124, 195, 255, 0.4);
+  box-shadow: 0 0 0 1px rgba(124, 195, 255, 0.18),
+    0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* ---------- Focus (console) ---------- */
+.is-focused {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08),
+    0 0 0 3px rgba(124, 195, 255, 0.5), 0 0 22px var(--glow),
+    0 18px 50px rgba(0, 0, 0, 0.55) !important;
+  transform: translateY(-1px) scale(1.01);
+  transition: transform var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
+}
+
+/* game cards: extra glow */
+.game-card.is-focused {
+  box-shadow: 0 0 0 2px rgba(124, 195, 255, 0.55), 0 0 28px var(--glow),
+    0 22px 55px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* ---------- Nav: PS-like underline + subtle glow ---------- */
+.nav-item {
+  transition: opacity var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease);
+  opacity: 0.8;
+}
+.nav-item.active {
+  opacity: 1;
+}
+.nav-item.is-focused {
+  opacity: 1;
+  transform: translateY(-1px);
+  text-shadow: 0 0 18px rgba(124, 195, 255, 0.32);
+}
+
+/* ---------- Screen transitions (new-gen) ---------- */
+.screen {
+  transition: opacity var(--t-mid) var(--ease),
+    transform var(--t-mid) var(--ease);
+  opacity: 0;
+  transform: translate3d(0, 10px, 0) scale(0.995);
+  will-change: opacity, transform;
+}
+.screen.is-active {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+/* Overlay transitions */
+#loadingOverlay.is-active,
+#powerOverlay.is-active,
+#sleepOverlay.is-active,
+#offOverlay.is-active,
+#bootScreen.is-active {
+  animation: nexora-fadeIn var(--t-mid) var(--ease) both;
+}
+@keyframes nexora-fadeIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* ---------- Status chips look ---------- */
+.status-item,
+.status-chip,
+#sndStatus,
+#wifiStatus,
+#controllerStatus {
+  border-radius: 999px;
+}
+#sndStatus,
+#wifiStatus,
+#controllerStatus {
+  border: 1px solid rgba(210, 230, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 6px 10px;
+  transition: opacity var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
+}
+#sndStatus.is-off,
+#wifiStatus.is-off,
+#controllerStatus.is-off {
+  opacity: 0.45;
+}
+
+/* ---------- High contrast mode (hard edge) ---------- */
+body.high-contrast {
+  --panel: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.28);
+  --text: rgba(255, 255, 255, 0.98);
+  --muted: rgba(255, 255, 255, 0.8);
+  --glow: rgba(255, 255, 255, 0.22);
+}
+body.high-contrast .hero-btn.primary {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---------- Reduce motion ---------- */
+body.reduce-motion * {
+  animation: none !important;
+  transition-duration: 1ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* =========================
+   THEMES
+   ========================= */
+
+/* DARK: futuristic calm (default) */
+body.theme-dark {
+  --bg: #07080c;
+  --bg2: #05060a;
+  --panel: rgba(255, 255, 255, 0.03);
+  --panel2: rgba(255, 255, 255, 0.05);
+  --border: rgba(210, 230, 255, 0.14);
+
+  --accent: #7cc3ff;
+  --accent2: #b8dcff;
+  --glow: rgba(124, 195, 255, 0.42);
+
+  --aurora-a: rgba(124, 195, 255, 0.22);
+  --aurora-b: rgba(255, 77, 230, 0.1);
+  --aurora-c: rgba(169, 255, 107, 0.08);
+}
+
+/* ICE: bright, clean, “glass” next-gen */
+body.theme-ice {
+  --bg: #06131d;
+  --bg2: #040b12;
+  --panel: rgba(180, 245, 255, 0.055);
+  --panel2: rgba(180, 245, 255, 0.08);
+  --border: rgba(170, 235, 255, 0.22);
+
+  --accent: #a6f0ff;
+  --accent2: #d6fbff;
+  --glow: rgba(166, 240, 255, 0.45);
+
+  --aurora-a: rgba(166, 240, 255, 0.26);
+  --aurora-b: rgba(124, 195, 255, 0.1);
+  --aurora-c: rgba(255, 255, 255, 0.06);
+}
+
+/* NEON: cyber / premium esports vibe */
+body.theme-neon {
+  --bg: #07040d;
+  --bg2: #05020a;
+  --panel: rgba(255, 255, 255, 0.03);
+  --panel2: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 77, 230, 0.22);
+
+  --accent: #ff4de6;
+  --accent2: #a9ff6b;
+  --glow: rgba(255, 77, 230, 0.5);
+
+  --aurora-a: rgba(255, 77, 230, 0.22);
+  --aurora-b: rgba(124, 195, 255, 0.1);
+  --aurora-c: rgba(169, 255, 107, 0.14);
+}
+
+/* ---------- Optional: neon highlights on primary buttons ---------- */
+body.theme-neon .hero-btn.primary {
+  border-color: rgba(255, 77, 230, 0.52);
+  box-shadow: 0 0 0 1px rgba(255, 77, 230, 0.18),
+    0 0 26px rgba(255, 77, 230, 0.22), 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+body.theme-ice .hero-btn.primary {
+  border-color: rgba(166, 240, 255, 0.52);
+  box-shadow: 0 0 0 1px rgba(166, 240, 255, 0.18),
+    0 0 26px rgba(166, 240, 255, 0.2), 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+body.theme-pulse::before {
+  animation: nexora-pulse 620ms var(--ease) 1;
+}
+@keyframes nexora-pulse {
+  0% {
+    filter: blur(22px) saturate(1);
+    opacity: 0.55;
+  }
+  40% {
+    filter: blur(16px) saturate(1.35);
+    opacity: 0.95;
+  }
+  100% {
+    filter: blur(18px) saturate(1.1);
+    opacity: 0.85;
+  }
+}
