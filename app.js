@@ -757,64 +757,72 @@
   function seedDefaultGames() {
     return [
       {
+        id: "eldenring",
+        title: "Elden Ring",
+        genre: "Soulslike",
+        installed: true,
+        size: 52.9,
+        lastPlayed: Date.now() - 1000 * 60 * 60 * 24 * 21,
+        cover:
+          "https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/capsule_616x353.jpg",
+        desc: "Become the Elden Lord.",
+      },
+      {
+        id: "cyberpunk",
+        title: "Cyberpunk 2077",
+        genre: "RPG",
+        installed: false,
+        size: 71.5,
+        lastPlayed: null,
+        cover:
+          "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg",
+        desc: "Night City never sleeps.",
+      },
+      {
+        id: "horizon",
+        title: "Horizon Zero Dawn",
+        genre: "Action Adventure",
+        installed: true,
+        size: 54.2,
+        lastPlayed: Date.now() - 1000 * 60 * 60 * 24 * 10,
+        cover:
+          "https://cdn.cloudflare.steamstatic.com/steam/apps/1151640/capsule_616x353.jpg",
+        desc: "Machines. Mystery. Survival.",
+      },
+
+      // ---- Temporary internet art (replace later with local covers) ----
+      {
         id: "tlou2",
         title: "The Last of Us Part II",
         genre: "Action",
         installed: true,
-        size: 86.4,
-        lastPlayed: now() - 1000 * 60 * 60 * 24 * 2,
-        cover: "assets/images/covers/tlou2.jpg",
+        size: 78.4,
+        lastPlayed: Date.now() - 1000 * 60 * 60 * 24 * 2,
+        cover:
+          "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1400&q=70",
         desc: "Survive. Adapt. Endure.",
-      },
-      {
-        id: "horizon",
-        title: "Horizon",
-        genre: "Adventure",
-        installed: true,
-        size: 54.1,
-        lastPlayed: now() - 1000 * 60 * 60 * 48,
-        cover: "assets/images/covers/horizon.jpg",
-        desc: "A wild world beyond.",
-      },
-      {
-        id: "cyberpunk",
-        title: "Cyberpunk",
-        genre: "RPG",
-        installed: false,
-        size: 0,
-        lastPlayed: 0,
-        cover: "assets/images/covers/cyberpunk.jpg",
-        desc: "Night City never sleeps.",
       },
       {
         id: "gtavi",
         title: "GTA VI",
         genre: "Open World",
         installed: false,
-        size: 0,
-        lastPlayed: 0,
-        cover: "assets/images/covers/gtavi.jpg",
-        desc: "Next-gen chaos.",
-      },
-      {
-        id: "eldenring",
-        title: "Elden Ring",
-        genre: "Soulslike",
-        installed: true,
-        size: 48.8,
-        lastPlayed: now() - 1000 * 60 * 60 * 24 * 12,
-        cover: "assets/images/covers/eldenring.jpg",
-        desc: "Rise, Tarnished.",
+        size: 110.0,
+        lastPlayed: null,
+        cover:
+          "https://images.unsplash.com/photo-1535223289827-42f1e9919769?auto=format&fit=crop&w=1400&q=70",
+        desc: "Next generation open world crime saga.",
       },
       {
         id: "minecraft",
         title: "Minecraft",
         genre: "Sandbox",
         installed: true,
-        size: 2.1,
-        lastPlayed: now() - 1000 * 60 * 60 * 240,
-        cover: "assets/images/covers/minecraft.jpg",
-        desc: "Build anything. Survive anywhere.",
+        size: 1.2,
+        lastPlayed: Date.now() - 1000 * 60 * 60 * 24 * 1,
+        cover:
+          "https://images.unsplash.com/photo-1611996575749-79a3a250f948?auto=format&fit=crop&w=1400&q=70",
+        desc: "Build. Mine. Survive. Create.",
       },
     ];
   }
@@ -849,6 +857,27 @@
     return list;
   }
 
+  function applyCardCover(coverEl, url, cardEl) {
+    // اگر اصلاً url نداریم
+    if (!url) {
+      cardEl?.classList.add("cover-failed");
+      return;
+    }
+
+    // تست لود شدن تصویر (اگر fail شد fallback)
+    const img = new Image();
+    img.referrerPolicy = "no-referrer"; // بعضی CDNها حساسن
+    img.onload = () => {
+      coverEl.style.backgroundImage = `url("${url}")`;
+      cardEl?.classList.remove("cover-failed");
+    };
+    img.onerror = () => {
+      cardEl?.classList.add("cover-failed");
+      coverEl.style.backgroundImage = ""; // بذار CSS fallback اعمال بشه
+    };
+    img.src = url;
+  }
+
   function renderGamesGrid() {
     if (!gamesGrid) return;
     const list = getVisibleGames();
@@ -872,7 +901,7 @@
           linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.35))`;
 
       btn.innerHTML = `
-  <span class="gc-cover" style='${coverStyle}' aria-hidden="true"></span>
+  <span class="gc-cover" aria-hidden="true"></span>
 
   <span class="gc-info">
     <span>
@@ -883,15 +912,18 @@
     </span>
 
     <span class="gc-meta">
-      <span class="gc-chip ${g.installed ? "" : "is-get"}">
-        ${g.installed ? "PLAY" : "GET"}
-      </span>
-      <span class="gc-chip" style="opacity:.7">
-        ${g.size ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB` : "--"}
-      </span>
+      <span class="gc-chip ${g.installed ? "" : "is-get"}">${
+        g.installed ? "PLAY" : "GET"
+      }</span>
+      <span class="gc-chip" style="opacity:.7">${
+        g.size ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB` : "--"
+      }</span>
     </span>
   </span>
 `;
+
+      const coverEl = btn.querySelector(".gc-cover");
+      applyCardCover(coverEl, g.cover, btn);
 
       btn.addEventListener("click", () => {
         uiSound.ok();
