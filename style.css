@@ -1373,3 +1373,51 @@ body.reduce-motion .boot-bar-fill {
     transform: none;
   }
 }
+/* =========================
+   Sleep / Power Off Overlays (FIX)
+   ========================= */
+.sleep-overlay,
+.off-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000000;
+  background: rgba(5, 6, 7, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.sleep-overlay.is-active,
+.off-overlay.is-active {
+  display: flex;
+}
+
+.sleep-text,
+.off-text {
+  text-align: center;
+}
+
+.sleep-title,
+.off-title {
+  color: #b8dcff;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.sleep-sub,
+.off-sub {
+  margin-top: 10px;
+  color: rgba(230, 237, 245, 0.7);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+/* Respect reduce motion */
+body.reduce-motion .sleep-overlay,
+body.reduce-motion .off-overlay {
+  backdrop-filter: none !important;
+}

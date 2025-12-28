@@ -41,6 +41,11 @@
     clockKey: "nexora_use24h", // "1" | "0"
     wifiKey: "nexora_wifi_on", // "1" | "0"
     controllerKey: "nexora_controller_on", // "1" | "0"
+
+    // ===== PATCH: new settings keys =====
+    volumeKey: "nexora_volume", // "0".."100"
+    reduceMotionKey: "nexora_reduce_motion", // "1" | "0"
+    contrastKey: "nexora_high_contrast", // "1" | "0"
   };
 
   function loadBool(key, defaultValue) {
@@ -58,6 +63,27 @@
     try {
       localStorage.setItem(key, value ? "1" : "0");
     } catch (_) {}
+  }
+
+  // ===== PATCH: load/save number + clamp =====
+  function loadNum(key, defaultValue) {
+    try {
+      const v = localStorage.getItem(key);
+      const n = parseInt(v ?? "", 10);
+      return Number.isFinite(n) ? n : defaultValue;
+    } catch (_) {
+      return defaultValue;
+    }
+  }
+
+  function saveNum(key, value) {
+    try {
+      localStorage.setItem(key, String(value));
+    } catch (_) {}
+  }
+
+  function clamp(n, min, max) {
+    return Math.max(min, Math.min(max, n));
   }
 
   // ==================== NAV helpers ====================
@@ -194,6 +220,66 @@
   let soundEnabled = loadBool(SETTINGS.soundKey, true);
   let sndStatusEl = null;
 
+  // ===== PATCH: Volume / Motion / Contrast =====
+  let masterVolume = clamp(loadNum(SETTINGS.volumeKey, 60), 0, 100);
+  let reduceMotion = loadBool(SETTINGS.reduceMotionKey, false);
+  let highContrast = loadBool(SETTINGS.contrastKey, false);
+
+  function applyReduceMotion() {
+    document.body.classList.toggle("reduce-motion", !!reduceMotion);
+
+    const v = document.getElementById("reduceMotionValue");
+    if (v) v.textContent = reduceMotion ? "ON" : "OFF";
+
+    const offBtn = document.getElementById("motionOffBtn");
+    const onBtn = document.getElementById("motionOnBtn");
+    if (offBtn && onBtn) {
+      offBtn.classList.toggle("primary", !reduceMotion);
+      onBtn.classList.toggle("primary", reduceMotion);
+    }
+  }
+
+  function applyHighContrast() {
+    document.body.classList.toggle("high-contrast", !!highContrast);
+
+    const v = document.getElementById("contrastValue");
+    if (v) v.textContent = highContrast ? "ON" : "OFF";
+
+    const offBtn = document.getElementById("contrastOffBtn");
+    const onBtn = document.getElementById("contrastOnBtn");
+    if (offBtn && onBtn) {
+      offBtn.classList.toggle("primary", !highContrast);
+      onBtn.classList.toggle("primary", highContrast);
+    }
+  }
+
+  function setReduceMotion(next) {
+    reduceMotion = !!next;
+    saveBool(SETTINGS.reduceMotionKey, reduceMotion);
+    applyReduceMotion();
+    syncSystemUI();
+    showToast(`Reduce Motion: ${reduceMotion ? "ON" : "OFF"}`);
+  }
+
+  function setHighContrast(next) {
+    highContrast = !!next;
+    saveBool(SETTINGS.contrastKey, highContrast);
+    applyHighContrast();
+    syncSystemUI();
+    showToast(`High Contrast: ${highContrast ? "ON" : "OFF"}`);
+  }
+
+  function setVolume(next) {
+    masterVolume = clamp(Number(next) || 0, 0, 100);
+    saveNum(SETTINGS.volumeKey, masterVolume);
+
+    const vv = document.getElementById("volumeValue");
+    if (vv) vv.textContent = String(masterVolume);
+
+    const vs = document.getElementById("volumeSlider");
+    if (vs) vs.value = String(masterVolume);
+  }
+
   function ensureAudio() {
     if (!soundEnabled) return null;
 
@@ -214,6 +300,10 @@
     const ctx = ensureAudio();
     if (!ctx) return;
 
+    // ===== PATCH: volume factor =====
+    const volFactor = clamp(masterVolume, 0, 100) / 100;
+    const finalVol = vol * volFactor;
+
     const t0 = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -222,7 +312,7 @@
     osc.frequency.setValueAtTime(freq, t0);
 
     gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(finalVol, t0 + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
 
     osc.connect(gain);
@@ -821,6 +911,16 @@
       soundOnBtn.classList.toggle("primary", soundEnabled);
       soundOffBtn.classList.toggle("primary", !soundEnabled);
     }
+
+    // ===== PATCH: Volume =====
+    const vv = document.getElementById("volumeValue");
+    if (vv) vv.textContent = String(masterVolume);
+    const vs = document.getElementById("volumeSlider");
+    if (vs) vs.value = String(masterVolume);
+
+    // ===== PATCH: Motion / Contrast =====
+    applyReduceMotion();
+    applyHighContrast();
   }
 
   function onEnterSystem() {
@@ -921,7 +1021,13 @@
       const sOn = e.target.closest("#soundOnBtn");
       const sOff = e.target.closest("#soundOffBtn");
 
-      if (c12 || c24 || sOn || sOff) {
+      // ===== PATCH: motion/contrast buttons =====
+      const mOff = e.target.closest("#motionOffBtn");
+      const mOn = e.target.closest("#motionOnBtn");
+      const hcOff = e.target.closest("#contrastOffBtn");
+      const hcOn = e.target.closest("#contrastOnBtn");
+
+      if (c12 || c24 || sOn || sOff || mOff || mOn || hcOff || hcOn) {
         e.preventDefault();
         e.stopPropagation();
         uiSound.ok();
@@ -930,6 +1036,13 @@
         if (c24) setClockFormat(true);
         if (sOn) setSoundEnabled(true);
         if (sOff) setSoundEnabled(false);
+
+        if (mOff) setReduceMotion(false);
+        if (mOn) setReduceMotion(true);
+        if (hcOff) setHighContrast(false);
+        if (hcOn) setHighContrast(true);
+
+        syncSystemUI();
         return;
       }
     }
@@ -1084,6 +1197,11 @@
     );
   }
 
+  // ===== PATCH: allow hotkeys when slider focused =====
+  function isVolumeSliderFocused() {
+    return document.activeElement?.id === "volumeSlider";
+  }
+
   // ====== POWER MENU / SLEEP / OFF keyboard handling ======
   document.addEventListener("keydown", (e) => {
     if (booting) return;
@@ -1108,7 +1226,7 @@
 
     // باز/بسته Power Menu با P
     if (e.key === "p" || e.key === "P") {
-      if (isTypingContext()) return;
+      if (isTypingContext() && !isVolumeSliderFocused()) return;
       e.preventDefault();
       if (powerMenuOpen) closePowerMenu();
       else openPowerMenu();
@@ -1152,7 +1270,7 @@
     if (powerMenuOpen || sleeping || poweredOff || booting) return;
     const active = document.activeElement;
     if (!active || !active.classList?.contains("nav-item")) return;
-    if (isTypingContext()) return;
+    if (isTypingContext() && !isVolumeSliderFocused()) return;
 
     const order = getNavOrder();
     if (!order.length) return;
@@ -1188,7 +1306,7 @@
   document.addEventListener("keydown", (e) => {
     if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (e.key !== "Escape" && e.key !== "Backspace") return;
-    if (isTypingContext()) return;
+    if (isTypingContext() && !isVolumeSliderFocused()) return;
     uiSound.back();
     goBack();
   });
@@ -1197,7 +1315,7 @@
   document.addEventListener("keydown", (e) => {
     if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (e.key !== "m" && e.key !== "M") return;
-    if (isTypingContext()) return;
+    if (isTypingContext() && !isVolumeSliderFocused()) return;
 
     e.preventDefault();
     if (e.shiftKey) {
@@ -1212,7 +1330,7 @@
   document.addEventListener("keydown", (e) => {
     if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (e.key !== "t" && e.key !== "T") return;
-    if (isTypingContext()) return;
+    if (isTypingContext() && !isVolumeSliderFocused()) return;
     e.preventDefault();
     uiSound.ok();
     toggleClockFormat();
@@ -1221,7 +1339,7 @@
   // W / C toggle wifi/controller
   document.addEventListener("keydown", (e) => {
     if (powerMenuOpen || sleeping || poweredOff || booting) return;
-    if (isTypingContext()) return;
+    if (isTypingContext() && !isVolumeSliderFocused()) return;
 
     if (e.key === "w" || e.key === "W") {
       e.preventDefault();
@@ -1257,7 +1375,7 @@
   document.addEventListener("keydown", (e) => {
     if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "games") return;
-    if (isTypingContext()) return;
+    if (isTypingContext() && !isVolumeSliderFocused()) return;
 
     const cards = getGameCards();
     if (!cards.length) return;
@@ -1316,7 +1434,7 @@
   document.addEventListener("keydown", (e) => {
     if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "game-details") return;
-    if (isTypingContext()) return;
+    if (isTypingContext() && !isVolumeSliderFocused()) return;
 
     const playBtn = document.getElementById("playBtn");
     const optionsBtn = document.getElementById("optionsBtn");
@@ -1357,7 +1475,7 @@
   document.addEventListener("keydown", (e) => {
     if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "in-game") return;
-    if (isTypingContext()) return;
+    if (isTypingContext() && !isVolumeSliderFocused()) return;
 
     const openBtn = document.getElementById("openNowPlayingBtn");
     const quitBtn = document.getElementById("quitFromGameBtn");
@@ -1398,7 +1516,7 @@
   document.addEventListener("keydown", (e) => {
     if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "now-playing") return;
-    if (isTypingContext()) return;
+    if (isTypingContext() && !isVolumeSliderFocused()) return;
 
     const resumeBtn = document.getElementById("resumeBtn");
     const quitBtn = document.getElementById("quitBtn");
@@ -1451,7 +1569,7 @@
   document.addEventListener("keydown", (e) => {
     if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "home") return;
-    if (isTypingContext()) return;
+    if (isTypingContext() && !isVolumeSliderFocused()) return;
 
     const heroBtns = getHomeHeroButtons();
     const navs = getHomeNavItems();
@@ -1541,7 +1659,7 @@
   document.addEventListener("keydown", (e) => {
     if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "media") return;
-    if (isTypingContext()) return;
+    if (isTypingContext() && !isVolumeSliderFocused()) return;
 
     const order = getNavOrder();
     const cards = getMediaCards();
@@ -1614,7 +1732,7 @@
   document.addEventListener("keydown", (e) => {
     if (powerMenuOpen || sleeping || poweredOff || booting) return;
     if (currentScreen !== "system") return;
-    if (isTypingContext()) return;
+    if (isTypingContext() && !isVolumeSliderFocused()) return;
 
     const order = getNavOrder();
     const cards = getSystemCards();
@@ -1699,6 +1817,15 @@
 
         if (focusedId === "soundOnBtn") setSoundEnabled(true);
         if (focusedId === "soundOffBtn") setSoundEnabled(false);
+
+        // ===== PATCH: motion/contrast via keyboard Enter =====
+        if (focusedId === "motionOffBtn") setReduceMotion(false);
+        if (focusedId === "motionOnBtn") setReduceMotion(true);
+
+        if (focusedId === "contrastOffBtn") setHighContrast(false);
+        if (focusedId === "contrastOnBtn") setHighContrast(true);
+
+        syncSystemUI();
       }
     }
   });
@@ -1729,6 +1856,30 @@
 
     // system ui sync
     syncSystemUI();
+
+    // ===== PATCH: Bind Volume Slider =====
+    const vs = document.getElementById("volumeSlider");
+    if (vs) {
+      vs.value = String(masterVolume);
+
+      vs.addEventListener("input", () => {
+        const v = clamp(parseInt(vs.value || "0", 10), 0, 100);
+        masterVolume = v;
+        saveNum(SETTINGS.volumeKey, masterVolume);
+
+        const vv = document.getElementById("volumeValue");
+        if (vv) vv.textContent = String(masterVolume);
+      });
+
+      vs.addEventListener("change", () => {
+        uiSound.ok();
+        showToast(`Volume: ${masterVolume}%`);
+      });
+    }
+
+    // apply stored modes once
+    applyReduceMotion();
+    applyHighContrast();
 
     // Boot
     runBootSequence();
