@@ -42,6 +42,7 @@ body.theme-neon {
   height: 100px;
   /* background-color: rgba(220, 235, 255, 0.12); */
   display: flex;
+  align-items: center;
 }
 /* Header - Left Side (Start) */
 .header-os .left-side {
@@ -49,6 +50,7 @@ body.theme-neon {
   height: 100%;
   padding: 10px 20px;
   display: flex;
+  align-items: center;
 }
 
 .header-os .left-side .user-info {
@@ -318,7 +320,7 @@ body.theme-neon {
 .screens {
   position: relative;
   width: 100%;
-  height: calc(100% - 100px); /* چون header 100px هست */
+  height: calc(100% - 100px - 70px); /* چون header 100px هست */
   overflow: hidden;
 }
 
@@ -501,7 +503,7 @@ body.theme-neon {
     inset 0 0 0 1px rgba(220, 235, 255, 0.06);
 }
 .screen {
-  overflow: auto;
+  overflow: hidden;
 }
 /* ===== NAV Focus (separate from active) ===== */
 .nav-item.is-focused {
@@ -902,7 +904,7 @@ body.theme-neon {
 .screens {
   position: relative;
   width: 100%;
-  height: calc(100% - 100px - 64px); /* header + nav */
+  height: calc(100% - 100px - 70px); /* header + nav */
   overflow: hidden;
 }
 
@@ -2278,4 +2280,94 @@ body.reduce-motion .game-card .gc-cover {
 }
 .gc-badge.is-store {
   opacity: 0.55;
+}
+.games-screen {
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+.games-screen::-webkit-scrollbar {
+  width: 0; /* Chrome */
+  height: 0;
+}
+/* =========================================
+   NEXORA OS - LAYOUT FIX PACK (PASTE AT END)
+   Fix: black bottom, header icons top, scrollbar
+   ========================================= */
+
+/* 1) Make the whole OS layout a column: Header + Nav + Screens */
+.main-os {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 2) Header: vertical centering + spacing */
+.header-os {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Ensure both sides are centered vertically */
+.header-os .left-side,
+.header-os .right-side {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+/* keep your row-reverse but center it */
+.header-os .right-side {
+  flex-direction: row-reverse;
+}
+
+/* os-info row should also be centered */
+.header-os .right-side .os-info {
+  display: flex;
+  align-items: center;
+}
+
+/* 3) Nav: remove old margin-top (you still have it in older block) */
+.nav {
+  margin-top: 0 !important;
+  flex: 0 0 64px; /* fixed nav height */
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 4) Screens: STOP using calc(...) – let flex do the math */
+.screens {
+  position: relative;
+  width: 100%;
+  flex: 1; /* take remaining height */
+  min-height: 0; /* CRITICAL: allows inner scrolling without breaking layout */
+  overflow: hidden;
+  background: rgba(
+    255,
+    255,
+    255,
+    0.01
+  ); /* prevents "raw black" feeling at the bottom */
+}
+
+/* 5) Screens/Pages: avoid page scrollbar on the OS container */
+.screen {
+  overflow: hidden;
+}
+
+/* If content is taller, scroll INSIDE the active screen (but hide scrollbar) */
+.screen.is-active {
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+.screen.is-active::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* 6) (Optional) If any child accidentally causes horizontal scroll */
+.screens,
+.screen {
+  overflow-x: hidden;
 }
