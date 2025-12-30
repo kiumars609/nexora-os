@@ -2371,3 +2371,85 @@ body.reduce-motion .game-card .gc-cover {
 .screen {
   overflow-x: hidden;
 }
+
+
+
+
+
+
+
+
+/* =========================
+   Nexora OS - app.js (FULL, FIXED)
+   - Boot + Power + Sleep/Off
+   - Central settings + localStorage
+   - Real clock + wifi/controller status
+   - Unified Focus Manager (contexts)
+   - Games library: data JSON + render + filters/sort/search
+   - Game details: play/options/install/uninstall
+   - Media placeholders
+   - Accessibility: aria-selected, aria-live updates
+   ========================= */
+
+
+
+/* ---------- Generic Overlay (Media / Quick Resume) ---------- */
+.overlay{
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0,0,0,.65);
+  z-index: 50;
+}
+.overlay.is-active{ display:flex; }
+.overlay-box{
+  width: min(560px, 92vw);
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(15,18,22,.95);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.55);
+  backdrop-filter: blur(10px);
+}
+.overlay-title{
+  font-size: 18px;
+  letter-spacing: .5px;
+  margin-bottom: 10px;
+}
+.overlay-body{
+  color: rgba(255,255,255,.85);
+  margin-bottom: 14px;
+}
+.overlay-actions{
+  display:flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* Quick Resume list */
+.qr-list{
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.qr-item{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 14px;
+  background: rgba(255,255,255,.04);
+}
+.qr-item.is-focused{
+  outline: 2px solid rgba(255,255,255,.35);
+  box-shadow: 0 0 0 6px rgba(255,255,255,.06);
+}
+.qr-meta{
+  font-size: 12px;
+  color: rgba(255,255,255,.65);
+}

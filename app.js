@@ -1,15 +1,3 @@
-/* =========================
-   Nexora OS - app.js (FULL, FIXED)
-   - Boot + Power + Sleep/Off
-   - Central settings + localStorage
-   - Real clock + wifi/controller status
-   - Unified Focus Manager (contexts)
-   - Games library: data JSON + render + filters/sort/search
-   - Game details: play/options/install/uninstall
-   - Media placeholders
-   - Accessibility: aria-selected, aria-live updates
-   ========================= */
-
 (() => {
   // -------------------- Helpers --------------------
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -95,6 +83,26 @@
   const controllerStatus = $("#controllerStatus");
 
   const toastEl = $("#toast");
+  // Media overlay
+  const mediaOverlay = $("#mediaOverlay");
+  const mediaOverlayTitle = $("#mediaOverlayTitle");
+  const mediaOverlayBody = $("#mediaOverlayBody");
+  const mediaOpenBtn = $("#mediaOpenBtn");
+  const mediaBackBtn = $("#mediaBackBtn");
+
+  // Quick Resume overlay
+  const quickResumeOverlay = $("#quickResumeOverlay");
+  const qrList = $("#qrList");
+  const qrCloseBtn = $("#qrCloseBtn");
+
+  // Home Quick Resume card
+  const quickResumeCard = $("#quickResumeCard");
+  const quickResumeValue = $("#quickResumeValue");
+
+  // Profile (System)
+  const xpValueEl = $("#xpValue");
+  const achValueEl = $("#achValue");
+  const achLastValueEl = $("#achLastValue");
 
   // Boot
   const bootScreen = $("#bootScreen");
@@ -173,6 +181,8 @@
   const state = {
     booting: true,
     powerMenuOpen: false,
+    mediaOverlayOpen: false,
+    quickResumeOpen: false,
     sleeping: false,
     poweredOff: false,
 
@@ -384,6 +394,7 @@
   function setTheme(next) {
     state.settings.theme = String(next || "dark");
     applyTheme();
+    updateProfileUI();
     showToast(`Theme: ${state.settings.theme.toUpperCase()}`);
   }
 
@@ -490,6 +501,206 @@
     loadingOverlay.setAttribute("aria-hidden", "true");
   }
 
+  // -------------------- Media Overlay --------------------
+  const MEDIA_CONTENT = {
+    music: {
+      title: "Music",
+      body: "A simple music hub. (Placeholder for now.)",
+    },
+    gallery: {
+      title: "Gallery",
+      body: "View screenshots / covers. (Placeholder for now.)",
+    },
+    streaming: {
+      title: "Streaming",
+      body: "Connect streaming apps. (Placeholder for now.)",
+    },
+    downloads: {
+      title: "Downloads",
+      body: "Manage downloaded media. (Placeholder for now.)",
+    },
+  };
+
+  const focusSnapshot = { ctx: "home", index: 0 };
+
+  function snapshotFocus() {
+    focusSnapshot.ctx = state.focus.context;
+    focusSnapshot.index = state.focus.index;
+  }
+  function restoreFocus() {
+    setFocusContext(focusSnapshot.ctx);
+    setFocusIndex(focusSnapshot.index);
+    const items = getContextItems(focusSnapshot.ctx);
+    focusEl(items[focusSnapshot.index]);
+  }
+
+  function openMediaOverlay(kind = "music") {
+    if (!mediaOverlay) return;
+    snapshotFocus();
+    const meta = MEDIA_CONTENT[kind] || { title: "Media", body: "Coming soon…" };
+    mediaOverlayTitle && (mediaOverlayTitle.textContent = meta.title);
+    mediaOverlayBody && (mediaOverlayBody.textContent = meta.body);
+
+    state.mediaOverlayOpen = true;
+    mediaOverlay.classList.add("is-active");
+    mediaOverlay.setAttribute("aria-hidden", "false");
+    setFocusContext("mediaOverlay");
+    setFocusIndex(0);
+    focusEl(mediaOpenBtn || mediaBackBtn);
+    uiSound.ok();
+  }
+
+  function closeMediaOverlay() {
+    if (!mediaOverlay) return;
+    state.mediaOverlayOpen = false;
+    mediaOverlay.classList.remove("is-active");
+    mediaOverlay.setAttribute("aria-hidden", "true");
+    restoreFocus();
+    uiSound.back();
+  }
+
+  // -------------------- Quick Resume --------------------
+  function saveQuickResume() {
+    saveJson(STORAGE.quickResume, state.quickResume);
+    updateQuickResumeUI();
+  }
+
+  function updateQuickResume(gameId) {
+    const ts = now();
+    const existing = state.quickResume.find((g) => g.id === gameId);
+    if (existing) existing.ts = ts;
+    else state.quickResume.unshift({ id: gameId, ts });
+    // keep max 5
+    state.quickResume = state.quickResume
+      .sort((a, b) => (b.ts || 0) - (a.ts || 0))
+      .slice(0, 5);
+    saveQuickResume();
+  }
+
+  function formatAgo(ts) {
+    const diff = Math.max(0, Date.now() - ts);
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return "just now";
+    if (min < 60) return `${min}m ago`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    return `${d}d ago`;
+  }
+
+  function updateQuickResumeUI() {
+    // Home card number
+    if (quickResumeValue) {
+      const n = state.quickResume?.length || 0;
+      quickResumeValue.textContent = n === 1 ? "1 Game" : `${n} Games`;
+    }
+
+    // System profile
+    updateProfileUI();
+
+    // overlay list (if open)
+    if (state.quickResumeOpen) renderQuickResumeList();
+  }
+
+  function renderQuickResumeList() {
+    if (!qrList) return;
+    qrList.innerHTML = "";
+    const items = state.quickResume || [];
+    if (!items.length) {
+      const empty = document.createElement("div");
+      empty.className = "qr-meta";
+      empty.textContent = "No suspended games.";
+      qrList.appendChild(empty);
+      return;
+    }
+    items.forEach((it, idx) => {
+      const game = state.games.find((g) => g.id === it.id);
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "qr-item";
+      row.setAttribute("role", "option");
+      row.setAttribute("aria-selected", idx === state.focus.index ? "true" : "false");
+      row.innerHTML = `
+        <div>
+          <div>${game ? game.title : it.id}</div>
+          <div class="qr-meta">${formatAgo(it.ts || Date.now())}</div>
+        </div>
+        <div class="qr-meta">Resume</div>
+      `;
+      row.addEventListener("click", () => resumeFromQuickResume(idx));
+      qrList.appendChild(row);
+    });
+  }
+
+  function openQuickResumeOverlay() {
+    if (!quickResumeOverlay) return;
+    snapshotFocus();
+    state.quickResumeOpen = true;
+    quickResumeOverlay.classList.add("is-active");
+    quickResumeOverlay.setAttribute("aria-hidden", "false");
+    setFocusContext("quickResume");
+    setFocusIndex(0);
+    renderQuickResumeList();
+    // focus first item or close
+    const first = qrList?.querySelector(".qr-item");
+    focusEl(first || qrCloseBtn);
+    uiSound.ok();
+  }
+
+  function closeQuickResumeOverlay() {
+    if (!quickResumeOverlay) return;
+    state.quickResumeOpen = false;
+    quickResumeOverlay.classList.remove("is-active");
+    quickResumeOverlay.setAttribute("aria-hidden", "true");
+    restoreFocus();
+    uiSound.back();
+  }
+
+  function resumeFromQuickResume(index) {
+    const items = state.quickResume || [];
+    const it = items[index];
+    if (!it) return;
+    const game = state.games.find((g) => g.id === it.id);
+    if (!game) return;
+
+    closeQuickResumeOverlay();
+
+    // resume into in-game directly
+    state.runningGameId = game.id;
+    setActiveScreen("inGame", { pushHistory: true });
+    updateInGameUI();
+    showToast(`Resumed: ${game.title}`);
+    uiSound.launch();
+  }
+
+  // -------------------- Achievements --------------------
+  function saveAchievements() {
+    saveJson(STORAGE.achievements, state.achievements);
+    updateProfileUI();
+  }
+
+  function unlockAchievement(key, label) {
+    if (!key) return;
+    const exists = (state.achievements || []).some((a) => a.key === key);
+    if (exists) return;
+
+    const entry = { key, label, ts: now() };
+    state.achievements = [entry, ...(state.achievements || [])].slice(0, 50);
+    saveAchievements();
+    showToast(`Achievement unlocked: ${label}`);
+    uiSound.ok();
+  }
+
+  function updateProfileUI() {
+    if (xpValueEl) xpValueEl.textContent = String(state.xp || 0);
+    if (achValueEl) achValueEl.textContent = String((state.achievements || []).length);
+    if (achLastValueEl) {
+      const last = (state.achievements || [])[0];
+      achLastValueEl.textContent = last?.label || "—";
+    }
+  }
+
+
   // -------------------- Routing / Screens --------------------
   function screenNameOf(el) {
     if (!el) return null;
@@ -585,10 +796,22 @@
 
   function markFocused(el) {
     if (!el) return;
+
+    // remove visual focus from anything else
     clearAllFocusClasses();
     el.classList.add("is-focused");
-    if (el.classList.contains("nav-item"))
+
+    // keep ARIA selection consistent (only one selected tab)
+    if (el.classList.contains("nav-item")) {
+      navItems.forEach((n) => n.setAttribute("aria-selected", "false"));
       el.setAttribute("aria-selected", "true");
+    } else {
+      // when focus leaves nav, ensure tabs remain "selected" based on active tab
+      navItems.forEach((n) => {
+        const isActive = n.classList.contains("active");
+        n.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+    }
   }
 
   function focusEl(el) {
@@ -605,6 +828,15 @@
 
   function getContextItems(ctx = state.focus.context) {
     if (ctx === "nav") return navItems;
+
+    if (ctx === "mediaOverlay") {
+      return [mediaOpenBtn, mediaBackBtn].filter(Boolean);
+    }
+
+    if (ctx === "quickResume") {
+      const items = qrList ? $$(".qr-item", qrList) : [];
+      return [...items, qrCloseBtn].filter(Boolean);
+    }
 
     if (ctx === "home") {
       const home = $(".home-screen");
@@ -1133,6 +1365,8 @@
         // Launch game
         uiSound.launch();
         state.runningGameId = game.id;
+        updateQuickResume(game.id);
+        unlockAchievement(`FIRST_LAUNCH_${game.id}`, `First launch: ${game.title}`);
 
         // XP tick
         state.xp += 15;
@@ -1350,6 +1584,7 @@
 
   // -------------------- Screen enter helpers --------------------
   function onEnterHome() {
+    updateQuickResumeUI();
     // underline stays HOME anyway, focus first hero
     setTimeout(() => {
       const home = $(".home-screen");
@@ -1477,8 +1712,91 @@
       return;
     }
 
+
+    // If Media overlay open => trap focus + controls
+    if (state.mediaOverlayOpen) {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeMediaOverlay();
+        return;
+      }
+      const items = getContextItems("mediaOverlay");
+      if (!items.length) return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setFocusIndex(clamp(state.focus.index - 1, 0, items.length - 1));
+        uiSound.move();
+        focusEl(items[state.focus.index]);
+        return;
+      }
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        setFocusIndex(clamp(state.focus.index + 1, 0, items.length - 1));
+        uiSound.move();
+        focusEl(items[state.focus.index]);
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (state.focus.index === 0) mediaOpenBtn?.click();
+        else mediaBackBtn?.click();
+        return;
+      }
+      return;
+    }
+
+    // If Quick Resume overlay open => trap focus + controls
+    if (state.quickResumeOpen) {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeQuickResumeOverlay();
+        return;
+      }
+      const items = getContextItems("quickResume");
+      if (!items.length) return;
+
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setFocusIndex(clamp(state.focus.index - 1, 0, items.length - 1));
+        uiSound.move();
+        focusEl(items[state.focus.index]);
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setFocusIndex(clamp(state.focus.index + 1, 0, items.length - 1));
+        uiSound.move();
+        focusEl(items[state.focus.index]);
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const idx = Math.min(state.focus.index, (state.quickResume?.length || 0) - 1);
+        if ((state.quickResume?.length || 0) === 0) {
+          closeQuickResumeOverlay();
+        } else if (idx >= 0) {
+          resumeFromQuickResume(idx);
+        }
+        return;
+      }
+      return;
+    }
+
     // If power menu open => handle arrows/enter/esc
     if (state.powerMenuOpen) {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        return;
+      }
       const items = getContextItems("power");
       if (!items.length) return;
 
@@ -1568,7 +1886,35 @@
   openNowPlayingBtn?.addEventListener("click", () => openNowPlaying());
   quitFromGameBtn?.addEventListener("click", () => quitGame());
 
-  // -------------------- Initial Apply --------------------
+  
+  // -------------------- Media cards / overlays --------------------
+  $$(".media-card").forEach((card) => {
+    card.addEventListener("click", () => openMediaOverlay(card.dataset.media));
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openMediaOverlay(card.dataset.media);
+      }
+    });
+  });
+
+  mediaBackBtn?.addEventListener("click", () => closeMediaOverlay());
+  mediaOpenBtn?.addEventListener("click", () => {
+    showToast("Opening… (placeholder)");
+    closeMediaOverlay();
+  });
+
+  // -------------------- Quick Resume --------------------
+  quickResumeCard?.addEventListener("click", () => openQuickResumeOverlay());
+  quickResumeCard?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openQuickResumeOverlay();
+    }
+  });
+
+  qrCloseBtn?.addEventListener("click", () => closeQuickResumeOverlay());
+// -------------------- Initial Apply --------------------
   function init() {
     // Apply settings to DOM
     applySoundUI();
@@ -1583,6 +1929,8 @@
     syncClock();
 
     loadGamesState();
+    updateQuickResumeUI();
+    updateProfileUI();
     migrateGameCoversIfNeeded();
     renderGamesGrid();
 

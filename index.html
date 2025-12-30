@@ -76,17 +76,17 @@
       <!-- Header -->
 
       <!-- GLOBAL NAV (برای همه صفحات) -->
-      <nav class="nav" aria-label="Main navigation">
-        <div class="nav-item active" data-screen="home" tabindex="0">HOME</div>
-        <div class="nav-item" data-screen="games" tabindex="0">GAMES</div>
-        <div class="nav-item" data-screen="media" tabindex="0">MEDIA</div>
-        <div class="nav-item" data-screen="system" tabindex="0">SYSTEM</div>
+      <nav class="nav" aria-label="Main navigation" role="tablist">
+        <button class="nav-item active" data-screen="home" type="button" role="tab" aria-controls="homePanel" aria-selected="true">HOME</button>
+        <button class="nav-item" data-screen="games" type="button" role="tab" aria-controls="gamesPanel" aria-selected="false">GAMES</button>
+        <button class="nav-item" data-screen="media" type="button" role="tab" aria-controls="mediaPanel" aria-selected="false">MEDIA</button>
+        <button class="nav-item" data-screen="system" type="button" role="tab" aria-controls="systemPanel" aria-selected="false">SYSTEM</button>
       </nav>
 
       <!-- Screens -->
       <section class="screens">
         <!-- HOME -->
-        <section class="screen home-screen is-active">
+        <section class="screen home-screen is-active" id="homePanel" role="tabpanel" aria-label="Home">
           <!-- Hero -->
           <section class="hero">
             <div class="hero-title">The Last of Us Part 2</div>
@@ -98,9 +98,9 @@
 
           <!-- Context Cards -->
           <section class="context-cards">
-            <div class="context-card" tabindex="0">
+            <div class="context-card" tabindex="0" id="quickResumeCard">
               <div class="context-title">Quick Resume</div>
-              <div class="context-value">2 Games</div>
+              <div class="context-value"><span id="quickResumeValue">2 Games</span></div>
               <div class="context-sub">Ready to play</div>
             </div>
 
@@ -125,7 +125,7 @@
         </section>
 
         <!-- GAMES -->
-        <section class="screen games-screen">
+        <section class="screen games-screen" id="gamesPanel" role="tabpanel" aria-label="Games">
           <button class="back-btn" data-action="back" type="button">
             ← Back
           </button>
@@ -152,7 +152,7 @@
         </section>
 
         <!-- MEDIA -->
-        <section class="screen media-screen">
+        <section class="screen media-screen" id="mediaPanel" role="tabpanel" aria-label="Media">
           <button class="back-btn" data-action="back" type="button">
             ← Back
           </button>
@@ -204,7 +204,7 @@
         </section>
 
         <!-- SYSTEM -->
-        <section class="screen system-screen">
+        <section class="screen system-screen" id="systemPanel" role="tabpanel" aria-label="System">
           <button class="back-btn" data-action="back" type="button">
             ← Back
           </button>
@@ -510,4 +510,30 @@
 
     <script src="./app.js"></script>
   </body>
-</html>
+</html
+      <!-- Media Overlay -->
+      <div class="overlay" id="mediaOverlay" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="overlay-box">
+          <div class="overlay-title" id="mediaOverlayTitle">Media</div>
+          <div class="overlay-body" id="mediaOverlayBody">Coming soon…</div>
+          <div class="overlay-actions">
+            <button class="hero-btn primary" id="mediaOpenBtn">Open</button>
+            <button class="hero-btn" id="mediaBackBtn">Back</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Resume Overlay -->
+      <div class="overlay" id="quickResumeOverlay" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="overlay-box">
+          <div class="overlay-title">Quick Resume</div>
+          <div class="overlay-body">
+            <div class="qr-list" id="qrList" role="listbox" aria-label="Suspended games"></div>
+          </div>
+          <div class="overlay-actions">
+            <button class="hero-btn" id="qrCloseBtn">Back</button>
+          </div>
+        </div>
+      </div>
+
+>
