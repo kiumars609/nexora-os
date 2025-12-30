@@ -537,7 +537,10 @@
   function openMediaOverlay(kind = "music") {
     if (!mediaOverlay) return;
     snapshotFocus();
-    const meta = MEDIA_CONTENT[kind] || { title: "Media", body: "Coming soon…" };
+    const meta = MEDIA_CONTENT[kind] || {
+      title: "Media",
+      body: "Coming soon…",
+    };
     mediaOverlayTitle && (mediaOverlayTitle.textContent = meta.title);
     mediaOverlayBody && (mediaOverlayBody.textContent = meta.body);
 
@@ -619,7 +622,10 @@
       row.type = "button";
       row.className = "qr-item";
       row.setAttribute("role", "option");
-      row.setAttribute("aria-selected", idx === state.focus.index ? "true" : "false");
+      row.setAttribute(
+        "aria-selected",
+        idx === state.focus.index ? "true" : "false"
+      );
       row.innerHTML = `
         <div>
           <div>${game ? game.title : it.id}</div>
@@ -693,13 +699,13 @@
 
   function updateProfileUI() {
     if (xpValueEl) xpValueEl.textContent = String(state.xp || 0);
-    if (achValueEl) achValueEl.textContent = String((state.achievements || []).length);
+    if (achValueEl)
+      achValueEl.textContent = String((state.achievements || []).length);
     if (achLastValueEl) {
       const last = (state.achievements || [])[0];
       achLastValueEl.textContent = last?.label || "—";
     }
   }
-
 
   // -------------------- Routing / Screens --------------------
   function screenNameOf(el) {
@@ -1366,7 +1372,10 @@
         uiSound.launch();
         state.runningGameId = game.id;
         updateQuickResume(game.id);
-        unlockAchievement(`FIRST_LAUNCH_${game.id}`, `First launch: ${game.title}`);
+        unlockAchievement(
+          `FIRST_LAUNCH_${game.id}`,
+          `First launch: ${game.title}`
+        );
 
         // XP tick
         state.xp += 15;
@@ -1712,7 +1721,6 @@
       return;
     }
 
-
     // If Media overlay open => trap focus + controls
     if (state.mediaOverlayOpen) {
       if (e.key === "Tab") {
@@ -1780,7 +1788,10 @@
       }
       if (e.key === "Enter") {
         e.preventDefault();
-        const idx = Math.min(state.focus.index, (state.quickResume?.length || 0) - 1);
+        const idx = Math.min(
+          state.focus.index,
+          (state.quickResume?.length || 0) - 1
+        );
         if ((state.quickResume?.length || 0) === 0) {
           closeQuickResumeOverlay();
         } else if (idx >= 0) {
@@ -1886,7 +1897,6 @@
   openNowPlayingBtn?.addEventListener("click", () => openNowPlaying());
   quitFromGameBtn?.addEventListener("click", () => quitGame());
 
-  
   // -------------------- Media cards / overlays --------------------
   $$(".media-card").forEach((card) => {
     card.addEventListener("click", () => openMediaOverlay(card.dataset.media));
@@ -1914,7 +1924,7 @@
   });
 
   qrCloseBtn?.addEventListener("click", () => closeQuickResumeOverlay());
-// -------------------- Initial Apply --------------------
+  // -------------------- Initial Apply --------------------
   function init() {
     // Apply settings to DOM
     applySoundUI();
