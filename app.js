@@ -177,6 +177,11 @@
   const themeIceBtn = $("#themeIceBtn");
   const themeNeonBtn = $("#themeNeonBtn");
 
+  const themeAuroraBtn = $("#themeAuroraBtn");
+  const themeLavaBtn = $("#themeLavaBtn");
+  const themeSakuraBtn = $("#themeSakuraBtn");
+  const themeFrostBtn = $("#themeFrostBtn");
+
   // -------------------- Central State --------------------
   const state = {
     booting: true,
@@ -340,7 +345,15 @@
   }
 
   function applyTheme() {
-    document.body.classList.remove("theme-dark", "theme-ice", "theme-neon");
+    document.body.classList.remove(
+      "theme-dark",
+      "theme-ice",
+      "theme-neon",
+      "theme-aurora",
+      "theme-lava",
+      "theme-sakura",
+      "theme-frost"
+    );
     const t = state.settings.theme || "dark";
     document.body.classList.add(`theme-${t}`);
 
@@ -356,6 +369,10 @@
     themeDarkBtn?.classList.toggle("primary", t === "dark");
     themeIceBtn?.classList.toggle("primary", t === "ice");
     themeNeonBtn?.classList.toggle("primary", t === "neon");
+    themeAuroraBtn?.classList.toggle("primary", t === "aurora");
+    themeLavaBtn?.classList.toggle("primary", t === "lava");
+    themeSakuraBtn?.classList.toggle("primary", t === "sakura");
+    themeFrostBtn?.classList.toggle("primary", t === "frost");
   }
 
   function setSoundEnabled(v) {
@@ -1588,6 +1605,22 @@
     themeNeonBtn?.addEventListener(
       "click",
       () => (uiSound.ok(), setTheme("neon"))
+    );
+    themeAuroraBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("aurora"))
+    );
+    themeLavaBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("lava"))
+    );
+    themeSakuraBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("sakura"))
+    );
+    themeFrostBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("frost"))
     );
   }
 

@@ -1794,6 +1794,69 @@ body.theme-neon {
   --aurora-c: rgba(169, 255, 107, 0.14);
 }
 
+/* ✅ THEMES NEW (مثل قبلی‌ها دقیقاً) */
+body.theme-aurora {
+  --bg: #040b14;
+  --bg2: #02060d;
+  --panel: rgba(255, 255, 255, 0.03);
+  --panel2: rgba(255, 255, 255, 0.055);
+  --border: rgba(120, 255, 220, 0.18);
+  --accent: #59f7c4;
+  --accent2: #c9fff2;
+  --glow: rgba(89, 247, 196, 0.45);
+  --glow2: rgba(201, 255, 242, 0.24);
+  --aurora-a: rgba(89, 247, 196, 0.16);
+  --aurora-b: rgba(124, 195, 255, 0.12);
+  --aurora-c: rgba(169, 255, 107, 0.08);
+}
+
+body.theme-lava {
+  --bg: #120302;
+  --bg2: #070101;
+  --panel: rgba(255, 170, 120, 0.045);
+  --panel2: rgba(255, 170, 120, 0.07);
+  --border: rgba(255, 120, 70, 0.22);
+  --accent: #ff5722;
+  --accent2: #ffd1c2;
+  --glow: rgba(255, 87, 34, 0.48);
+  --glow2: rgba(255, 209, 194, 0.22);
+  --aurora-a: rgba(255, 87, 34, 0.18);
+  --aurora-b: rgba(255, 170, 90, 0.12);
+  --aurora-c: rgba(255, 240, 170, 0.06);
+}
+
+body.theme-sakura {
+  --bg: #140610;
+  --bg2: #09020a;
+  --panel: rgba(255, 170, 205, 0.045);
+  --panel2: rgba(255, 170, 205, 0.07);
+  --border: rgba(255, 123, 176, 0.22);
+  --accent: #ff7bb0;
+  --accent2: #ffe0ec;
+  --glow: rgba(255, 123, 176, 0.48);
+  --glow2: rgba(255, 224, 236, 0.22);
+  --aurora-a: rgba(255, 123, 176, 0.16);
+  --aurora-b: rgba(124, 195, 255, 0.1);
+  --aurora-c: rgba(255, 220, 240, 0.08);
+}
+
+body.theme-frost {
+  --text: rgba(10, 31, 68, 0.92);
+  --muted: rgba(10, 31, 68, 0.62);
+  --bg: #f2f7ff;
+  --bg2: #e7f0ff;
+  --panel: rgba(0, 20, 50, 0.045);
+  --panel2: rgba(0, 20, 50, 0.06);
+  --border: rgba(0, 40, 90, 0.14);
+  --accent: #3f8cff;
+  --accent2: #0a1f44;
+  --glow: rgba(63, 140, 255, 0.32);
+  --glow2: rgba(10, 31, 68, 0.14);
+  --aurora-a: rgba(63, 140, 255, 0.14);
+  --aurora-b: rgba(10, 31, 68, 0.08);
+  --aurora-c: rgba(90, 200, 255, 0.07);
+}
+
 /* ---------- Optional: neon highlights on primary buttons ---------- */
 body.theme-neon .hero-btn.primary {
   border-color: rgba(255, 77, 230, 0.52);
@@ -2382,13 +2445,6 @@ body.reduce-motion .game-card .gc-cover {
   overflow-x: hidden;
 }
 
-
-
-
-
-
-
-
 /* =========================
    Nexora OS - app.js (FULL, FIXED)
    - Boot + Power + Sleep/Off
@@ -2401,65 +2457,65 @@ body.reduce-motion .game-card .gc-cover {
    - Accessibility: aria-selected, aria-live updates
    ========================= */
 
-
-
 /* ---------- Generic Overlay (Media / Quick Resume) ---------- */
-.overlay{
+.overlay {
   position: fixed;
   inset: 0;
   display: none;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(0,0,0,.65);
+  background: rgba(0, 0, 0, 0.65);
   z-index: 50;
 }
-.overlay.is-active{ display:flex; }
-.overlay-box{
+.overlay.is-active {
+  display: flex;
+}
+.overlay-box {
   width: min(560px, 92vw);
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(15,18,22,.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 18, 22, 0.95);
   border-radius: 18px;
   padding: 18px;
-  box-shadow: 0 12px 40px rgba(0,0,0,.55);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(10px);
 }
-.overlay-title{
+.overlay-title {
   font-size: 18px;
-  letter-spacing: .5px;
+  letter-spacing: 0.5px;
   margin-bottom: 10px;
 }
-.overlay-body{
-  color: rgba(255,255,255,.85);
+.overlay-body {
+  color: rgba(255, 255, 255, 0.85);
   margin-bottom: 14px;
 }
-.overlay-actions{
-  display:flex;
+.overlay-actions {
+  display: flex;
   gap: 10px;
   justify-content: flex-end;
 }
 
 /* Quick Resume list */
-.qr-list{
-  display:flex;
+.qr-list {
+  display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.qr-item{
-  display:flex;
-  align-items:center;
+.qr-item {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid rgba(255,255,255,.10);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
-  background: rgba(255,255,255,.04);
+  background: rgba(255, 255, 255, 0.04);
 }
-.qr-item.is-focused{
-  outline: 2px solid rgba(255,255,255,.35);
-  box-shadow: 0 0 0 6px rgba(255,255,255,.06);
+.qr-item.is-focused {
+  outline: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.06);
 }
-.qr-meta{
+.qr-meta {
   font-size: 12px;
-  color: rgba(255,255,255,.65);
+  color: rgba(255, 255, 255, 0.65);
 }
