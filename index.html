@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <title>Nexora OS</title>
     <link rel="stylesheet" href="./style.css" />
+    <link rel="icon" href="assets/images/icones/nexora-os.ico" type="image/x-icon">
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self' https: data: blob:;
@@ -385,7 +386,17 @@
     <!-- BOOT SCREEN -->
     <div class="boot-screen is-active" id="bootScreen" aria-hidden="false">
       <div class="boot-inner">
-        <div class="boot-logo">NEXORA</div>
+        <div class="boot-brand" aria-label="Nexora OS">
+  <img
+    class="boot-brand-logo"
+    src="assets/images/branding/nexora-os-logo.png"
+    alt="Nexora OS Logo"
+    draggable="false"
+  />
+  <div class="boot-brand-text">NEXORA-OS</div>
+</div>
+
+<div class="boot-sub" id="bootSub">Initializing system...</div>
         <div class="boot-sub">Initializing system...</div>
 
         <div class="boot-bar">

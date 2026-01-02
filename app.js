@@ -4,6 +4,7 @@
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const now = () => Date.now();
+  const bootSub = document.getElementById("bootSub");
 
   const STORAGE = {
     sound: "nexora_sound_enabled",
@@ -471,8 +472,14 @@
   }
   function hideBoot() {
     if (!bootScreen) return;
-    bootScreen.classList.remove("is-active");
+    bootScreen.classList.add("is-leaving");
     bootScreen.setAttribute("aria-hidden", "true");
+
+    // بعد از fade-out کامل، display none
+    setTimeout(() => {
+      bootScreen.classList.remove("is-active");
+      bootScreen.classList.remove("is-leaving");
+    }, 430);
   }
 
   function runBootSequence() {
@@ -481,26 +488,80 @@
     uiSound.launch();
 
     let p = 0;
+    let canSkip = false;
+    let done = false;
+
+    const steps = [
+      "Powering on...",
+      "Loading kernel...",
+      "Mounting modules...",
+      "Initializing UI...",
+      "Finalizing...",
+    ];
+
+    const setStep = (i) => {
+      if (bootSub) bootSub.textContent = steps[Math.min(i, steps.length - 1)];
+    };
+
+    setStep(0);
+
+    // اجازه بده بعد از کمی زمان با هر کلیدی skip کنه
+    const enableSkipTimer = setTimeout(() => {
+      canSkip = true;
+    }, 900);
+
+    const finish = () => {
+      if (done) return;
+      done = true;
+
+      clearTimeout(enableSkipTimer);
+      window.removeEventListener("keydown", onSkip, { capture: true });
+
+      setTimeout(() => {
+        hideBoot();
+        state.booting = false;
+        setActiveScreen("home", { pushHistory: false });
+        onEnterHome();
+      }, 200);
+    };
+
+    const onSkip = (e) => {
+      if (!canSkip) return;
+      // جلوگیری از تداخل با کنترل‌های دیگه موقع بوت
+      e.preventDefault();
+      e.stopPropagation();
+      p = 100;
+      if (bootBarFill) bootBarFill.style.width = `100%`;
+      if (bootPercent) bootPercent.textContent = `100%`;
+      if (bootSub) bootSub.textContent = "Ready.";
+      finish();
+    };
+
+    window.addEventListener("keydown", onSkip, { capture: true });
+
     const tick = () => {
+      if (done) return;
+
       const add = Math.random() * 12 + 6;
       p = Math.min(100, Math.floor(p + add));
 
       if (bootBarFill) bootBarFill.style.width = `${p}%`;
       if (bootPercent) bootPercent.textContent = `${p}%`;
 
+      // step text based on progress
+      const idx = Math.floor((p / 100) * steps.length);
+      setStep(idx);
+
       if (p >= 100) {
-        setTimeout(() => {
-          hideBoot();
-          state.booting = false;
-          setActiveScreen("home", { pushHistory: false });
-          onEnterHome();
-        }, 450);
+        if (bootSub) bootSub.textContent = "Ready.";
+        setTimeout(finish, 280);
         return;
       }
-      setTimeout(tick, 180 + Math.random() * 160);
+
+      setTimeout(tick, 160 + Math.random() * 180);
     };
 
-    setTimeout(tick, 260);
+    setTimeout(tick, 240);
   }
 
   // -------------------- Loading Overlay --------------------
