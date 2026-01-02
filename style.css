@@ -2779,3 +2779,159 @@ body.reduce-motion .game-card .gc-cover {
   color: var(--muted);
   opacity: 0.9;
 }
+/* =========================
+   Nexora OS Boot Background
+   ========================= */
+
+.nexora-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* soft ambient haze */
+.nexora-bg::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background:
+    radial-gradient(circle at 50% 55%, rgba(184,220,255,0.14), rgba(0,0,0,0) 55%),
+    radial-gradient(circle at 70% 30%, rgba(184,220,255,0.08), rgba(0,0,0,0) 52%),
+    radial-gradient(circle at 30% 25%, rgba(184,220,255,0.06), rgba(0,0,0,0) 50%);
+  filter: blur(2px);
+  opacity: 0.9;
+  animation: hazeDrift 6s ease-in-out infinite;
+}
+
+@keyframes hazeDrift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: .85; }
+  50% { transform: translate3d(10px, -8px, 0) scale(1.02); opacity: 1; }
+}
+
+/* orbital rings */
+.nexora-orb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(560px, 110vw);
+  height: min(560px, 110vw);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(184,220,255,0.10);
+  box-shadow: 0 0 30px rgba(184,220,255,0.08);
+  opacity: 0.35;
+  filter: blur(0.2px);
+}
+
+.orb-1 { transform: translate(-50%, -50%) scale(1.05) rotate(12deg); animation: orbSpin 14s linear infinite; }
+.orb-2 { transform: translate(-50%, -50%) scale(0.86) rotate(-18deg); opacity: 0.25; animation: orbSpin 18s linear reverse infinite; }
+.orb-3 { transform: translate(-50%, -50%) scale(0.68) rotate(26deg); opacity: 0.18; animation: orbSpin 22s linear infinite; }
+
+@keyframes orbSpin {
+  to { transform: translate(-50%, -50%) rotate(360deg) scale(var(--s, 1)); }
+}
+
+/* energy waves */
+.nexora-wave {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: min(980px, 160vw);
+  height: 260px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  filter: blur(14px);
+  opacity: 0.35;
+  mix-blend-mode: screen;
+  background: radial-gradient(circle at 50% 50%,
+    rgba(184,220,255,0.22),
+    rgba(184,220,255,0.08) 40%,
+    rgba(0,0,0,0) 70%);
+}
+
+.wave-1 { animation: waveFloat 4.2s ease-in-out infinite; }
+.wave-2 {
+  top: 68%;
+  opacity: 0.22;
+  transform: translateX(-50%) scale(0.92);
+  animation: waveFloat 5.6s ease-in-out infinite reverse;
+}
+
+@keyframes waveFloat {
+  0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+  50% { transform: translateX(-50%) translateY(-18px) scale(1.03); }
+}
+
+/* core pulse under logo */
+.nexora-core {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(184,220,255,0.65);
+  box-shadow:
+    0 0 18px rgba(184,220,255,0.25),
+    0 0 60px rgba(184,220,255,0.12);
+  opacity: 0.55;
+  animation: corePulse 1.9s ease-in-out infinite;
+}
+
+@keyframes corePulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: .45;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.7);
+    opacity: .65;
+  }
+}
+
+/* Ensure boot content stays above background */
+.boot-inner { position: relative; z-index: 1; }
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .nexora-bg::before,
+  .nexora-orb,
+  .nexora-wave,
+  .nexora-core {
+    animation: none !important;
+  }
+}
+/* PS6-like Nexora Boot FX */
+.boot-fx{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:0;
+  pointer-events:none;
+  opacity: 0.95;
+}
+
+.boot-inner{ position:relative; z-index:1; }
+
+/* یک لایه‌ی لطیف برای عمق بیشتر */
+.boot-screen .fx-overlay{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 55%, rgba(184,220,255,0.12), rgba(0,0,0,0) 55%),
+    radial-gradient(circle at 80% 30%, rgba(184,220,255,0.06), rgba(0,0,0,0) 58%),
+    linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.35));
+  mix-blend-mode: screen;
+  opacity: .9;
+}
+
+/* احترام به Reduce Motion */
+@media (prefers-reduced-motion: reduce) {
+  .boot-fx{ display:none; }
+}

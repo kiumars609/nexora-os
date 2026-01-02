@@ -2064,3 +2064,212 @@
 
   init();
 })();
+(function initPS6BootFx(){
+  const canvas = document.getElementById("bootFx");
+  const bootScreen = document.getElementById("bootScreen");
+  if (!canvas || !bootScreen) return;
+
+  const ctx = canvas.getContext("2d", { alpha: true });
+
+  // تنظیمات vibe (امضای Nexora)
+  const CFG = {
+    ribbons: 3,
+    particles: 85,
+    // رنگ‌ها (قابل تغییر)
+    c1: [184, 220, 255], // Nexora light
+    c2: [110, 170, 255], // deeper blue
+    bgFade: 0.10,        // trail amount
+    ribbonAlpha: 0.08,
+    particleAlpha: 0.55,
+    speed: 0.9,
+    wobble: 0.8,
+  };
+
+  let W = 0, H = 0, dpr = Math.min(2, window.devicePixelRatio || 1);
+  let t = 0;
+  let running = true;
+
+  function resize(){
+    const r = bootScreen.getBoundingClientRect();
+    W = Math.max(1, Math.floor(r.width));
+    H = Math.max(1, Math.floor(r.height));
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  // موج‌های انرژی (ribbons)
+  const ribbons = Array.from({ length: CFG.ribbons }, (_, i) => ({
+    phase: Math.random() * Math.PI * 2,
+    yBase: H * (0.45 + i * 0.09),
+    amp: 34 + i * 18,
+    freq: 0.010 + i * 0.003,
+    thickness: 64 + i * 22,
+    drift: (Math.random() * 0.7 + 0.5) * (i % 2 ? 1 : -1),
+  }));
+
+  // ذرات درخشان
+  const particles = Array.from({ length: CFG.particles }, () => ({
+    x: Math.random(),
+    y: Math.random(),
+    s: Math.random() * 1.6 + 0.6,
+    v: Math.random() * 0.25 + 0.08,
+    a: Math.random() * 0.5 + 0.2,
+    p: Math.random() * Math.PI * 2
+  }));
+
+  function mix(a,b,k){ return a + (b-a)*k; }
+  function rgba(rgb, a){ return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`; }
+
+  // پارالاکس خیلی ملایم با موس/تاچ
+  let mx = 0.5, my = 0.5;
+  const onMove = (e) => {
+    const rect = bootScreen.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    mx = Math.min(1, Math.max(0, x / rect.width));
+    my = Math.min(1, Math.max(0, y / rect.height));
+  };
+  bootScreen.addEventListener("mousemove", onMove, { passive:true });
+  bootScreen.addEventListener("touchmove", onMove, { passive:true });
+
+  function drawRibbon(r, idx){
+    const k = idx / Math.max(1, (CFG.ribbons - 1));
+    const col = [
+      Math.floor(mix(CFG.c1[0], CFG.c2[0], k)),
+      Math.floor(mix(CFG.c1[1], CFG.c2[1], k)),
+      Math.floor(mix(CFG.c1[2], CFG.c2[2], k)),
+    ];
+
+    // پارالاکس: خیلی ظریف
+    const px = (mx - 0.5) * 22 * (0.6 + k);
+    const py = (my - 0.5) * 18 * (0.6 + k);
+
+    ctx.save();
+    ctx.translate(px, py);
+
+    ctx.beginPath();
+    const y0 = H * 0.52;
+    const base = mix(y0, r.yBase || y0, 0.8);
+
+    for (let x = -40; x <= W + 40; x += 10){
+      const n = Math.sin((x * r.freq) + r.phase + t * 0.013 * r.drift)
+              + 0.6 * Math.sin((x * r.freq * 0.6) - r.phase + t * 0.009);
+      const y = base + n * r.amp * CFG.wobble;
+      if (x === -40) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+
+    // گرادینت ضخامت‌دار (مثل موج کنسول)
+    const grad = ctx.createLinearGradient(0, base - r.thickness, 0, base + r.thickness);
+    grad.addColorStop(0, rgba(col, 0));
+    grad.addColorStop(0.35, rgba(col, CFG.ribbonAlpha));
+    grad.addColorStop(0.5, rgba(col, CFG.ribbonAlpha * 1.35));
+    grad.addColorStop(0.65, rgba(col, CFG.ribbonAlpha));
+    grad.addColorStop(1, rgba(col, 0));
+
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = r.thickness;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.globalCompositeOperation = "screen";
+    ctx.stroke();
+
+    // خط مرکزی تیزتر (برای حس PS جدید)
+    ctx.globalAlpha = 0.9;
+    ctx.lineWidth = Math.max(1.4, r.thickness * 0.03);
+    ctx.strokeStyle = rgba(col, 0.22);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawParticles(){
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+
+    for (const p of particles){
+      // حرکت آرام
+      p.p += 0.008;
+      p.y -= p.v * 0.0025 * CFG.speed;
+      p.x += Math.sin(p.p) * 0.00035;
+
+      // wrap
+      if (p.y < -0.1){ p.y = 1.1; p.x = Math.random(); }
+      if (p.x < -0.1) p.x = 1.1;
+      if (p.x > 1.1) p.x = -0.1;
+
+      const x = p.x * W;
+      const y = p.y * H;
+
+      // فاصله از مرکز برای عمق
+      const d = Math.hypot((p.x - 0.5), (p.y - 0.55));
+      const glow = Math.max(0, 1 - d * 1.8);
+
+      const r = Math.floor(mix(CFG.c2[0], CFG.c1[0], glow));
+      const g = Math.floor(mix(CFG.c2[1], CFG.c1[1], glow));
+      const b = Math.floor(mix(CFG.c2[2], CFG.c1[2], glow));
+
+      const a = (CFG.particleAlpha * glow) * (0.45 + 0.55 * Math.sin(p.p + t*0.01));
+      ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+
+      ctx.beginPath();
+      ctx.arc(x, y, p.s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  function frame(){
+    if (!running) return;
+
+    // اگر bootScreen مخفی شد، افکت رو متوقف کن
+    const isActive = bootScreen.classList.contains("is-active");
+    if (!isActive){
+      // یک فریم هم نکش، اما آماده باش دوباره فعال شد
+      requestAnimationFrame(frame);
+      return;
+    }
+
+    t++;
+
+    // trail / fade
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = `rgba(0,0,0,${CFG.bgFade})`;
+    ctx.fillRect(0, 0, W, H);
+
+    // ribbons
+    for (let i = 0; i < ribbons.length; i++){
+      drawRibbon(ribbons[i], i);
+    }
+
+    // particles
+    drawParticles();
+
+    requestAnimationFrame(frame);
+  }
+
+  // ریسایز و شروع
+  resize();
+  const ro = new ResizeObserver(resize);
+  ro.observe(bootScreen);
+  window.addEventListener("resize", resize);
+
+  // اگر بوت fade-out شد، canvas هم نرم کم‌رنگ‌تر شه
+  const mo = new MutationObserver(() => {
+    if (bootScreen.classList.contains("is-leaving")) {
+      canvas.style.transition = "opacity 420ms ease-in";
+      canvas.style.opacity = "0";
+    } else {
+      canvas.style.transition = "";
+      canvas.style.opacity = "0.95";
+    }
+  });
+  mo.observe(bootScreen, { attributes: true, attributeFilter: ["class"] });
+
+  requestAnimationFrame(frame);
+})();
