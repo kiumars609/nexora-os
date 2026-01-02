@@ -387,26 +387,30 @@
     <div class="boot-screen is-active" id="bootScreen" aria-hidden="false">
       
 <canvas id="bootFx" class="boot-fx" aria-hidden="true"></canvas>
-      <div class="boot-inner">
-        <div class="boot-brand" aria-label="Nexora OS">
-  <img
-    class="boot-brand-logo"
-    src="assets/images/branding/nexora-os-logo.png"
-    alt="Nexora OS Logo"
-    draggable="false"
-  />
-  <div class="boot-brand-text">NEXORA-OS</div>
+      <!-- PS6-like Background FX -->
+<canvas id="bootFx" class="boot-fx" aria-hidden="true"></canvas>
+<div class="fx-overlay" aria-hidden="true"></div>
+
+<div class="boot-inner">
+  <div class="boot-brand" aria-label="Nexora OS">
+    <img
+      class="boot-brand-logo"
+      src="assets/images/branding/nexora-os-logo.png"
+      alt="Nexora OS Logo"
+      draggable="false"
+    />
+    <div class="boot-brand-text">NEXORA-OS</div>
+  </div>
+
+  <div class="boot-sub" id="bootSub">Initializing system...</div>
+
+  <div class="boot-bar">
+    <div class="boot-bar-fill" id="bootBarFill"></div>
+  </div>
+
+  <div class="boot-percent" id="bootPercent">0%</div>
 </div>
 
-<div class="boot-sub" id="bootSub">Initializing system...</div>
-        <div class="boot-sub">Initializing system...</div>
-
-        <div class="boot-bar">
-          <div class="boot-bar-fill" id="bootBarFill"></div>
-        </div>
-
-        <div class="boot-percent" id="bootPercent">0%</div>
-      </div>
     </div>
 
     <!-- LOADING OVERLAY -->
