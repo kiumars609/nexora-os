@@ -4,6 +4,7 @@
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const now = () => Date.now();
+  const bootSub = document.getElementById("bootSub");
 
   const STORAGE = {
     sound: "nexora_sound_enabled",
@@ -83,7 +84,6 @@
   const controllerStatus = $("#controllerStatus");
 
   const toastEl = $("#toast");
-
   // Media overlay
   const mediaOverlay = $("#mediaOverlay");
   const mediaOverlayTitle = $("#mediaOverlayTitle");
@@ -109,7 +109,6 @@
   const bootScreen = $("#bootScreen");
   const bootBarFill = $("#bootBarFill");
   const bootPercent = $("#bootPercent");
-  const bootSub = $("#bootSub");
 
   // Loading overlay
   const loadingOverlay = $("#loadingOverlay");
@@ -298,9 +297,6 @@
     motionOffBtn?.classList.toggle("primary", !state.settings.reduceMotion);
     motionOnBtn?.classList.toggle("primary", !!state.settings.reduceMotion);
     saveBool(STORAGE.reduceMotion, !!state.settings.reduceMotion);
-
-    // اگر reduce motion روشن شد، افکت بوت رو خاموش کن
-    stopBootFxIfAny();
   }
 
   function applyHighContrast() {
@@ -362,6 +358,7 @@
     const t = state.settings.theme || "dark";
     document.body.classList.add(`theme-${t}`);
 
+    // pulse (premium apply feel)
     document.body.classList.remove("theme-pulse");
     void document.body.offsetWidth;
     document.body.classList.add("theme-pulse");
@@ -463,6 +460,8 @@
     if (!timeEl) return;
     timeEl.textContent = formatTime(new Date());
   }
+
+  // update every 30s (snappy)
   setInterval(syncClock, 30000);
 
   // -------------------- Boot Sequence --------------------
@@ -476,6 +475,7 @@
     bootScreen.classList.add("is-leaving");
     bootScreen.setAttribute("aria-hidden", "true");
 
+    // بعد از fade-out کامل، display none
     setTimeout(() => {
       bootScreen.classList.remove("is-active");
       bootScreen.classList.remove("is-leaving");
@@ -486,9 +486,6 @@
     showBoot();
     state.booting = true;
     uiSound.launch();
-
-    // اگر reduce motion خاموشه، افکت بوت رو شروع کن
-    startBootFxIfAllowed();
 
     let p = 0;
     let canSkip = false;
@@ -508,6 +505,7 @@
 
     setStep(0);
 
+    // اجازه بده بعد از کمی زمان با هر کلیدی skip کنه
     const enableSkipTimer = setTimeout(() => {
       canSkip = true;
     }, 900);
@@ -529,6 +527,7 @@
 
     const onSkip = (e) => {
       if (!canSkip) return;
+      // جلوگیری از تداخل با کنترل‌های دیگه موقع بوت
       e.preventDefault();
       e.stopPropagation();
       p = 100;
@@ -546,9 +545,12 @@
       const add = Math.random() * 12 + 6;
       p = Math.min(100, Math.floor(p + add));
 
+      
+
       if (bootBarFill) bootBarFill.style.width = `${p}%`;
       if (bootPercent) bootPercent.textContent = `${p}%`;
 
+      // step text based on progress
       const idx = Math.floor((p / 100) * steps.length);
       setStep(idx);
 
@@ -581,13 +583,26 @@
 
   // -------------------- Media Overlay --------------------
   const MEDIA_CONTENT = {
-    music: { title: "Music", body: "A simple music hub. (Placeholder for now.)" },
-    gallery: { title: "Gallery", body: "View screenshots / covers. (Placeholder for now.)" },
-    streaming: { title: "Streaming", body: "Connect streaming apps. (Placeholder for now.)" },
-    downloads: { title: "Downloads", body: "Manage downloaded media. (Placeholder for now.)" },
+    music: {
+      title: "Music",
+      body: "A simple music hub. (Placeholder for now.)",
+    },
+    gallery: {
+      title: "Gallery",
+      body: "View screenshots / covers. (Placeholder for now.)",
+    },
+    streaming: {
+      title: "Streaming",
+      body: "Connect streaming apps. (Placeholder for now.)",
+    },
+    downloads: {
+      title: "Downloads",
+      body: "Manage downloaded media. (Placeholder for now.)",
+    },
   };
 
   const focusSnapshot = { ctx: "home", index: 0 };
+
   function snapshotFocus() {
     focusSnapshot.ctx = state.focus.context;
     focusSnapshot.index = state.focus.index;
@@ -602,7 +617,10 @@
   function openMediaOverlay(kind = "music") {
     if (!mediaOverlay) return;
     snapshotFocus();
-    const meta = MEDIA_CONTENT[kind] || { title: "Media", body: "Coming soon…" };
+    const meta = MEDIA_CONTENT[kind] || {
+      title: "Media",
+      body: "Coming soon…",
+    };
     mediaOverlayTitle && (mediaOverlayTitle.textContent = meta.title);
     mediaOverlayBody && (mediaOverlayBody.textContent = meta.body);
 
@@ -635,6 +653,7 @@
     const existing = state.quickResume.find((g) => g.id === gameId);
     if (existing) existing.ts = ts;
     else state.quickResume.unshift({ id: gameId, ts });
+    // keep max 5
     state.quickResume = state.quickResume
       .sort((a, b) => (b.ts || 0) - (a.ts || 0))
       .slice(0, 5);
@@ -653,11 +672,16 @@
   }
 
   function updateQuickResumeUI() {
+    // Home card number
     if (quickResumeValue) {
       const n = state.quickResume?.length || 0;
       quickResumeValue.textContent = n === 1 ? "1 Game" : `${n} Games`;
     }
+
+    // System profile
     updateProfileUI();
+
+    // overlay list (if open)
     if (state.quickResumeOpen) renderQuickResumeList();
   }
 
@@ -703,6 +727,7 @@
     setFocusContext("quickResume");
     setFocusIndex(0);
     renderQuickResumeList();
+    // focus first item or close
     const first = qrList?.querySelector(".qr-item");
     focusEl(first || qrCloseBtn);
     uiSound.ok();
@@ -726,9 +751,10 @@
 
     closeQuickResumeOverlay();
 
+    // resume into in-game directly
     state.runningGameId = game.id;
     setActiveScreen("inGame", { pushHistory: true });
-    updateInGameUI?.();
+    updateInGameUI();
     showToast(`Resumed: ${game.title}`);
     uiSound.launch();
   }
@@ -790,6 +816,7 @@
     const prev = state.currentScreen;
     if (pushHistory && prev && prev !== name) {
       state.historyStack.push(prev);
+      // avoid unlimited growth
       if (state.historyStack.length > 30) state.historyStack.shift();
     }
 
@@ -801,10 +828,19 @@
       s.setAttribute("aria-hidden", sName === name ? "false" : "true");
     });
 
-    if (name === "home" || name === "games" || name === "media" || name === "system") {
+    // nav underline rules:
+    // - if we enter a main tab screen => currentTab = that screen
+    // - if we enter detail/in-game => keep currentTab as previous main tab
+    if (
+      name === "home" ||
+      name === "games" ||
+      name === "media" ||
+      name === "system"
+    ) {
       setActiveTab(name);
     }
 
+    // set focus context per screen
     if (name === "home") setFocusContext("home");
     else if (name === "games") setFocusContext("games");
     else if (name === "media") setFocusContext("media");
@@ -818,7 +854,13 @@
   }
 
   function goBack() {
-    if (state.powerMenuOpen || state.sleeping || state.poweredOff || state.booting) return;
+    if (
+      state.powerMenuOpen ||
+      state.sleeping ||
+      state.poweredOff ||
+      state.booting
+    )
+      return;
 
     const prev = state.historyStack.pop();
     if (!prev) {
@@ -833,9 +875,6 @@
     state.focus.context = ctx;
     state.focus.index = 0;
   }
-  function setFocusIndex(i) {
-    state.focus.index = i;
-  }
 
   function clearAllFocusClasses() {
     $$(".is-focused").forEach((el) => el.classList.remove("is-focused"));
@@ -844,13 +883,16 @@
   function markFocused(el) {
     if (!el) return;
 
+    // remove visual focus from anything else
     clearAllFocusClasses();
     el.classList.add("is-focused");
 
+    // keep ARIA selection consistent (only one selected tab)
     if (el.classList.contains("nav-item")) {
       navItems.forEach((n) => n.setAttribute("aria-selected", "false"));
       el.setAttribute("aria-selected", "true");
     } else {
+      // when focus leaves nav, ensure tabs remain "selected" based on active tab
       navItems.forEach((n) => {
         const isActive = n.classList.contains("active");
         n.setAttribute("aria-selected", isActive ? "true" : "false");
@@ -873,7 +915,9 @@
   function getContextItems(ctx = state.focus.context) {
     if (ctx === "nav") return navItems;
 
-    if (ctx === "mediaOverlay") return [mediaOpenBtn, mediaBackBtn].filter(Boolean);
+    if (ctx === "mediaOverlay") {
+      return [mediaOpenBtn, mediaBackBtn].filter(Boolean);
+    }
 
     if (ctx === "quickResume") {
       const items = qrList ? $$(".qr-item", qrList) : [];
@@ -890,7 +934,14 @@
     if (ctx === "games") {
       const backBtn = $(".games-screen .back-btn");
       const cards = getGameCards();
-      return [backBtn, filterBtn, sortBtn, searchInput, applyFiltersBtn, ...cards].filter(Boolean);
+      return [
+        backBtn,
+        filterBtn,
+        sortBtn,
+        searchInput,
+        applyFiltersBtn,
+        ...cards,
+      ].filter(Boolean);
     }
 
     if (ctx === "media") {
@@ -941,11 +992,12 @@
     const items = getContextItems();
     if (!items.length) return;
 
+    // restore games grid focus
     if (state.focus.context === "games") {
       const cards = getGameCards();
       if (cards.length) {
         const idx = clamp(state.gamesUI.lastGridFocus, 0, cards.length - 1);
-        state.focus.index = 5 + idx;
+        state.focus.index = 5 + idx; // back + filter + sort + search + apply = 5
       }
     }
 
@@ -992,6 +1044,7 @@
     });
   }
 
+  // -------------------- Back buttons (FIX: always bind + keyboard) --------------------
   function bindBackButtons() {
     const backs = $$('[data-action="back"]');
     backs.forEach((btn) => {
@@ -1020,14 +1073,20 @@
 
   // -------------------- Covers (Internet) - migration safe --------------------
   const COVER_LIBRARY = {
-    tlou2: "https://cdn.cloudflare.steamstatic.com/steam/apps/253131/capsule_616x353.jpg",
+    tlou2:
+      "https://cdn.cloudflare.steamstatic.com/steam/apps/253131/capsule_616x353.jpg",
     gowr: "https://cdn.cloudflare.steamstatic.com/steam/apps/2322010/capsule_616x353.jpg",
     sm2: "https://cdn.cloudflare.steamstatic.com/steam/apps/2651280/capsule_616x353.jpg",
-    horizon: "https://cdn.cloudflare.steamstatic.com/steam/apps/1151640/capsule_616x353.jpg",
-    cyberpunk: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg",
-    eldenring: "https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/capsule_616x353.jpg",
-    minecraft: "https://cdn.cloudflare.steamstatic.com/steam/apps/1672970/capsule_616x353.jpg",
-    gtavi: "https://images.unsplash.com/photo-1520975958225-5a3b8c3f7f76?auto=format&fit=crop&w=1400&q=70",
+    horizon:
+      "https://cdn.cloudflare.steamstatic.com/steam/apps/1151640/capsule_616x353.jpg",
+    cyberpunk:
+      "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg",
+    eldenring:
+      "https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/capsule_616x353.jpg",
+    minecraft:
+      "https://cdn.cloudflare.steamstatic.com/steam/apps/1672970/capsule_616x353.jpg",
+    gtavi:
+      "https://images.unsplash.com/photo-1520975958225-5a3b8c3f7f76?auto=format&fit=crop&w=1400&q=70",
   };
 
   // -------------------- Games Data --------------------
@@ -1040,7 +1099,8 @@
         installed: true,
         size: 52.9,
         lastPlayed: Date.now() - 1000 * 60 * 60 * 24 * 21,
-        cover: "https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/capsule_616x353.jpg",
+        cover:
+          "https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/capsule_616x353.jpg",
         desc: "Become the Elden Lord.",
       },
       {
@@ -1050,7 +1110,8 @@
         installed: false,
         size: 71.5,
         lastPlayed: null,
-        cover: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg",
+        cover:
+          "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg",
         desc: "Night City never sleeps.",
       },
       {
@@ -1060,9 +1121,12 @@
         installed: true,
         size: 54.2,
         lastPlayed: Date.now() - 1000 * 60 * 60 * 24 * 10,
-        cover: "https://cdn.cloudflare.steamstatic.com/steam/apps/1151640/capsule_616x353.jpg",
+        cover:
+          "https://cdn.cloudflare.steamstatic.com/steam/apps/1151640/capsule_616x353.jpg",
         desc: "Machines. Mystery. Survival.",
       },
+
+      // ---- Temporary internet art (replace later with local covers) ----
       {
         id: "tlou2",
         title: "The Last of Us Part II",
@@ -1070,7 +1134,8 @@
         installed: true,
         size: 78.4,
         lastPlayed: Date.now() - 1000 * 60 * 60 * 24 * 2,
-        cover: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1400&q=70",
+        cover:
+          "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1400&q=70",
         desc: "Survive. Adapt. Endure.",
       },
       {
@@ -1080,7 +1145,8 @@
         installed: false,
         size: 110.0,
         lastPlayed: null,
-        cover: "https://images.unsplash.com/photo-1535223289827-42f1e9919769?auto=format&fit=crop&w=1400&q=70",
+        cover:
+          "https://images.unsplash.com/photo-1535223289827-42f1e9919769?auto=format&fit=crop&w=1400&q=70",
         desc: "Next generation open world crime saga.",
       },
       {
@@ -1090,7 +1156,8 @@
         installed: true,
         size: 1.2,
         lastPlayed: Date.now() - 1000 * 60 * 60 * 24 * 1,
-        cover: "https://images.unsplash.com/photo-1611996575749-79a3a250f948?auto=format&fit=crop&w=1400&q=70",
+        cover:
+          "https://images.unsplash.com/photo-1611996575749-79a3a250f948?auto=format&fit=crop&w=1400&q=70",
         desc: "Build. Mine. Survive. Create.",
       },
     ];
@@ -1129,6 +1196,7 @@
         return { ...g, cover };
       }
 
+      // اگر id کاور خاصی نداشت، همون رو نگه دار (یا خالی)
       return g;
     });
 
@@ -1170,7 +1238,7 @@
     img.referrerPolicy = "no-referrer";
     img.onload = () => {
       coverEl.style.backgroundImage = `url("${url}")`;
-      cardEl?.classList.add("cover-loaded");
+      cardEl?.classList.add("cover-loaded"); // ✅ جدید
       cardEl?.classList.remove("cover-failed");
     };
     img.onerror = () => {
@@ -1194,31 +1262,44 @@
       btn.setAttribute("aria-selected", "false");
       btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
 
+      // cover style
+      const coverStyle = g.cover
+        ? `background-image:url("${g.cover}")`
+        : `background-image:
+          radial-gradient(800px 420px at 20% 20%, rgba(124,195,255,0.22), transparent 60%),
+          radial-gradient(700px 420px at 85% 25%, rgba(255,77,230,0.14), transparent 60%),
+          radial-gradient(900px 520px at 55% 95%, rgba(169,255,107,0.10), transparent 65%),
+          linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.35))`;
+
       btn.innerHTML = `
-        <span class="gc-cover" aria-hidden="true"></span>
-        <span class="gc-badge ${g.installed ? "is-installed" : "is-store"}">
-          ${g.installed ? "INSTALLED" : "STORE"}
-        </span>
-        <span class="gc-info">
-          <span>
-            <span class="gc-title">${g.title}</span>
-            <div class="gc-line">${(g.genre || "—").toUpperCase()} • ${
-              g.installed ? "INSTALLED" : "NOT INSTALLED"
-            }</div>
-          </span>
-          <span class="gc-meta">
-            <span class="gc-chip ${g.installed ? "" : "is-get"}">${
-              g.installed ? "PLAY" : "GET"
-            }</span>
-            <span class="gc-chip" style="opacity:.7">${
-              g.size ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB` : "--"
-            }</span>
-          </span>
-        </span>
-        <span class="gc-hint" aria-hidden="true">
-          ${g.installed ? "PRESS ENTER TO PLAY" : "PRESS ENTER TO GET"}
-        </span>
-      `;
+  <span class="gc-cover" aria-hidden="true"></span>
+
+  <span class="gc-badge ${g.installed ? "is-installed" : "is-store"}">
+    ${g.installed ? "INSTALLED" : "STORE"}
+  </span>
+
+  <span class="gc-info">
+    <span>
+      <span class="gc-title">${g.title}</span>
+      <div class="gc-line">${(g.genre || "—").toUpperCase()} • ${
+        g.installed ? "INSTALLED" : "NOT INSTALLED"
+      }</div>
+    </span>
+
+    <span class="gc-meta">
+      <span class="gc-chip ${g.installed ? "" : "is-get"}">${
+        g.installed ? "PLAY" : "GET"
+      }</span>
+      <span class="gc-chip" style="opacity:.7">${
+        g.size ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB` : "--"
+      }</span>
+    </span>
+  </span>
+
+  <span class="gc-hint" aria-hidden="true">
+  ${g.installed ? "PRESS ENTER TO PLAY" : "PRESS ENTER TO GET"}
+</span>
+`;
 
       const coverEl = btn.querySelector(".gc-cover");
       applyCardCover(coverEl, g.cover, btn);
@@ -1248,7 +1329,8 @@
   }
 
   function updateGamesFiltersUI() {
-    if (filterValue) filterValue.textContent = state.gamesUI.filter.toUpperCase();
+    if (filterValue)
+      filterValue.textContent = state.gamesUI.filter.toUpperCase();
     if (sortValue) sortValue.textContent = state.gamesUI.sort.toUpperCase();
     if (searchInput && searchInput.value !== state.gamesUI.search)
       searchInput.value = state.gamesUI.search || "";
@@ -1317,7 +1399,8 @@
 
     detailsGenre && (detailsGenre.textContent = game.genre || "--");
     detailsSize && (detailsSize.textContent = fmtSize(game.size));
-    detailsLastPlayed && (detailsLastPlayed.textContent = fmtLastPlayed(game.lastPlayed));
+    detailsLastPlayed &&
+      (detailsLastPlayed.textContent = fmtLastPlayed(game.lastPlayed));
 
     if (detailsCover) {
       detailsCover.style.backgroundImage = game.cover
@@ -1325,6 +1408,7 @@
         : "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.35))";
     }
 
+    // install/uninstall logic
     const uninstallBtn = ensureUninstallButton();
     if (uninstallBtn) {
       uninstallBtn.style.display = game.installed ? "inline-flex" : "none";
@@ -1344,6 +1428,7 @@
       };
     }
 
+    // Play button state
     if (playBtn) {
       playBtn.textContent = game.installed ? "Play" : "Install";
       playBtn.onclick = () => {
@@ -1363,11 +1448,16 @@
           return;
         }
 
+        // Launch game
         uiSound.launch();
         state.runningGameId = game.id;
         updateQuickResume(game.id);
-        unlockAchievement(`FIRST_LAUNCH_${game.id}`, `First launch: ${game.title}`);
+        unlockAchievement(
+          `FIRST_LAUNCH_${game.id}`,
+          `First launch: ${game.title}`
+        );
 
+        // XP tick
         state.xp += 15;
         saveNum(STORAGE.xp, state.xp);
 
@@ -1390,6 +1480,7 @@
     setActiveScreen("game-details", { pushHistory: true });
     updateDetailsUI(g);
 
+    // focus play
     setTimeout(() => playBtn?.focus?.(), 0);
   }
 
@@ -1436,7 +1527,8 @@
   let powerIndex = 0;
 
   function showPowerMenu() {
-    if (!powerOverlay || state.poweredOff || state.sleeping || state.booting) return;
+    if (!powerOverlay || state.poweredOff || state.sleeping || state.booting)
+      return;
     state.powerMenuOpen = true;
     powerOverlay.classList.add("is-active");
     powerOverlay.setAttribute("aria-hidden", "false");
@@ -1451,13 +1543,14 @@
     state.powerMenuOpen = false;
     powerOverlay.classList.remove("is-active");
     powerOverlay.setAttribute("aria-hidden", "true");
-
+    // return focus to current screen context
     if (state.currentScreen === "home") setFocusContext("home");
     else if (state.currentScreen === "games") setFocusContext("games");
     else if (state.currentScreen === "media") setFocusContext("media");
     else if (state.currentScreen === "system") setFocusContext("system");
     else if (state.currentScreen === "game-details") setFocusContext("details");
-    else if (state.currentScreen === "now-playing") setFocusContext("nowPlaying");
+    else if (state.currentScreen === "now-playing")
+      setFocusContext("nowPlaying");
     else if (state.currentScreen === "in-game") setFocusContext("inGame");
 
     focusFirstInContext();
@@ -1466,7 +1559,9 @@
 
   function updatePowerFocus() {
     const items = getContextItems("power");
-    items.forEach((el, i) => el.classList.toggle("is-focused", i === powerIndex));
+    items.forEach((el, i) =>
+      el.classList.toggle("is-focused", i === powerIndex)
+    );
     const el = items[powerIndex];
     el?.focus?.();
   }
@@ -1475,6 +1570,7 @@
     const items = getContextItems("power");
     const el = items[powerIndex];
     const action = el?.dataset?.power;
+
     if (!action) return;
 
     if (action === "sleep") {
@@ -1523,32 +1619,78 @@
 
   // -------------------- System UI bindings --------------------
   function bindSystemUI() {
-    clock12Btn?.addEventListener("click", () => (uiSound.ok(), setClockFormat(false)));
-    clock24Btn?.addEventListener("click", () => (uiSound.ok(), setClockFormat(true)));
+    clock12Btn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setClockFormat(false))
+    );
+    clock24Btn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setClockFormat(true))
+    );
 
-    soundOnBtn?.addEventListener("click", () => (uiSound.ok(), setSoundEnabled(true)));
-    soundOffBtn?.addEventListener("click", () => (uiSound.ok(), setSoundEnabled(false)));
+    soundOnBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setSoundEnabled(true))
+    );
+    soundOffBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setSoundEnabled(false))
+    );
 
     volumeSlider?.addEventListener("input", (e) => setVolume(e.target.value));
 
-    motionOffBtn?.addEventListener("click", () => (uiSound.ok(), setReduceMotion(false)));
-    motionOnBtn?.addEventListener("click", () => (uiSound.ok(), setReduceMotion(true)));
+    motionOffBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setReduceMotion(false))
+    );
+    motionOnBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setReduceMotion(true))
+    );
 
-    contrastOffBtn?.addEventListener("click", () => (uiSound.ok(), setHighContrast(false)));
-    contrastOnBtn?.addEventListener("click", () => (uiSound.ok(), setHighContrast(true)));
+    contrastOffBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setHighContrast(false))
+    );
+    contrastOnBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setHighContrast(true))
+    );
 
-    themeDarkBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("dark")));
-    themeIceBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("ice")));
-    themeNeonBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("neon")));
-    themeAuroraBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("aurora")));
-    themeLavaBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("lava")));
-    themeSakuraBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("sakura")));
-    themeFrostBtn?.addEventListener("click", () => (uiSound.ok(), setTheme("frost")));
+    themeDarkBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("dark"))
+    );
+    themeIceBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("ice"))
+    );
+    themeNeonBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("neon"))
+    );
+    themeAuroraBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("aurora"))
+    );
+    themeLavaBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("lava"))
+    );
+    themeSakuraBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("sakura"))
+    );
+    themeFrostBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("frost"))
+    );
   }
 
   // -------------------- Screen enter helpers --------------------
   function onEnterHome() {
     updateQuickResumeUI();
+    // underline stays HOME anyway, focus first hero
     setTimeout(() => {
       const home = $(".home-screen");
       const firstHero = $(".hero-btn", home);
@@ -1579,6 +1721,7 @@
 
   // -------------------- Global Click Delegation --------------------
   document.addEventListener("click", (e) => {
+    // Header toggles
     const wifiEl = e.target.closest("#wifiStatus");
     if (wifiEl) {
       e.preventDefault();
@@ -1613,17 +1756,20 @@
 
   // -------------------- Keyboard Shortcuts (Console feel) --------------------
   document.addEventListener("keydown", (e) => {
+    // Wake / power-on overrides
     if (state.sleeping) {
       wakeFromSleep();
       return;
     }
     if (state.poweredOff) {
+      // only P wakes when off (console-like)
       if (e.key.toLowerCase() === "p") powerOnFromOff();
       return;
     }
 
     if (state.booting) return;
 
+    // Sound toggle (M)
     if (!e.repeat && e.key.toLowerCase() === "m" && !e.shiftKey) {
       if (isTypingContext()) return;
       toggleSound();
@@ -1631,6 +1777,7 @@
       return;
     }
 
+    // Shift+M => open System on sound
     if (!e.repeat && e.key.toLowerCase() === "m" && e.shiftKey) {
       if (isTypingContext()) return;
       setActiveScreen("system", { pushHistory: true });
@@ -1639,6 +1786,7 @@
       return;
     }
 
+    // T => clock toggle
     if (!e.repeat && e.key.toLowerCase() === "t") {
       if (isTypingContext()) return;
       setClockFormat(!state.settings.clock24);
@@ -1646,6 +1794,7 @@
       return;
     }
 
+    // W => wifi toggle
     if (!e.repeat && e.key.toLowerCase() === "w") {
       if (isTypingContext()) return;
       toggleWifi();
@@ -1653,6 +1802,7 @@
       return;
     }
 
+    // C => controller toggle
     if (!e.repeat && e.key.toLowerCase() === "c") {
       if (isTypingContext()) return;
       toggleController();
@@ -1660,16 +1810,24 @@
       return;
     }
 
+    // P => power menu toggle
     if (!e.repeat && e.key.toLowerCase() === "p") {
       if (state.powerMenuOpen) hidePowerMenu();
       else showPowerMenu();
       return;
     }
 
+    // If Media overlay open => trap focus + controls
     if (state.mediaOverlayOpen) {
-      if (e.key === "Tab") { e.preventDefault(); return; }
-      if (e.key === "Escape") { e.preventDefault(); closeMediaOverlay(); return; }
-
+      if (e.key === "Tab") {
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeMediaOverlay();
+        return;
+      }
       const items = getContextItems("mediaOverlay");
       if (!items.length) return;
 
@@ -1696,10 +1854,17 @@
       return;
     }
 
+    // If Quick Resume overlay open => trap focus + controls
     if (state.quickResumeOpen) {
-      if (e.key === "Tab") { e.preventDefault(); return; }
-      if (e.key === "Escape") { e.preventDefault(); closeQuickResumeOverlay(); return; }
-
+      if (e.key === "Tab") {
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeQuickResumeOverlay();
+        return;
+      }
       const items = getContextItems("quickResume");
       if (!items.length) return;
 
@@ -1733,8 +1898,12 @@
       return;
     }
 
+    // If power menu open => handle arrows/enter/esc
     if (state.powerMenuOpen) {
-      if (e.key === "Tab") { e.preventDefault(); return; }
+      if (e.key === "Tab") {
+        e.preventDefault();
+        return;
+      }
       const items = getContextItems("power");
       if (!items.length) return;
 
@@ -1752,11 +1921,20 @@
         updatePowerFocus();
         return;
       }
-      if (e.key === "Enter") { e.preventDefault(); powerSelect(); return; }
-      if (e.key === "Escape") { e.preventDefault(); hidePowerMenu(); return; }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        powerSelect();
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        hidePowerMenu();
+        return;
+      }
       return;
     }
 
+    // Global Back: Esc
     if (e.key === "Escape") {
       if (isTypingContext()) return;
       e.preventDefault();
@@ -1765,7 +1943,11 @@
       return;
     }
 
-    if (isTypingContext()) return;
+    // Focus movement (console style): arrows
+    if (isTypingContext()) {
+      // allow typing in inputs
+      return;
+    }
 
     if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
@@ -1781,6 +1963,7 @@
     }
 
     if (e.key === "Enter") {
+      // simulate click on focused element
       const items = getContextItems();
       const el = items[state.focus.index];
       if (el) {
@@ -1837,267 +2020,9 @@
   });
 
   qrCloseBtn?.addEventListener("click", () => closeQuickResumeOverlay());
-
-  // ======================================================
-  // PS6-like Boot FX (ONE integrated version + Logo Field)
-  // ======================================================
-  let bootFx = null;
-
-  function prefersReducedMotion() {
-    try {
-      return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function stopBootFxIfAny() {
-    if (bootFx && bootFx.stop) bootFx.stop();
-  }
-
-  function startBootFxIfAllowed() {
-    if (!bootScreen) return;
-    if (state.settings.reduceMotion || prefersReducedMotion()) {
-      stopBootFxIfAny();
-      return;
-    }
-    if (!bootFx) bootFx = createPS6BootFx();
-    bootFx?.start?.();
-  }
-
-  function createPS6BootFx() {
-    const canvas = document.getElementById("bootFx");
-    if (!canvas || !bootScreen) return { start() {}, stop() {} };
-
-    const logoEl = document.querySelector(".boot-brand-logo");
-    const ctx = canvas.getContext("2d", { alpha: true });
-
-    const CFG = {
-      ribbons: 4,
-      particles: 120,
-      c1: [184, 220, 255],
-      c2: [95, 165, 255],
-      bgFade: 0.10,
-      ribbonAlpha: 0.075,
-      particleAlpha: 0.55,
-      speed: 1.0,
-      wobble: 0.86,
-      fieldStrength: 0.95,
-      fieldRadius: 260,
-    };
-
-    let W = 1, H = 1, dpr = Math.min(2, window.devicePixelRatio || 1);
-    let t = 0;
-    let raf = 0;
-    let running = false;
-
-    const mix = (a, b, k) => a + (b - a) * k;
-    const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
-
-    // Parallax
-    let mx = 0.5, my = 0.5;
-    const onMove = (e) => {
-      const rect = bootScreen.getBoundingClientRect();
-      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-      mx = Math.min(1, Math.max(0, x / rect.width));
-      my = Math.min(1, Math.max(0, y / rect.height));
-    };
-
-    const ribbons = Array.from({ length: CFG.ribbons }, (_, i) => ({
-      phase: Math.random() * Math.PI * 2,
-      amp: 26 + i * 14,
-      freq: 0.009 + i * 0.0026,
-      thickness: 56 + i * 18,
-      drift: (Math.random() * 0.7 + 0.5) * (i % 2 ? 1 : -1),
-      yBaseK: 0.52 + i * 0.06,
-    }));
-
-    const particles = Array.from({ length: CFG.particles }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      s: Math.random() * 1.7 + 0.6,
-      v: Math.random() * 0.26 + 0.08,
-      p: Math.random() * Math.PI * 2,
-    }));
-
-    function resize() {
-      const r = bootScreen.getBoundingClientRect();
-      W = Math.max(1, Math.floor(r.width));
-      H = Math.max(1, Math.floor(r.height));
-      dpr = Math.min(2, window.devicePixelRatio || 1);
-      canvas.width = Math.floor(W * dpr);
-      canvas.height = Math.floor(H * dpr);
-      canvas.style.width = W + "px";
-      canvas.style.height = H + "px";
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-
-    function getLogoCenter() {
-      if (!logoEl) return { x: W * 0.5, y: H * 0.45 };
-      const br = bootScreen.getBoundingClientRect();
-      const lr = logoEl.getBoundingClientRect();
-      return {
-        x: (lr.left - br.left) + lr.width * 0.5,
-        y: (lr.top - br.top) + lr.height * 0.55,
-      };
-    }
-
-    function drawRibbon(r, idx, field) {
-      const k = idx / Math.max(1, CFG.ribbons - 1);
-      const col = [
-        Math.floor(mix(CFG.c1[0], CFG.c2[0], k)),
-        Math.floor(mix(CFG.c1[1], CFG.c2[1], k)),
-        Math.floor(mix(CFG.c1[2], CFG.c2[2], k)),
-      ];
-
-      const px = (mx - 0.5) * 22 * (0.6 + k);
-      const py = (my - 0.5) * 18 * (0.6 + k);
-
-      ctx.save();
-      ctx.translate(px, py);
-
-      const base = H * r.yBaseK;
-
-      ctx.beginPath();
-      for (let x = -50; x <= W + 50; x += 10) {
-        const n =
-          Math.sin((x * r.freq) + r.phase + t * 0.013 * r.drift) +
-          0.6 * Math.sin((x * r.freq * 0.6) - r.phase + t * 0.009);
-
-        const dx = x - field.x;
-        const dy = base - field.y;
-        const dist = Math.hypot(dx, dy);
-        const falloff = Math.max(0, 1 - dist / CFG.fieldRadius);
-        const fieldWarp = (falloff * falloff) * CFG.fieldStrength;
-
-        const y =
-          base +
-          n * r.amp * CFG.wobble -
-          fieldWarp * 22 * Math.sin((dx * 0.01) + t * 0.02);
-
-        if (x === -50) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-
-      const grad = ctx.createLinearGradient(0, base - r.thickness, 0, base + r.thickness);
-      grad.addColorStop(0, rgba(col, 0));
-      grad.addColorStop(0.35, rgba(col, CFG.ribbonAlpha));
-      grad.addColorStop(0.5, rgba(col, CFG.ribbonAlpha * 1.4));
-      grad.addColorStop(0.65, rgba(col, CFG.ribbonAlpha));
-      grad.addColorStop(1, rgba(col, 0));
-
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = r.thickness;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.globalCompositeOperation = "screen";
-      ctx.stroke();
-
-      // sharp core line
-      ctx.globalAlpha = 0.9;
-      ctx.lineWidth = Math.max(1.2, r.thickness * 0.028);
-      ctx.strokeStyle = rgba(col, 0.22);
-      ctx.stroke();
-
-      ctx.restore();
-    }
-
-    function drawParticles(field) {
-      ctx.save();
-      ctx.globalCompositeOperation = "screen";
-
-      for (const p of particles) {
-        p.p += 0.008;
-        p.y -= p.v * 0.0026 * CFG.speed;
-        p.x += Math.sin(p.p) * 0.00035;
-
-        if (p.y < -0.1) { p.y = 1.1; p.x = Math.random(); }
-        if (p.x < -0.1) p.x = 1.1;
-        if (p.x > 1.1) p.x = -0.1;
-
-        const x = p.x * W;
-        const y = p.y * H;
-
-        const dist = Math.hypot(x - field.x, y - field.y);
-        const glow = Math.max(0, 1 - dist / (CFG.fieldRadius * 1.05));
-
-        const rr = Math.floor(mix(CFG.c2[0], CFG.c1[0], glow));
-        const gg = Math.floor(mix(CFG.c2[1], CFG.c1[1], glow));
-        const bb = Math.floor(mix(CFG.c2[2], CFG.c1[2], glow));
-
-        const a =
-          (CFG.particleAlpha * (0.25 + glow)) *
-          (0.5 + 0.5 * Math.sin(p.p + t * 0.01));
-
-        ctx.fillStyle = `rgba(${rr},${gg},${bb},${a})`;
-        ctx.beginPath();
-        ctx.arc(x, y, p.s, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.restore();
-    }
-
-    function frame() {
-      if (!running) return;
-      raf = requestAnimationFrame(frame);
-
-      if (!bootScreen.classList.contains("is-active")) return;
-
-      t++;
-
-      ctx.globalCompositeOperation = "source-over";
-      ctx.fillStyle = `rgba(0,0,0,${CFG.bgFade})`;
-      ctx.fillRect(0, 0, W, H);
-
-      const field = getLogoCenter();
-
-      for (let i = 0; i < ribbons.length; i++) drawRibbon(ribbons[i], i, field);
-      drawParticles(field);
-    }
-
-    // Resize + fade sync
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(bootScreen);
-    window.addEventListener("resize", resize);
-
-    const mo = new MutationObserver(() => {
-      if (bootScreen.classList.contains("is-leaving")) {
-        canvas.style.transition = "opacity 420ms ease-in";
-        canvas.style.opacity = "0";
-      } else {
-        canvas.style.transition = "";
-        canvas.style.opacity = "0.95";
-      }
-    });
-    mo.observe(bootScreen, { attributes: true, attributeFilter: ["class"] });
-
-    function start() {
-      if (state.settings.reduceMotion || prefersReducedMotion()) return;
-      if (running) return;
-      running = true;
-      canvas.style.opacity = "0.95";
-      bootScreen.addEventListener("mousemove", onMove, { passive: true });
-      bootScreen.addEventListener("touchmove", onMove, { passive: true });
-      frame();
-    }
-
-    function stop() {
-      running = false;
-      cancelAnimationFrame(raf);
-      bootScreen.removeEventListener("mousemove", onMove);
-      bootScreen.removeEventListener("touchmove", onMove);
-      ctx.clearRect(0, 0, W, H);
-      canvas.style.opacity = "0";
-    }
-
-    return { start, stop };
-  }
-
   // -------------------- Initial Apply --------------------
   function init() {
+    // Apply settings to DOM
     applySoundUI();
     applyVolumeUI();
     applyClockFormat();
@@ -2120,6 +2045,7 @@
     bindGamesUI();
     bindSystemUI();
 
+    // Screen enter hooks
     const onScreenChange = () => {
       if (state.currentScreen === "home") onEnterHome();
       if (state.currentScreen === "games") onEnterGames();
@@ -2127,8 +2053,11 @@
       if (state.currentScreen === "system") onEnterSystem();
     };
 
+    // run boot then enter home
     runBootSequence();
 
+    // whenever screen changes via nav clicks we call onEnter* through setActiveScreen,
+    // but for safety keep this small observer:
     const observer = new MutationObserver(() => onScreenChange());
     screens.forEach((s) =>
       observer.observe(s, { attributes: true, attributeFilter: ["class"] })
@@ -2136,4 +2065,432 @@
   }
 
   init();
+})();
+(function initPS6BootFx(){
+  const canvas = document.getElementById("bootFx");
+  const bootScreen = document.getElementById("bootScreen");
+  if (!canvas || !bootScreen) return;
+
+  const ctx = canvas.getContext("2d", { alpha: true });
+
+  // تنظیمات vibe (امضای Nexora)
+  const CFG = {
+    ribbons: 3,
+    particles: 85,
+    // رنگ‌ها (قابل تغییر)
+    c1: [184, 220, 255], // Nexora light
+    c2: [110, 170, 255], // deeper blue
+    bgFade: 0.10,        // trail amount
+    ribbonAlpha: 0.08,
+    particleAlpha: 0.55,
+    speed: 0.9,
+    wobble: 0.8,
+  };
+
+  let W = 0, H = 0, dpr = Math.min(2, window.devicePixelRatio || 1);
+  let t = 0;
+  let running = true;
+
+  function resize(){
+    const r = bootScreen.getBoundingClientRect();
+    W = Math.max(1, Math.floor(r.width));
+    H = Math.max(1, Math.floor(r.height));
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  // موج‌های انرژی (ribbons)
+  const ribbons = Array.from({ length: CFG.ribbons }, (_, i) => ({
+    phase: Math.random() * Math.PI * 2,
+    yBase: H * (0.45 + i * 0.09),
+    amp: 34 + i * 18,
+    freq: 0.010 + i * 0.003,
+    thickness: 64 + i * 22,
+    drift: (Math.random() * 0.7 + 0.5) * (i % 2 ? 1 : -1),
+  }));
+
+  // ذرات درخشان
+  const particles = Array.from({ length: CFG.particles }, () => ({
+    x: Math.random(),
+    y: Math.random(),
+    s: Math.random() * 1.6 + 0.6,
+    v: Math.random() * 0.25 + 0.08,
+    a: Math.random() * 0.5 + 0.2,
+    p: Math.random() * Math.PI * 2
+  }));
+
+  function mix(a,b,k){ return a + (b-a)*k; }
+  function rgba(rgb, a){ return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`; }
+
+  // پارالاکس خیلی ملایم با موس/تاچ
+  let mx = 0.5, my = 0.5;
+  const onMove = (e) => {
+    const rect = bootScreen.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    mx = Math.min(1, Math.max(0, x / rect.width));
+    my = Math.min(1, Math.max(0, y / rect.height));
+  };
+  bootScreen.addEventListener("mousemove", onMove, { passive:true });
+  bootScreen.addEventListener("touchmove", onMove, { passive:true });
+
+  function drawRibbon(r, idx){
+    const k = idx / Math.max(1, (CFG.ribbons - 1));
+    const col = [
+      Math.floor(mix(CFG.c1[0], CFG.c2[0], k)),
+      Math.floor(mix(CFG.c1[1], CFG.c2[1], k)),
+      Math.floor(mix(CFG.c1[2], CFG.c2[2], k)),
+    ];
+
+    // پارالاکس: خیلی ظریف
+    const px = (mx - 0.5) * 22 * (0.6 + k);
+    const py = (my - 0.5) * 18 * (0.6 + k);
+
+    ctx.save();
+    ctx.translate(px, py);
+
+    ctx.beginPath();
+    const y0 = H * 0.52;
+    const base = mix(y0, r.yBase || y0, 0.8);
+
+    for (let x = -40; x <= W + 40; x += 10){
+      const n = Math.sin((x * r.freq) + r.phase + t * 0.013 * r.drift)
+              + 0.6 * Math.sin((x * r.freq * 0.6) - r.phase + t * 0.009);
+      const y = base + n * r.amp * CFG.wobble;
+      if (x === -40) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+
+    // گرادینت ضخامت‌دار (مثل موج کنسول)
+    const grad = ctx.createLinearGradient(0, base - r.thickness, 0, base + r.thickness);
+    grad.addColorStop(0, rgba(col, 0));
+    grad.addColorStop(0.35, rgba(col, CFG.ribbonAlpha));
+    grad.addColorStop(0.5, rgba(col, CFG.ribbonAlpha * 1.35));
+    grad.addColorStop(0.65, rgba(col, CFG.ribbonAlpha));
+    grad.addColorStop(1, rgba(col, 0));
+
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = r.thickness;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.globalCompositeOperation = "screen";
+    ctx.stroke();
+
+    // خط مرکزی تیزتر (برای حس PS جدید)
+    ctx.globalAlpha = 0.9;
+    ctx.lineWidth = Math.max(1.4, r.thickness * 0.03);
+    ctx.strokeStyle = rgba(col, 0.22);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawParticles(){
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+
+    for (const p of particles){
+      // حرکت آرام
+      p.p += 0.008;
+      p.y -= p.v * 0.0025 * CFG.speed;
+      p.x += Math.sin(p.p) * 0.00035;
+
+      // wrap
+      if (p.y < -0.1){ p.y = 1.1; p.x = Math.random(); }
+      if (p.x < -0.1) p.x = 1.1;
+      if (p.x > 1.1) p.x = -0.1;
+
+      const x = p.x * W;
+      const y = p.y * H;
+
+      // فاصله از مرکز برای عمق
+      const d = Math.hypot((p.x - 0.5), (p.y - 0.55));
+      const glow = Math.max(0, 1 - d * 1.8);
+
+      const r = Math.floor(mix(CFG.c2[0], CFG.c1[0], glow));
+      const g = Math.floor(mix(CFG.c2[1], CFG.c1[1], glow));
+      const b = Math.floor(mix(CFG.c2[2], CFG.c1[2], glow));
+
+      const a = (CFG.particleAlpha * glow) * (0.45 + 0.55 * Math.sin(p.p + t*0.01));
+      ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+
+      ctx.beginPath();
+      ctx.arc(x, y, p.s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  function frame(){
+    if (!running) return;
+
+    // اگر bootScreen مخفی شد، افکت رو متوقف کن
+    const isActive = bootScreen.classList.contains("is-active");
+    if (!isActive){
+      // یک فریم هم نکش، اما آماده باش دوباره فعال شد
+      requestAnimationFrame(frame);
+      return;
+    }
+
+    t++;
+
+    // trail / fade
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = `rgba(0,0,0,${CFG.bgFade})`;
+    ctx.fillRect(0, 0, W, H);
+
+    // ribbons
+    for (let i = 0; i < ribbons.length; i++){
+      drawRibbon(ribbons[i], i);
+    }
+
+    // particles
+    drawParticles();
+
+    requestAnimationFrame(frame);
+  }
+
+  // ریسایز و شروع
+  resize();
+  const ro = new ResizeObserver(resize);
+  ro.observe(bootScreen);
+  window.addEventListener("resize", resize);
+
+  // اگر بوت fade-out شد، canvas هم نرم کم‌رنگ‌تر شه
+  const mo = new MutationObserver(() => {
+    if (bootScreen.classList.contains("is-leaving")) {
+      canvas.style.transition = "opacity 420ms ease-in";
+      canvas.style.opacity = "0";
+    } else {
+      canvas.style.transition = "";
+      canvas.style.opacity = "0.95";
+    }
+  });
+  mo.observe(bootScreen, { attributes: true, attributeFilter: ["class"] });
+
+  requestAnimationFrame(frame);
+})();
+(function initPS6BootFx(){
+  const canvas = document.getElementById("bootFx");
+  const bootScreen = document.getElementById("bootScreen");
+  const logoEl = document.querySelector(".boot-brand-logo");
+  if (!canvas || !bootScreen) return;
+
+  const ctx = canvas.getContext("2d", { alpha: true });
+
+  const CFG = {
+    ribbons: 4,
+    particles: 110,
+    c1: [184, 220, 255],
+    c2: [95, 165, 255],
+    bgFade: 0.10,
+    ribbonAlpha: 0.075,
+    particleAlpha: 0.55,
+    speed: 1.0,
+    wobble: 0.85,
+    fieldStrength: 0.9,     // قدرت تاثیر لوگو روی موج
+    fieldRadius: 260,       // شعاع میدان
+  };
+
+  let W=1, H=1, dpr = Math.min(2, window.devicePixelRatio || 1);
+  let t = 0;
+
+  function resize(){
+    const r = bootScreen.getBoundingClientRect();
+    W = Math.max(1, Math.floor(r.width));
+    H = Math.max(1, Math.floor(r.height));
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  // مرکز لوگو برای “میدان”
+  function getLogoCenter(){
+    if (!logoEl) return { x: W*0.5, y: H*0.45 };
+    const br = bootScreen.getBoundingClientRect();
+    const lr = logoEl.getBoundingClientRect();
+    return {
+      x: (lr.left - br.left) + lr.width * 0.5,
+      y: (lr.top  - br.top ) + lr.height * 0.55
+    };
+  }
+
+  // پارالاکس لطیف
+  let mx = 0.5, my = 0.5;
+  const onMove = (e) => {
+    const rect = bootScreen.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    mx = Math.min(1, Math.max(0, x / rect.width));
+    my = Math.min(1, Math.max(0, y / rect.height));
+  };
+  bootScreen.addEventListener("mousemove", onMove, { passive:true });
+  bootScreen.addEventListener("touchmove", onMove, { passive:true });
+
+  // ribbons
+  const ribbons = Array.from({ length: CFG.ribbons }, (_, i) => ({
+    phase: Math.random() * Math.PI * 2,
+    amp: 26 + i * 14,
+    freq: 0.009 + i * 0.0026,
+    thickness: 56 + i * 18,
+    drift: (Math.random() * 0.7 + 0.5) * (i % 2 ? 1 : -1),
+    yBaseK: 0.52 + i * 0.06,
+  }));
+
+  // particles
+  const particles = Array.from({ length: CFG.particles }, () => ({
+    x: Math.random(), y: Math.random(),
+    s: Math.random() * 1.7 + 0.6,
+    v: Math.random() * 0.26 + 0.08,
+    p: Math.random() * Math.PI * 2,
+  }));
+
+  const mix = (a,b,k)=> a+(b-a)*k;
+  const rgba = (rgb,a)=> `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
+
+  function drawRibbon(r, idx, field){
+    const k = idx / Math.max(1, (CFG.ribbons - 1));
+    const col = [
+      Math.floor(mix(CFG.c1[0], CFG.c2[0], k)),
+      Math.floor(mix(CFG.c1[1], CFG.c2[1], k)),
+      Math.floor(mix(CFG.c1[2], CFG.c2[2], k)),
+    ];
+
+    const px = (mx - 0.5) * 22 * (0.6 + k);
+    const py = (my - 0.5) * 18 * (0.6 + k);
+
+    ctx.save();
+    ctx.translate(px, py);
+
+    const base = H * r.yBaseK;
+
+    ctx.beginPath();
+    for (let x = -50; x <= W + 50; x += 10){
+      const n = Math.sin((x * r.freq) + r.phase + t * 0.013 * r.drift)
+              + 0.6 * Math.sin((x * r.freq * 0.6) - r.phase + t * 0.009);
+
+      // “میدان لوگو”: نزدیک لوگو موج کمی خم میشه/مکیده میشه
+      const dx = x - field.x;
+      const dy = base - field.y;
+      const dist = Math.hypot(dx, dy);
+      const falloff = Math.max(0, 1 - (dist / CFG.fieldRadius));
+      const fieldWarp = (falloff * falloff) * CFG.fieldStrength;
+
+      const y = base
+        + n * r.amp * CFG.wobble
+        - fieldWarp * 22 * Math.sin((dx * 0.01) + t * 0.02); // warp signature
+
+      if (x === -50) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+
+    const grad = ctx.createLinearGradient(0, base - r.thickness, 0, base + r.thickness);
+    grad.addColorStop(0, rgba(col, 0));
+    grad.addColorStop(0.35, rgba(col, CFG.ribbonAlpha));
+    grad.addColorStop(0.5, rgba(col, CFG.ribbonAlpha * 1.4));
+    grad.addColorStop(0.65, rgba(col, CFG.ribbonAlpha));
+    grad.addColorStop(1, rgba(col, 0));
+
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = r.thickness;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.globalCompositeOperation = "screen";
+    ctx.stroke();
+
+    // core sharp line
+    ctx.globalAlpha = 0.9;
+    ctx.lineWidth = Math.max(1.2, r.thickness * 0.028);
+    ctx.strokeStyle = rgba(col, 0.22);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawParticles(field){
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+
+    for (const p of particles){
+      p.p += 0.008;
+      p.y -= p.v * 0.0026 * CFG.speed;
+      p.x += Math.sin(p.p) * 0.00035;
+
+      if (p.y < -0.1){ p.y = 1.1; p.x = Math.random(); }
+      if (p.x < -0.1) p.x = 1.1;
+      if (p.x > 1.1) p.x = -0.1;
+
+      const x = p.x * W;
+      const y = p.y * H;
+
+      // نزدیک لوگو ذرات کمی قوی‌تر
+      const dist = Math.hypot(x - field.x, y - field.y);
+      const glow = Math.max(0, 1 - dist / (CFG.fieldRadius * 1.05));
+
+      const r = Math.floor(mix(CFG.c2[0], CFG.c1[0], glow));
+      const g = Math.floor(mix(CFG.c2[1], CFG.c1[1], glow));
+      const b = Math.floor(mix(CFG.c2[2], CFG.c1[2], glow));
+
+      const a = (CFG.particleAlpha * (0.25 + glow)) * (0.5 + 0.5 * Math.sin(p.p + t*0.01));
+      ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+
+      ctx.beginPath();
+      ctx.arc(x, y, p.s, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  function frame(){
+    requestAnimationFrame(frame);
+
+    // فقط وقتی boot فعاله رندر کن (تو HTML الان is-active هست) :contentReference[oaicite:2]{index=2}
+    if (!bootScreen.classList.contains("is-active")) return;
+
+    t++;
+
+    // fade trail
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = `rgba(0,0,0,${CFG.bgFade})`;
+    ctx.fillRect(0, 0, W, H);
+
+    const field = getLogoCenter();
+
+    // ribbons
+    for (let i=0; i<ribbons.length; i++){
+      drawRibbon(ribbons[i], i, field);
+    }
+
+    // particles
+    drawParticles(field);
+  }
+
+  // ریسایز و شروع
+  resize();
+  const ro = new ResizeObserver(resize);
+  ro.observe(bootScreen);
+  window.addEventListener("resize", resize);
+
+  // هماهنگ با fade-out بوت
+  const mo = new MutationObserver(() => {
+    if (bootScreen.classList.contains("is-leaving")) {
+      canvas.style.transition = "opacity 420ms ease-in";
+      canvas.style.opacity = "0";
+    } else {
+      canvas.style.transition = "";
+      canvas.style.opacity = "0.95";
+    }
+  });
+  mo.observe(bootScreen, { attributes:true, attributeFilter:["class"] });
+
+  requestAnimationFrame(frame);
 })();
