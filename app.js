@@ -343,6 +343,22 @@
     }
   }
 
+  function unlockAudio() {
+    // Resume contexts if suspended
+    try {
+      bgmCtx?.resume?.();
+    } catch {}
+    try {
+      audioCtx?.resume?.();
+    } catch {}
+
+    // Retry pending bgm play
+    if (bgmPendingPlay) {
+      bgmPendingPlay = false;
+      playBGM();
+    }
+  }
+
   function stopBGM() {
     if (bgmAudio) bgmAudio.pause();
   }
@@ -2171,7 +2187,9 @@
       observer.observe(s, { attributes: true, attributeFilter: ["class"] })
     );
   }
-
+  ["pointerdown", "keydown", "touchstart", "mousedown"].forEach((evt) => {
+    document.addEventListener(evt, unlockAudio, { passive: true });
+  });
   init();
 })();
 (function initNexoraPS6BootFx() {
