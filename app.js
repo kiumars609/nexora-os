@@ -67,8 +67,26 @@
   function isTypingContext() {
     const a = document.activeElement;
     if (!a) return false;
+
     const tag = (a.tagName || "").toLowerCase();
-    if (tag === "input" || tag === "textarea" || tag === "select") return true;
+
+    // Treat only text-like inputs as typing contexts (so shortcuts still work on sliders).
+    if (tag === "input") {
+      const type = (a.getAttribute("type") || "").toLowerCase();
+      const textLike = [
+        "",
+        "text",
+        "search",
+        "email",
+        "password",
+        "number",
+        "tel",
+        "url",
+      ];
+      return textLike.includes(type);
+    }
+
+    if (tag === "textarea" || tag === "select") return true;
     if (a.isContentEditable) return true;
     return false;
   }
@@ -825,7 +843,14 @@
     el.classList.add("is-focused");
 
     // ensure focused element is keyboard-focusable
-    if (!el.hasAttribute("tabindex") && !(el instanceof HTMLInputElement) && !(el instanceof HTMLTextAreaElement) && !(el instanceof HTMLButtonElement) && !(el instanceof HTMLSelectElement) && !(el instanceof HTMLAnchorElement)) {
+    if (
+      !el.hasAttribute("tabindex") &&
+      !(el instanceof HTMLInputElement) &&
+      !(el instanceof HTMLTextAreaElement) &&
+      !(el instanceof HTMLButtonElement) &&
+      !(el instanceof HTMLSelectElement) &&
+      !(el instanceof HTMLAnchorElement)
+    ) {
       el.setAttribute("tabindex", "0");
     }
 
@@ -963,70 +988,72 @@
       if (cardIdx >= 0) state.gamesUI.lastGridFocus = cardIdx;
     }
 
-  // -------------------- Focus movement (Directional / Console-like) --------------------
-  function moveFocusDir(direction) {
-    const items = getContextItems();
-    if (!items.length) return;
+    // -------------------- Focus movement (Directional / Console-like) --------------------
+    function moveFocusDir(direction) {
+      const items = getContextItems();
+      if (!items.length) return;
 
-    // If nothing focused yet, focus first item.
-    let currentEl = items[state.focus.index] || items[0];
-    if (!currentEl) return;
+      // If nothing focused yet, focus first item.
+      let currentEl = items[state.focus.index] || items[0];
+      if (!currentEl) return;
 
-    // Ensure current index matches currentEl
-    let currentIdx = items.indexOf(currentEl);
-    if (currentIdx < 0) currentIdx = 0;
+      // Ensure current index matches currentEl
+      let currentIdx = items.indexOf(currentEl);
+      if (currentIdx < 0) currentIdx = 0;
 
-    const cur = currentEl.getBoundingClientRect();
+      const cur = currentEl.getBoundingClientRect();
 
-    let bestIdx = -1;
-    let bestScore = Infinity;
+      let bestIdx = -1;
+      let bestScore = Infinity;
 
-    for (let i = 0; i < items.length; i++) {
-      const el = items[i];
-      if (!el || el === currentEl) continue;
-      const r = el.getBoundingClientRect();
+      for (let i = 0; i < items.length; i++) {
+        const el = items[i];
+        if (!el || el === currentEl) continue;
+        const r = el.getBoundingClientRect();
 
-      const dx = r.left - cur.left;
-      const dy = r.top - cur.top;
+        const dx = r.left - cur.left;
+        const dy = r.top - cur.top;
 
-      // Filter candidates by direction
-      if (
-        (direction === "RIGHT" && dx <= 0) ||
-        (direction === "LEFT" && dx >= 0) ||
-        (direction === "DOWN" && dy <= 0) ||
-        (direction === "UP" && dy >= 0)
-      ) continue;
+        // Filter candidates by direction
+        if (
+          (direction === "RIGHT" && dx <= 0) ||
+          (direction === "LEFT" && dx >= 0) ||
+          (direction === "DOWN" && dy <= 0) ||
+          (direction === "UP" && dy >= 0)
+        )
+          continue;
 
-      // Prefer closer in the intended axis; penalize cross-axis drift.
-      let primary = 0, secondary = 0;
-      if (direction === "RIGHT" || direction === "LEFT") {
-        primary = Math.abs(dx);
-        secondary = Math.abs(dy);
-      } else {
-        primary = Math.abs(dy);
-        secondary = Math.abs(dx);
+        // Prefer closer in the intended axis; penalize cross-axis drift.
+        let primary = 0,
+          secondary = 0;
+        if (direction === "RIGHT" || direction === "LEFT") {
+          primary = Math.abs(dx);
+          secondary = Math.abs(dy);
+        } else {
+          primary = Math.abs(dy);
+          secondary = Math.abs(dx);
+        }
+
+        const score = primary * primary + secondary * secondary * 1.5;
+        if (score < bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
       }
 
-      const score = primary * primary + secondary * secondary * 1.5;
-      if (score < bestScore) {
-        bestScore = score;
-        bestIdx = i;
+      if (bestIdx >= 0) {
+        state.focus.index = bestIdx;
+        const el = items[bestIdx];
+        focusEl(el);
+
+        // Keep games grid memory in sync
+        if (state.focus.context === "games") {
+          const cards = getGameCards();
+          const cardIdx = cards.indexOf(el);
+          if (cardIdx >= 0) state.gamesUI.lastGridFocus = cardIdx;
+        }
       }
     }
-
-    if (bestIdx >= 0) {
-      state.focus.index = bestIdx;
-      const el = items[bestIdx];
-      focusEl(el);
-
-      // Keep games grid memory in sync
-      if (state.focus.context === "games") {
-        const cards = getGameCards();
-        const cardIdx = cards.indexOf(el);
-        if (cardIdx >= 0) state.gamesUI.lastGridFocus = cardIdx;
-      }
-    }
-  }
   }
 
   // -------------------- Navigation (Tab switching) --------------------
@@ -2131,7 +2158,7 @@
     cA: [184, 220, 255], // ice blue
     cB: [120, 170, 255], // deep blue
     cC: [120, 255, 232], // teal hint
-    bgFade: 0.10,
+    bgFade: 0.1,
     speed: 1.0,
 
     glyphs: 26,
@@ -2296,7 +2323,7 @@
     ctx.stroke();
 
     // micro spark along the ribbon (gives "new-gen" vibe)
-    const sparkX = (t * 6.5 + k * 240) % (W + 220) - 110;
+    const sparkX = ((t * 6.5 + k * 240) % (W + 220)) - 110;
     const sparkN =
       Math.sin(sparkX * r.freq + r.phase + t * 0.012 * r.drift) +
       0.55 * Math.sin(sparkX * r.freq * 0.62 - r.phase + t * 0.008);
@@ -2324,7 +2351,14 @@
     ctx.fillRect(0, 0, W, H);
 
     // subtle vignette (draw as big radial gradient)
-    const vg = ctx.createRadialGradient(W * 0.5, H * 0.55, 20, W * 0.5, H * 0.55, Math.max(W, H) * 0.75);
+    const vg = ctx.createRadialGradient(
+      W * 0.5,
+      H * 0.55,
+      20,
+      W * 0.5,
+      H * 0.55,
+      Math.max(W, H) * 0.75
+    );
     vg.addColorStop(0, "rgba(10,14,18,0)");
     vg.addColorStop(1, "rgba(0,0,0,0.55)");
     ctx.fillStyle = vg;
@@ -2380,7 +2414,6 @@
   requestAnimationFrame(frame);
 })();
 
-
 /* --- Patch: Gamepad bridge (maps controller to existing keyboard handlers) --- */
 (() => {
   const KEY = {
@@ -2398,7 +2431,17 @@
   // Standard mapping for most controllers:
   // 12/13/14/15 = dpad up/down/left/right
   // 0 = A, 1 = B, 4 = LB, 5 = RB, 9 = Start
-  const BTN = { A: 0, B: 1, LB: 4, RB: 5, START: 9, DU: 12, DD: 13, DL: 14, DR: 15 };
+  const BTN = {
+    A: 0,
+    B: 1,
+    LB: 4,
+    RB: 5,
+    START: 9,
+    DU: 12,
+    DD: 13,
+    DL: 14,
+    DR: 15,
+  };
 
   let prev = new Map(); // gamepadIndex -> buttons pressed boolean[]
 
