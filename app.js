@@ -824,6 +824,11 @@
     clearAllFocusClasses();
     el.classList.add("is-focused");
 
+    // ensure focused element is keyboard-focusable
+    if (!el.hasAttribute("tabindex") && !(el instanceof HTMLInputElement) && !(el instanceof HTMLTextAreaElement) && !(el instanceof HTMLButtonElement) && !(el instanceof HTMLSelectElement) && !(el instanceof HTMLAnchorElement)) {
+      el.setAttribute("tabindex", "0");
+    }
+
     // keep ARIA selection consistent (only one selected tab)
     if (el.classList.contains("nav-item")) {
       navItems.forEach((n) => n.setAttribute("aria-selected", "false"));
@@ -957,6 +962,71 @@
       const cardIdx = cards.indexOf(el);
       if (cardIdx >= 0) state.gamesUI.lastGridFocus = cardIdx;
     }
+
+  // -------------------- Focus movement (Directional / Console-like) --------------------
+  function moveFocusDir(direction) {
+    const items = getContextItems();
+    if (!items.length) return;
+
+    // If nothing focused yet, focus first item.
+    let currentEl = items[state.focus.index] || items[0];
+    if (!currentEl) return;
+
+    // Ensure current index matches currentEl
+    let currentIdx = items.indexOf(currentEl);
+    if (currentIdx < 0) currentIdx = 0;
+
+    const cur = currentEl.getBoundingClientRect();
+
+    let bestIdx = -1;
+    let bestScore = Infinity;
+
+    for (let i = 0; i < items.length; i++) {
+      const el = items[i];
+      if (!el || el === currentEl) continue;
+      const r = el.getBoundingClientRect();
+
+      const dx = r.left - cur.left;
+      const dy = r.top - cur.top;
+
+      // Filter candidates by direction
+      if (
+        (direction === "RIGHT" && dx <= 0) ||
+        (direction === "LEFT" && dx >= 0) ||
+        (direction === "DOWN" && dy <= 0) ||
+        (direction === "UP" && dy >= 0)
+      ) continue;
+
+      // Prefer closer in the intended axis; penalize cross-axis drift.
+      let primary = 0, secondary = 0;
+      if (direction === "RIGHT" || direction === "LEFT") {
+        primary = Math.abs(dx);
+        secondary = Math.abs(dy);
+      } else {
+        primary = Math.abs(dy);
+        secondary = Math.abs(dx);
+      }
+
+      const score = primary * primary + secondary * secondary * 1.5;
+      if (score < bestScore) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+
+    if (bestIdx >= 0) {
+      state.focus.index = bestIdx;
+      const el = items[bestIdx];
+      focusEl(el);
+
+      // Keep games grid memory in sync
+      if (state.focus.context === "games") {
+        const cards = getGameCards();
+        const cardIdx = cards.indexOf(el);
+        if (cardIdx >= 0) state.gamesUI.lastGridFocus = cardIdx;
+      }
+    }
+  }
   }
 
   // -------------------- Navigation (Tab switching) --------------------
@@ -1886,16 +1956,28 @@
       return;
     }
 
-    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+    if (e.key === "ArrowLeft") {
       e.preventDefault();
       uiSound.move();
-      moveFocus(-1);
+      moveFocusDir("LEFT");
       return;
     }
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+    if (e.key === "ArrowRight") {
       e.preventDefault();
       uiSound.move();
-      moveFocus(+1);
+      moveFocusDir("RIGHT");
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      uiSound.move();
+      moveFocusDir("UP");
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      uiSound.move();
+      moveFocusDir("DOWN");
       return;
     }
 

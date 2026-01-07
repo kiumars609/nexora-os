@@ -3060,3 +3060,16 @@ body.reduce-motion .game-card .gc-cover {
   outline: 2px solid rgba(255,255,255,0.55);
   outline-offset: 2px;
 }
+
+
+/* -------------------- Focus Engine (Generic) -------------------- */
+/* Any element marked focused gets a clear console-like ring */
+.is-focused {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 3px;
+}
+
+/* Keep input caret usable without a ring fighting it */
+input.is-focused, textarea.is-focused {
+  outline-offset: 2px;
+}
