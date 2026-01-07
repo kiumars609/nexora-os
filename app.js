@@ -2294,96 +2294,81 @@
     }
   });
   mo.observe(bootScreen, { attributes: true, attributeFilter: ["class"] });
+
   requestAnimationFrame(frame);
+})();
 
-  // -------------------- Gamepad Support (added) --------------------
-  // Maps common controllers:
-  // D-pad -> Arrows, A -> Enter, B -> Escape, LB/RB -> [ / ], Start -> P (power menu)
-  (() => {
-    const BTN = { A: 0, B: 1, LB: 4, RB: 5, START: 9, DU: 12, DD: 13, DL: 14, DR: 15 };
-    let lastButtons = [];
-    let lastAxes = [];
-    let lastMoveAt = 0;
-    const AXIS_THRESHOLD = 0.55;
-    const MOVE_REPEAT_MS = 140;
 
-    function dispatchKey(key) {
-      // Dispatch to document so existing keyboard handlers work unchanged.
-      const ev = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
-      document.dispatchEvent(ev);
+/* --- Patch: Gamepad bridge (maps controller to existing keyboard handlers) --- */
+(() => {
+  const KEY = {
+    UP: "ArrowUp",
+    DOWN: "ArrowDown",
+    LEFT: "ArrowLeft",
+    RIGHT: "ArrowRight",
+    SELECT: "Enter",
+    BACK: "Escape",
+    TAB_L: "[",
+    TAB_R: "]",
+    POWER: "p",
+  };
+
+  // Standard mapping for most controllers:
+  // 12/13/14/15 = dpad up/down/left/right
+  // 0 = A, 1 = B, 4 = LB, 5 = RB, 9 = Start
+  const BTN = { A: 0, B: 1, LB: 4, RB: 5, START: 9, DU: 12, DD: 13, DL: 14, DR: 15 };
+
+  let prev = new Map(); // gamepadIndex -> buttons pressed boolean[]
+
+  const fireKey = (key) => {
+    // Dispatch both keydown+keyup so existing logic that listens to keydown works,
+    // and keyup-based behaviors (if any) won't get stuck.
+    const down = new KeyboardEvent("keydown", { key, bubbles: true });
+    const up = new KeyboardEvent("keyup", { key, bubbles: true });
+    document.dispatchEvent(down);
+    document.dispatchEvent(up);
+  };
+
+  const tick = () => {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (const gp of pads) {
+      if (!gp) continue;
+      const p = prev.get(gp.index) || [];
+      const b = gp.buttons.map((x) => !!x.pressed);
+
+      const edge = (i) => b[i] && !p[i];
+
+      if (edge(BTN.DU)) fireKey(KEY.UP);
+      if (edge(BTN.DD)) fireKey(KEY.DOWN);
+      if (edge(BTN.DL)) fireKey(KEY.LEFT);
+      if (edge(BTN.DR)) fireKey(KEY.RIGHT);
+
+      if (edge(BTN.A)) fireKey(KEY.SELECT);
+      if (edge(BTN.B)) fireKey(KEY.BACK);
+
+      if (edge(BTN.LB)) fireKey(KEY.TAB_L);
+      if (edge(BTN.RB)) fireKey(KEY.TAB_R);
+
+      if (edge(BTN.START)) fireKey(KEY.POWER);
+
+      prev.set(gp.index, b);
     }
+    requestAnimationFrame(tick);
+  };
 
-    function setControllerConnected(isOn) {
-      // Non-breaking: if state/controller UI exists, update it.
-      try {
-        state.controllerConnected = !!isOn;
-      } catch {}
-      const el = document.querySelector("#controllerStatus, #controllerIcon, .controller-status, [data-controller-status]");
-      if (el) {
-        el.classList.toggle("is-on", !!isOn);
-        el.setAttribute("aria-label", isOn ? "Controller connected" : "Controller disconnected");
-      }
-    }
-
-    window.addEventListener("gamepadconnected", () => setControllerConnected(true));
-    window.addEventListener("gamepaddisconnected", () => {
-      const any = (navigator.getGamepads?.() || []).some((g) => g);
-      setControllerConnected(any);
-    });
-
-    function tick(ts) {
-      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-      const gp = pads && pads[0];
-
-      if (!gp) {
-        setControllerConnected(false);
-        requestAnimationFrame(tick);
-        return;
-      }
-      setControllerConnected(true);
-
-      // Buttons (edge-detect)
-      const btns = gp.buttons || [];
-      for (let i = 0; i < btns.length; i++) {
-        const pressed = !!btns[i]?.pressed;
-        const was = !!lastButtons[i];
-        if (pressed && !was) {
-          if (i === BTN.A) dispatchKey("Enter");
-          else if (i === BTN.B) dispatchKey("Escape");
-          else if (i === BTN.LB) dispatchKey("[");
-          else if (i === BTN.RB) dispatchKey("]");
-          else if (i === BTN.START) dispatchKey("p");
-          else if (i === BTN.DU) dispatchKey("ArrowUp");
-          else if (i === BTN.DD) dispatchKey("ArrowDown");
-          else if (i === BTN.DL) dispatchKey("ArrowLeft");
-          else if (i === BTN.DR) dispatchKey("ArrowRight");
-        }
-        lastButtons[i] = pressed;
-      }
-
-      // Left stick as optional navigation with repeat rate
-      const axes = gp.axes || [];
-      const ax0 = axes[0] ?? 0;
-      const ax1 = axes[1] ?? 0;
-
-      const now = ts || performance.now();
-      const canRepeat = now - lastMoveAt >= MOVE_REPEAT_MS;
-
-      // Only repeat when stick held in one direction
-      if (canRepeat) {
-        if (ax1 <= -AXIS_THRESHOLD) { dispatchKey("ArrowUp"); lastMoveAt = now; }
-        else if (ax1 >= AXIS_THRESHOLD) { dispatchKey("ArrowDown"); lastMoveAt = now; }
-        else if (ax0 <= -AXIS_THRESHOLD) { dispatchKey("ArrowLeft"); lastMoveAt = now; }
-        else if (ax0 >= AXIS_THRESHOLD) { dispatchKey("ArrowRight"); lastMoveAt = now; }
-      }
-
-      lastAxes = axes.slice(0);
-
+  // Start loop once user interacts (some browsers require a gesture)
+  window.addEventListener("gamepadconnected", () => {
+    if (!window.__nexora_gp_loop_started) {
+      window.__nexora_gp_loop_started = true;
       requestAnimationFrame(tick);
     }
+  });
 
-    // Start polling
-    requestAnimationFrame(tick);
-  })();
-
+  // Also start when page loads (works in many browsers)
+  window.addEventListener("load", () => {
+    if (!window.__nexora_gp_loop_started) {
+      window.__nexora_gp_loop_started = true;
+      requestAnimationFrame(tick);
+    }
+  });
 })();
