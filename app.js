@@ -254,6 +254,11 @@
     toastTimer = setTimeout(() => toastEl.classList.remove("is-show"), 950);
   }
 
+  // -------------------- Background Music --------------------
+  let bgmAudio = null;
+  let bgmCtx = null;
+  let bgmGain = null;
+
   // -------------------- Sound Engine (volume + enabled) --------------------
   let audioCtx = null;
   function getAudioCtx() {
@@ -300,6 +305,46 @@
     launch: () => beep({ freq: 260, dur: 0.09, vol: 0.08, type: "triangle" }),
     quit: () => beep({ freq: 160, dur: 0.1, vol: 0.09, type: "triangle" }),
   };
+
+  function initBGM() {
+    if (bgmAudio) return;
+
+    bgmAudio = new Audio("assets/audio/ambient.mp3");
+    bgmAudio.loop = true;
+    bgmAudio.preload = "auto";
+
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+
+    bgmCtx = new Ctx();
+    const src = bgmCtx.createMediaElementSource(bgmAudio);
+
+    bgmGain = bgmCtx.createGain();
+    bgmGain.gain.value = state.settings.soundEnabled
+      ? (state.settings.volume / 100) * 0.25
+      : 0;
+
+    src.connect(bgmGain).connect(bgmCtx.destination);
+
+    // resume after first user interaction
+    document.addEventListener("click", () => bgmCtx.resume(), { once: true });
+  }
+
+  function playBGM() {
+    if (!bgmAudio || !state.settings.soundEnabled) return;
+    bgmAudio.play().catch(() => {});
+  }
+
+  function stopBGM() {
+    if (bgmAudio) bgmAudio.pause();
+  }
+
+  function updateBGMVolume() {
+    if (!bgmGain) return;
+    bgmGain.gain.value = state.settings.soundEnabled
+      ? (state.settings.volume / 100) * 0.25
+      : 0;
+  }
 
   // -------------------- Apply Settings (DOM) --------------------
   function applyReduceMotion() {
@@ -354,12 +399,17 @@
     }
 
     saveBool(STORAGE.sound, !!state.settings.soundEnabled);
+
+    updateBGMVolume();
+    if (state.settings.soundEnabled) playBGM();
+    else stopBGM();
   }
 
   function applyVolumeUI() {
     if (volumeSlider) volumeSlider.value = String(state.settings.volume);
     if (volumeValue) volumeValue.textContent = `${state.settings.volume}%`;
     saveNum(STORAGE.volume, state.settings.volume);
+    updateBGMVolume();
   }
 
   function applyTheme() {
@@ -512,6 +562,8 @@
           state.booting = false;
           setActiveScreen("home", { pushHistory: false });
           onEnterHome();
+          initBGM();
+          playBGM();
         }, 450);
         return;
       }
@@ -973,87 +1025,88 @@
   }
 
   function moveFocus(delta) {
-  const items = getContextItems();
-  if (!items.length) return;
+    const items = getContextItems();
+    if (!items.length) return;
 
-  let i = clamp(state.focus.index + delta, 0, items.length - 1);
-  state.focus.index = i;
+    let i = clamp(state.focus.index + delta, 0, items.length - 1);
+    state.focus.index = i;
 
-  const el = items[i];
-  focusEl(el);
-
-  if (state.focus.context === "games") {
-    const cards = getGameCards();
-    const cardIdx = cards.indexOf(el);
-    if (cardIdx >= 0) state.gamesUI.lastGridFocus = cardIdx;
-  }
-}
-
-// -------------------- Focus movement (Directional / Console-like) --------------------
-function moveFocusDir(direction) {
-  const items = getContextItems();
-  if (!items.length) return;
-
-  // If nothing focused yet, focus first item.
-  let currentEl = items[state.focus.index] || items[0];
-  if (!currentEl) return;
-
-  // Ensure current index matches currentEl
-  let currentIdx = items.indexOf(currentEl);
-  if (currentIdx < 0) currentIdx = 0;
-
-  const cur = currentEl.getBoundingClientRect();
-
-  let bestIdx = -1;
-  let bestScore = Infinity;
-
-  for (let i = 0; i < items.length; i++) {
     const el = items[i];
-    if (!el || el === currentEl) continue;
-    const r = el.getBoundingClientRect();
-
-    const dx = r.left - cur.left;
-    const dy = r.top - cur.top;
-
-    // Filter candidates by direction
-    if (
-      (direction === "RIGHT" && dx <= 0) ||
-      (direction === "LEFT" && dx >= 0) ||
-      (direction === "DOWN" && dy <= 0) ||
-      (direction === "UP" && dy >= 0)
-    ) continue;
-
-    // Prefer closer in the intended axis; penalize cross-axis drift.
-    let primary = 0, secondary = 0;
-    if (direction === "RIGHT" || direction === "LEFT") {
-      primary = Math.abs(dx);
-      secondary = Math.abs(dy);
-    } else {
-      primary = Math.abs(dy);
-      secondary = Math.abs(dx);
-    }
-
-    const score = primary * primary + secondary * secondary * 1.5;
-    if (score < bestScore) {
-      bestScore = score;
-      bestIdx = i;
-    }
-  }
-
-  if (bestIdx >= 0) {
-    state.focus.index = bestIdx;
-    const el = items[bestIdx];
     focusEl(el);
 
-    // Keep games grid memory in sync
     if (state.focus.context === "games") {
       const cards = getGameCards();
       const cardIdx = cards.indexOf(el);
       if (cardIdx >= 0) state.gamesUI.lastGridFocus = cardIdx;
     }
   }
-}
 
+  // -------------------- Focus movement (Directional / Console-like) --------------------
+  function moveFocusDir(direction) {
+    const items = getContextItems();
+    if (!items.length) return;
+
+    // If nothing focused yet, focus first item.
+    let currentEl = items[state.focus.index] || items[0];
+    if (!currentEl) return;
+
+    // Ensure current index matches currentEl
+    let currentIdx = items.indexOf(currentEl);
+    if (currentIdx < 0) currentIdx = 0;
+
+    const cur = currentEl.getBoundingClientRect();
+
+    let bestIdx = -1;
+    let bestScore = Infinity;
+
+    for (let i = 0; i < items.length; i++) {
+      const el = items[i];
+      if (!el || el === currentEl) continue;
+      const r = el.getBoundingClientRect();
+
+      const dx = r.left - cur.left;
+      const dy = r.top - cur.top;
+
+      // Filter candidates by direction
+      if (
+        (direction === "RIGHT" && dx <= 0) ||
+        (direction === "LEFT" && dx >= 0) ||
+        (direction === "DOWN" && dy <= 0) ||
+        (direction === "UP" && dy >= 0)
+      )
+        continue;
+
+      // Prefer closer in the intended axis; penalize cross-axis drift.
+      let primary = 0,
+        secondary = 0;
+      if (direction === "RIGHT" || direction === "LEFT") {
+        primary = Math.abs(dx);
+        secondary = Math.abs(dy);
+      } else {
+        primary = Math.abs(dy);
+        secondary = Math.abs(dx);
+      }
+
+      const score = primary * primary + secondary * secondary * 1.5;
+      if (score < bestScore) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+
+    if (bestIdx >= 0) {
+      state.focus.index = bestIdx;
+      const el = items[bestIdx];
+      focusEl(el);
+
+      // Keep games grid memory in sync
+      if (state.focus.context === "games") {
+        const cards = getGameCards();
+        const cardIdx = cards.indexOf(el);
+        if (cardIdx >= 0) state.gamesUI.lastGridFocus = cardIdx;
+      }
+    }
+  }
 
   // -------------------- Navigation (Tab switching) --------------------
   function openTab(tab) {
@@ -1612,6 +1665,7 @@ function moveFocusDir(direction) {
       state.sleeping = true;
       sleepOverlay?.classList.add("is-active");
       sleepOverlay?.setAttribute("aria-hidden", "false");
+      stopBGM();
       return;
     }
 
@@ -1638,6 +1692,7 @@ function moveFocusDir(direction) {
     showToast("Woke up");
     uiSound.ok();
     focusFirstInContext();
+    playBGM();
   }
 
   function powerOnFromOff() {
