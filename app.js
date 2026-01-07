@@ -258,6 +258,7 @@
   let bgmAudio = null;
   let bgmCtx = null;
   let bgmGain = null;
+  let bgmPendingPlay = false;
 
   // -------------------- Sound Engine (volume + enabled) --------------------
   let audioCtx = null;
@@ -332,7 +333,14 @@
 
   function playBGM() {
     if (!bgmAudio || !state.settings.soundEnabled) return;
-    bgmAudio.play().catch(() => {});
+
+    const p = bgmAudio.play();
+    if (p && typeof p.catch === "function") {
+      p.catch(() => {
+        // Autoplay blocked -> wait for user gesture then retry
+        bgmPendingPlay = true;
+      });
+    }
   }
 
   function stopBGM() {
