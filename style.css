@@ -3178,3 +3178,5 @@ input.is-focused,
 textarea.is-focused {
   outline-offset: 2px;
 }
+
+audio { display:none !important; }
