@@ -2294,6 +2294,96 @@
     }
   });
   mo.observe(bootScreen, { attributes: true, attributeFilter: ["class"] });
-
   requestAnimationFrame(frame);
+
+  // -------------------- Gamepad Support (added) --------------------
+  // Maps common controllers:
+  // D-pad -> Arrows, A -> Enter, B -> Escape, LB/RB -> [ / ], Start -> P (power menu)
+  (() => {
+    const BTN = { A: 0, B: 1, LB: 4, RB: 5, START: 9, DU: 12, DD: 13, DL: 14, DR: 15 };
+    let lastButtons = [];
+    let lastAxes = [];
+    let lastMoveAt = 0;
+    const AXIS_THRESHOLD = 0.55;
+    const MOVE_REPEAT_MS = 140;
+
+    function dispatchKey(key) {
+      // Dispatch to document so existing keyboard handlers work unchanged.
+      const ev = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+      document.dispatchEvent(ev);
+    }
+
+    function setControllerConnected(isOn) {
+      // Non-breaking: if state/controller UI exists, update it.
+      try {
+        state.controllerConnected = !!isOn;
+      } catch {}
+      const el = document.querySelector("#controllerStatus, #controllerIcon, .controller-status, [data-controller-status]");
+      if (el) {
+        el.classList.toggle("is-on", !!isOn);
+        el.setAttribute("aria-label", isOn ? "Controller connected" : "Controller disconnected");
+      }
+    }
+
+    window.addEventListener("gamepadconnected", () => setControllerConnected(true));
+    window.addEventListener("gamepaddisconnected", () => {
+      const any = (navigator.getGamepads?.() || []).some((g) => g);
+      setControllerConnected(any);
+    });
+
+    function tick(ts) {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      const gp = pads && pads[0];
+
+      if (!gp) {
+        setControllerConnected(false);
+        requestAnimationFrame(tick);
+        return;
+      }
+      setControllerConnected(true);
+
+      // Buttons (edge-detect)
+      const btns = gp.buttons || [];
+      for (let i = 0; i < btns.length; i++) {
+        const pressed = !!btns[i]?.pressed;
+        const was = !!lastButtons[i];
+        if (pressed && !was) {
+          if (i === BTN.A) dispatchKey("Enter");
+          else if (i === BTN.B) dispatchKey("Escape");
+          else if (i === BTN.LB) dispatchKey("[");
+          else if (i === BTN.RB) dispatchKey("]");
+          else if (i === BTN.START) dispatchKey("p");
+          else if (i === BTN.DU) dispatchKey("ArrowUp");
+          else if (i === BTN.DD) dispatchKey("ArrowDown");
+          else if (i === BTN.DL) dispatchKey("ArrowLeft");
+          else if (i === BTN.DR) dispatchKey("ArrowRight");
+        }
+        lastButtons[i] = pressed;
+      }
+
+      // Left stick as optional navigation with repeat rate
+      const axes = gp.axes || [];
+      const ax0 = axes[0] ?? 0;
+      const ax1 = axes[1] ?? 0;
+
+      const now = ts || performance.now();
+      const canRepeat = now - lastMoveAt >= MOVE_REPEAT_MS;
+
+      // Only repeat when stick held in one direction
+      if (canRepeat) {
+        if (ax1 <= -AXIS_THRESHOLD) { dispatchKey("ArrowUp"); lastMoveAt = now; }
+        else if (ax1 >= AXIS_THRESHOLD) { dispatchKey("ArrowDown"); lastMoveAt = now; }
+        else if (ax0 <= -AXIS_THRESHOLD) { dispatchKey("ArrowLeft"); lastMoveAt = now; }
+        else if (ax0 >= AXIS_THRESHOLD) { dispatchKey("ArrowRight"); lastMoveAt = now; }
+      }
+
+      lastAxes = axes.slice(0);
+
+      requestAnimationFrame(tick);
+    }
+
+    // Start polling
+    requestAnimationFrame(tick);
+  })();
+
 })();
