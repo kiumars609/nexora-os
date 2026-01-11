@@ -1607,19 +1607,17 @@
   }
 
   function openGameDetails(gameId) {
-    const game = state.games.find((g) => g.id === id);
+    const game = getGameById(gameId);
     if (!game) return;
 
+    // ✅ background cover for details screen (optional)
     const bg = document.getElementById("gameDetailsBg");
-    if (bg && game.cover) {
-      bg.style.backgroundImage = `url("${game.cover}")`;
+    if (bg) {
+      bg.style.backgroundImage = game.cover ? `url("${game.cover}")` : "";
     }
 
-    const g = getGameById(gameId);
-    if (!g) return;
-
     setActiveScreen("game-details", { pushHistory: true });
-    updateDetailsUI(g);
+    updateDetailsUI(game);
 
     // focus play
     setTimeout(() => playBtn?.focus?.(), 0);
