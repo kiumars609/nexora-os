@@ -3,7 +3,7 @@
 *::after {
   box-sizing: border-box;
 }
-:root{
+:root {
   --hero-bg: url("assets/images/games/tlou2/cover.jpg");
 }
 
@@ -134,8 +134,7 @@ body.theme-neon {
   padding: 38px 44px;
   border-radius: 22px;
 
-  background:
-    linear-gradient(to top, rgba(5,6,7,.92), rgba(5,6,7,.25)),
+  background: linear-gradient(to top, rgba(5, 6, 7, 0.92), rgba(5, 6, 7, 0.25)),
     var(--hero-bg);
 
   background-position: center;
@@ -3255,4 +3254,46 @@ audio {
 
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(220, 235, 255, 0.14);
+}
+.game-details-screen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.game-details-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(12px) brightness(0.45);
+  transform: scale(1.1);
+  opacity: 0;
+  transition: opacity 360ms ease;
+  z-index: 0;
+}
+
+.game-details-screen.is-active .game-details-bg {
+  opacity: 1;
+}
+
+/* محتوا روی عکس */
+.game-details-screen > *:not(.game-details-bg) {
+  position: relative;
+  z-index: 2;
+}
+
+.game-details-screen.is-active .details-title {
+  animation: fadeUp 0.4s ease forwards;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

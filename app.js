@@ -1284,51 +1284,51 @@
   }
 
   function migrateGameCoversIfNeeded() {
-  if (!Array.isArray(state.games) || !state.games.length) return;
+    if (!Array.isArray(state.games) || !state.games.length) return;
 
-  let changed = false;
+    let changed = false;
 
-  state.games = state.games.map((g) => {
-    const id = g?.id;
-    let cover = (g?.cover || "").trim();
+    state.games = state.games.map((g) => {
+      const id = g?.id;
+      let cover = (g?.cover || "").trim();
 
-    const looksLocal =
-      cover.startsWith("assets/") ||
-      cover.startsWith("./") ||
-      (cover.endsWith(".jpg") && !cover.startsWith("http"));
+      const looksLocal =
+        cover.startsWith("assets/") ||
+        cover.startsWith("./") ||
+        (cover.endsWith(".jpg") && !cover.startsWith("http"));
 
-    const missing = !cover;
+      const missing = !cover;
 
-    if ((missing || looksLocal) && COVER_LIBRARY[id]) {
-      cover = COVER_LIBRARY[id];
-      changed = true;
-      return { ...g, cover }; // ✅ درست
+      if ((missing || looksLocal) && COVER_LIBRARY[id]) {
+        cover = COVER_LIBRARY[id];
+        changed = true;
+        return { ...g, cover }; // ✅ درست
+      }
+
+      return g;
+    });
+
+    if (changed) saveJson(STORAGE.games, state.games);
+  }
+
+  function getVisibleGames() {
+    let list = [...state.games]; // ✅ درست
+
+    if (state.gamesUI.filter === "installed") {
+      list = list.filter((g) => !!g.installed);
     }
 
-    return g;
-  });
+    const q = (state.gamesUI.search || "").trim().toLowerCase();
+    if (q) list = list.filter((g) => g.title.toLowerCase().includes(q));
 
-  if (changed) saveJson(STORAGE.games, state.games);
-}
+    if (state.gamesUI.sort === "az") {
+      list.sort((a, b) => a.title.localeCompare(b.title));
+    } else {
+      list.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+    }
 
-function getVisibleGames() {
-  let list = [...state.games]; // ✅ درست
-
-  if (state.gamesUI.filter === "installed") {
-    list = list.filter((g) => !!g.installed);
+    return list;
   }
-
-  const q = (state.gamesUI.search || "").trim().toLowerCase();
-  if (q) list = list.filter((g) => g.title.toLowerCase().includes(q));
-
-  if (state.gamesUI.sort === "az") {
-    list.sort((a, b) => a.title.localeCompare(b.title));
-  } else {
-    list.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
-  }
-
-  return list;
-}
 
   function saveGamesState() {
     saveJson(STORAGE.games, state.games);
@@ -1376,92 +1376,90 @@ function getVisibleGames() {
   }
 
   function renderGamesGrid() {
-  if (!gamesGrid) return;
+    if (!gamesGrid) return;
 
-  const list = getVisibleGames();
-  gamesGrid.innerHTML = "";
+    const list = getVisibleGames();
+    gamesGrid.innerHTML = "";
 
-  list.forEach((g) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "game-card";
-    btn.dataset.id = g.id;
-    btn.setAttribute("aria-selected", "false");
-    btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
+    list.forEach((g) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "game-card";
+      btn.dataset.id = g.id;
+      btn.setAttribute("aria-selected", "false");
+      btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
 
-    // ✅ Cover element
-    const cover = document.createElement("span");
-    cover.className = "gc-cover";
-    // اول خالی می‌ذاریم، بعد با applyCardCover پر می‌کنیم (با onload/onerror)
-    cover.style.backgroundImage =
-      "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.35))";
+      // ✅ Cover element
+      const cover = document.createElement("span");
+      cover.className = "gc-cover";
+      // اول خالی می‌ذاریم، بعد با applyCardCover پر می‌کنیم (با onload/onerror)
+      cover.style.backgroundImage =
+        "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.35))";
 
-    // ✅ Badge
-    const badge = document.createElement("span");
-    badge.className = "gc-badge" + (g.installed ? " is-installed" : "");
-    badge.textContent = g.installed ? "Installed" : "Get";
+      // ✅ Badge
+      const badge = document.createElement("span");
+      badge.className = "gc-badge" + (g.installed ? " is-installed" : "");
+      badge.textContent = g.installed ? "Installed" : "Get";
 
-    // ✅ Info wrapper
-    const info = document.createElement("div");
-    info.className = "gc-info";
+      // ✅ Info wrapper
+      const info = document.createElement("div");
+      info.className = "gc-info";
 
-    const left = document.createElement("div");
+      const left = document.createElement("div");
 
-    const title = document.createElement("div");
-    title.className = "gc-title";
-    title.textContent = (g.title || "").toUpperCase();
+      const title = document.createElement("div");
+      title.className = "gc-title";
+      title.textContent = (g.title || "").toUpperCase();
 
-    const line = document.createElement("div");
-    line.className = "gc-line";
-    line.textContent = `${(g.genre || "Game").toUpperCase()} • ${
-      g.installed ? "INSTALLED" : "AVAILABLE"
-    }`;
+      const line = document.createElement("div");
+      line.className = "gc-line";
+      line.textContent = `${(g.genre || "Game").toUpperCase()} • ${
+        g.installed ? "INSTALLED" : "AVAILABLE"
+      }`;
 
-    left.appendChild(title);
-    left.appendChild(line);
+      left.appendChild(title);
+      left.appendChild(line);
 
-    const meta = document.createElement("div");
-    meta.className = "gc-meta";
+      const meta = document.createElement("div");
+      meta.className = "gc-meta";
 
-    const chip1 = document.createElement("div");
-    chip1.className = "gc-chip";
-    chip1.textContent = g.installed ? "PLAY" : "GET";
+      const chip1 = document.createElement("div");
+      chip1.className = "gc-chip";
+      chip1.textContent = g.installed ? "PLAY" : "GET";
 
-    const chip2 = document.createElement("div");
-    chip2.className = "gc-chip is-get";
-    chip2.textContent = g.installed ? `${(g.size || 0).toFixed(0)} GB` : "—";
+      const chip2 = document.createElement("div");
+      chip2.className = "gc-chip is-get";
+      chip2.textContent = g.installed ? `${(g.size || 0).toFixed(0)} GB` : "—";
 
-    meta.appendChild(chip1);
-    meta.appendChild(chip2);
+      meta.appendChild(chip1);
+      meta.appendChild(chip2);
 
-    info.appendChild(left);
-    info.appendChild(meta);
+      info.appendChild(left);
+      info.appendChild(meta);
 
-    // assemble
-    btn.appendChild(badge);
-    btn.appendChild(cover);
-    btn.appendChild(info);
+      // assemble
+      btn.appendChild(badge);
+      btn.appendChild(cover);
+      btn.appendChild(info);
 
-    // ✅ این خط باعث میشه کاور واقعاً لود بشه
-    applyCardCover(cover, g.cover, btn);
+      // ✅ این خط باعث میشه کاور واقعاً لود بشه
+      applyCardCover(cover, g.cover, btn);
 
-    // click
-    btn.onclick = () => openGameDetails(g.id);
+      // click
+      btn.onclick = () => openGameDetails(g.id);
 
-    gamesGrid.appendChild(btn);
-  });
+      gamesGrid.appendChild(btn);
+    });
 
-  // empty state
-  if (!list.length) {
-    const empty = document.createElement("div");
-    empty.style.cssText =
-      "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
-    empty.textContent = "No games found";
-    gamesGrid.appendChild(empty);
+    // empty state
+    if (!list.length) {
+      const empty = document.createElement("div");
+      empty.style.cssText =
+        "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
+      empty.textContent = "No games found";
+      gamesGrid.appendChild(empty);
+    }
   }
-}
-
-
 
   function updateGamesFiltersUI() {
     if (filterValue)
@@ -1609,6 +1607,14 @@ function getVisibleGames() {
   }
 
   function openGameDetails(gameId) {
+    const game = state.games.find((g) => g.id === id);
+    if (!game) return;
+
+    const bg = document.getElementById("gameDetailsBg");
+    if (bg && game.cover) {
+      bg.style.backgroundImage = `url("${game.cover}")`;
+    }
+
     const g = getGameById(gameId);
     if (!g) return;
 
@@ -2188,7 +2194,6 @@ function getVisibleGames() {
     renderGamesGrid();
     updateQuickResumeUI();
     updateProfileUI();
-    
 
     bindNav();
     bindBackButtons();
