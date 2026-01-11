@@ -4,7 +4,11 @@
     <meta charset="UTF-8" />
     <title>Nexora OS</title>
     <link rel="stylesheet" href="./style.css" />
-    <link rel="icon" href="assets/images/icones/nexora-os.ico" type="image/x-icon">
+    <link
+      rel="icon"
+      href="assets/images/icones/nexora-os.ico"
+      type="image/x-icon"
+    />
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self' https: data: blob:;
@@ -78,18 +82,59 @@
 
       <!-- GLOBAL NAV (برای همه صفحات) -->
       <nav class="nav" aria-label="Main navigation" role="tablist">
-        <button class="nav-item active" data-screen="home" type="button" role="tab" aria-controls="homePanel" aria-selected="true">HOME</button>
-        <button class="nav-item" data-screen="games" type="button" role="tab" aria-controls="gamesPanel" aria-selected="false">GAMES</button>
-        <button class="nav-item" data-screen="media" type="button" role="tab" aria-controls="mediaPanel" aria-selected="false">MEDIA</button>
-        <button class="nav-item" data-screen="system" type="button" role="tab" aria-controls="systemPanel" aria-selected="false">SYSTEM</button>
+        <button
+          class="nav-item active"
+          data-screen="home"
+          type="button"
+          role="tab"
+          aria-controls="homePanel"
+          aria-selected="true"
+        >
+          HOME
+        </button>
+        <button
+          class="nav-item"
+          data-screen="games"
+          type="button"
+          role="tab"
+          aria-controls="gamesPanel"
+          aria-selected="false"
+        >
+          GAMES
+        </button>
+        <button
+          class="nav-item"
+          data-screen="media"
+          type="button"
+          role="tab"
+          aria-controls="mediaPanel"
+          aria-selected="false"
+        >
+          MEDIA
+        </button>
+        <button
+          class="nav-item"
+          data-screen="system"
+          type="button"
+          role="tab"
+          aria-controls="systemPanel"
+          aria-selected="false"
+        >
+          SYSTEM
+        </button>
       </nav>
 
       <!-- Screens -->
       <section class="screens">
         <!-- HOME -->
-        <section class="screen home-screen is-active" id="homePanel" role="tabpanel" aria-label="Home">
+        <section
+          class="screen home-screen is-active"
+          id="homePanel"
+          role="tabpanel"
+          aria-label="Home"
+        >
           <!-- Hero -->
-          <section class="hero">
+          <section class="hero" id="hero">
             <div class="hero-title">The Last of Us Part 2</div>
             <div class="hero-actions">
               <button class="hero-btn primary">Resume</button>
@@ -101,7 +146,9 @@
           <section class="context-cards">
             <div class="context-card" tabindex="0" id="quickResumeCard">
               <div class="context-title">Quick Resume</div>
-              <div class="context-value"><span id="quickResumeValue">2 Games</span></div>
+              <div class="context-value">
+                <span id="quickResumeValue">2 Games</span>
+              </div>
               <div class="context-sub">Ready to play</div>
             </div>
 
@@ -126,7 +173,12 @@
         </section>
 
         <!-- GAMES -->
-        <section class="screen games-screen" id="gamesPanel" role="tabpanel" aria-label="Games">
+        <section
+          class="screen games-screen"
+          id="gamesPanel"
+          role="tabpanel"
+          aria-label="Games"
+        >
           <button class="back-btn" data-action="back" type="button">
             ← Back
           </button>
@@ -135,8 +187,16 @@
           <div class="games-title">GAMES LIBRARY</div>
 
           <section class="games-grid" id="gamesGrid">
-            <button class="game-card" data-game="The Last of Us Part 2">
-              The Last of Us Part 2
+            <button class="game-card" data-game="tlou2">
+              <img
+                src="assets/images/games/tlou2/thumb.jpg"
+                alt="The Last of Us Part II"
+              />
+              <div class="game-meta">
+                <div class="game-name">THE LAST OF US PART II</div>
+                <div class="game-sub">ACTION • INSTALLED</div>
+              </div>
+              <div class="game-chip">PLAY</div>
             </button>
             <button class="game-card" data-game="God of War Ragnarok">
               God of War Ragnarok
@@ -153,7 +213,12 @@
         </section>
 
         <!-- MEDIA -->
-        <section class="screen media-screen" id="mediaPanel" role="tabpanel" aria-label="Media">
+        <section
+          class="screen media-screen"
+          id="mediaPanel"
+          role="tabpanel"
+          aria-label="Media"
+        >
           <button class="back-btn" data-action="back" type="button">
             ← Back
           </button>
@@ -205,7 +270,12 @@
         </section>
 
         <!-- SYSTEM -->
-        <section class="screen system-screen" id="systemPanel" role="tabpanel" aria-label="System">
+        <section
+          class="screen system-screen"
+          id="systemPanel"
+          role="tabpanel"
+          aria-label="System"
+        >
           <button class="back-btn" data-action="back" type="button">
             ← Back
           </button>
@@ -299,10 +369,18 @@
               <div class="context-value" id="themeValue">Dark</div>
               <div class="context-sub">Dark / Ice / Neon</div>
 
-              <button class="hero-btn" id="themeAuroraBtn" type="button">Aurora</button>
-<button class="hero-btn" id="themeLavaBtn" type="button">Lava</button>
-<button class="hero-btn" id="themeSakuraBtn" type="button">Sakura</button>
-<button class="hero-btn" id="themeFrostBtn" type="button">Frost</button>
+              <button class="hero-btn" id="themeAuroraBtn" type="button">
+                Aurora
+              </button>
+              <button class="hero-btn" id="themeLavaBtn" type="button">
+                Lava
+              </button>
+              <button class="hero-btn" id="themeSakuraBtn" type="button">
+                Sakura
+              </button>
+              <button class="hero-btn" id="themeFrostBtn" type="button">
+                Frost
+              </button>
 
               <div class="details-actions" style="margin-top: 12px">
                 <button
@@ -386,29 +464,28 @@
     <!-- BOOT SCREEN -->
     <div class="boot-screen is-active" id="bootScreen" aria-hidden="false">
       <!-- PS6-like Background FX -->
-<canvas id="bootFx" class="boot-fx" aria-hidden="true"></canvas>
-<div class="fx-overlay" aria-hidden="true"></div>
+      <canvas id="bootFx" class="boot-fx" aria-hidden="true"></canvas>
+      <div class="fx-overlay" aria-hidden="true"></div>
 
-<div class="boot-inner">
-  <div class="boot-brand" aria-label="Nexora OS">
-    <img
-      class="boot-brand-logo"
-      src="assets/images/branding/nexora-os-logo.png"
-      alt="Nexora OS Logo"
-      draggable="false"
-    />
-    <div class="boot-brand-text">NEXORA-OS</div>
-  </div>
+      <div class="boot-inner">
+        <div class="boot-brand" aria-label="Nexora OS">
+          <img
+            class="boot-brand-logo"
+            src="assets/images/branding/nexora-os-logo.png"
+            alt="Nexora OS Logo"
+            draggable="false"
+          />
+          <div class="boot-brand-text">NEXORA-OS</div>
+        </div>
 
-  <div class="boot-sub" id="bootSub">Initializing system...</div>
+        <div class="boot-sub" id="bootSub">Initializing system...</div>
 
-  <div class="boot-bar">
-    <div class="boot-bar-fill" id="bootBarFill"></div>
-  </div>
+        <div class="boot-bar">
+          <div class="boot-bar-fill" id="bootBarFill"></div>
+        </div>
 
-  <div class="boot-percent" id="bootPercent">0%</div>
-</div>
-
+        <div class="boot-percent" id="bootPercent">0%</div>
+      </div>
     </div>
 
     <!-- LOADING OVERLAY -->
@@ -525,38 +602,47 @@
       </div>
     </div>
 
-    
-<!-- Media Overlay -->
-      <div class="overlay" id="mediaOverlay" aria-hidden="true" role="dialog" aria-modal="true">
-        <div class="overlay-box">
-          <div class="overlay-title" id="mediaOverlayTitle">Media</div>
-          <div class="overlay-body" id="mediaOverlayBody">Coming soon…</div>
-          <div class="overlay-actions">
-            <button class="hero-btn primary" id="mediaOpenBtn">Open</button>
-            <button class="hero-btn" id="mediaBackBtn">Back</button>
-          </div>
+    <!-- Media Overlay -->
+    <div
+      class="overlay"
+      id="mediaOverlay"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="overlay-box">
+        <div class="overlay-title" id="mediaOverlayTitle">Media</div>
+        <div class="overlay-body" id="mediaOverlayBody">Coming soon…</div>
+        <div class="overlay-actions">
+          <button class="hero-btn primary" id="mediaOpenBtn">Open</button>
+          <button class="hero-btn" id="mediaBackBtn">Back</button>
         </div>
       </div>
+    </div>
 
-      <!-- Quick Resume Overlay -->
-      <div class="overlay" id="quickResumeOverlay" aria-hidden="true" role="dialog" aria-modal="true">
-        <div class="overlay-box">
-          <div class="overlay-title">Quick Resume</div>
-          <div class="overlay-body">
-            <div class="qr-list" id="qrList" role="listbox" aria-label="Suspended games"></div>
-          </div>
-          <div class="overlay-actions">
-            <button class="hero-btn" id="qrCloseBtn">Back</button>
-          </div>
+    <!-- Quick Resume Overlay -->
+    <div
+      class="overlay"
+      id="quickResumeOverlay"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="overlay-box">
+        <div class="overlay-title">Quick Resume</div>
+        <div class="overlay-body">
+          <div
+            class="qr-list"
+            id="qrList"
+            role="listbox"
+            aria-label="Suspended games"
+          ></div>
+        </div>
+        <div class="overlay-actions">
+          <button class="hero-btn" id="qrCloseBtn">Back</button>
         </div>
       </div>
-
-
-
-
-
-
-
+    </div>
 
     <script src="app.js"></script>
   </body>
