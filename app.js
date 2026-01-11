@@ -1295,7 +1295,6 @@
       const looksLocal =
         cover.startsWith("assets/") ||
         cover.startsWith("./") ||
-        cover.startsWith("../") ||
         (cover.endsWith(".jpg") && !cover.startsWith("http"));
 
       const missing = !cover;
@@ -1303,10 +1302,9 @@
       if ((missing || looksLocal) && COVER_LIBRARY[id]) {
         cover = COVER_LIBRARY[id];
         changed = true;
-        return { ...g, cover };
+        return { ...g, cover }; // ✅ درست
       }
 
-      // اگر id کاور خاصی نداشت، همون رو نگه دار (یا خالی)
       return g;
     });
 
@@ -1320,10 +1318,11 @@
   }
 
   function getVisibleGames() {
-    let list = [...state.games];
+    let list = [...state.games]; // ✅ درست
 
-    if (state.gamesUI.filter === "installed")
+    if (state.gamesUI.filter === "installed") {
       list = list.filter((g) => !!g.installed);
+    }
 
     const q = (state.gamesUI.search || "").trim().toLowerCase();
     if (q) list = list.filter((g) => g.title.toLowerCase().includes(q));
@@ -1360,83 +1359,63 @@
   }
 
   function renderGamesGrid() {
-    if (!gamesGrid) return;
-    const list = getVisibleGames();
-    gamesGrid.innerHTML = "";
+  if (!gamesGrid) return;
 
-    list.forEach((g) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "game-card";
-      btn.dataset.id = g.id;
-      btn.setAttribute("aria-selected", "false");
-      btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
+  const list = getVisibleGames();
+  gamesGrid.innerHTML = "";
 
-      // cover style
-      const coverStyle = g.cover
-        ? `background-image:url("${g.cover}")`
-        : `background-image:
-          radial-gradient(800px 420px at 20% 20%, rgba(124,195,255,0.22), transparent 60%),
-          radial-gradient(700px 420px at 85% 25%, rgba(255,77,230,0.14), transparent 60%),
-          radial-gradient(900px 520px at 55% 95%, rgba(169,255,107,0.10), transparent 65%),
-          linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.35))`;
+  list.forEach((g, idx) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "game-card";
+    btn.dataset.id = g.id;
+    btn.setAttribute("aria-selected", "false");
+    btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
 
-      btn.innerHTML = `
-  <span class="gc-cover" aria-hidden="true" style="${coverStyle}"></span>
+    const coverStyle = g.cover
+      ? `background-image:url("${g.cover}")`
+      : `background-image:
+        radial-gradient(800px 420px at 20% 20%, rgba(124,195,255,0.22), transparent 60%),
+        radial-gradient(700px 420px at 85% 25%, rgba(255,77,230,0.14), transparent 60%),
+        radial-gradient(900px 520px at 55% 95%, rgba(169,255,107,0.10), transparent 65%),
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.35))`;
 
-  <span class="gc-badge ${g.installed ? "is-installed" : "is-store"}">
-    ${g.installed ? "INSTALLED" : "STORE"}
-  </span>
+    btn.innerHTML = `
+      <span class="gc-cover" aria-hidden="true" style="${coverStyle}"></span>
 
-  <span class="gc-info">
-    <span>
-      <span class="gc-title">${g.title}</span>
-      <div class="gc-line">${(g.genre || "—").toUpperCase()} • ${
-        g.installed ? "INSTALLED" : "NOT INSTALLED"
-      }</div>
-    </span>
+      <span class="gc-badge ${g.installed ? "is-installed" : "is-store"}">
+        ${g.installed ? "INSTALLED" : "STORE"}
+      </span>
 
-    <span class="gc-meta">
-      <span class="gc-chip ${g.installed ? "" : "is-get"}">${
-        g.installed ? "PLAY" : "GET"
-      }</span>
-      <span class="gc-chip" style="opacity:.7">${
-        g.size ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB` : "--"
-      }</span>
-    </span>
-  </span>
+      <span class="gc-info">
+        <span>
+          <span class="gc-title">${g.title}</span>
+          <div class="gc-line">${(g.genre || "—").toUpperCase()} • ${
+            g.installed ? "INSTALLED" : "NOT INSTALLED"
+          }</div>
+        </span>
 
-  <span class="gc-hint" aria-hidden="true">
-  ${g.installed ? "PRESS ENTER TO PLAY" : "PRESS ENTER TO GET"}
-</span>
-`;
+        <span class="gc-meta">
+          <span class="gc-chip ${g.installed ? "" : "is-get"}">
+            ${g.installed ? "PLAY" : "GET"}
+          </span>
+          <span class="gc-chip" style="opacity:.7">
+            ${g.size ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB` : "--"}
+          </span>
+        </span>
+      </span>
+    `;
 
-      const coverEl = btn.querySelector(".gc-cover");
-      applyCardCover(coverEl, g.cover, btn);
+    // کلیک روی کارت
+    btn.addEventListener("click", () => openGameDetails(g.id));
 
-      btn.addEventListener("click", () => {
-        uiSound.ok();
-        openGameDetails(g.id);
-      });
+    gamesGrid.appendChild(btn);
+  });
 
-      btn.addEventListener("focus", () => {
-        markFocused(btn);
-        const cards = getGameCards();
-        const idx = cards.indexOf(btn);
-        if (idx >= 0) state.gamesUI.lastGridFocus = idx;
-      });
+  // فوکوس هم اگر داری
+  // focusGamesGrid(state.gamesUI.lastGridFocus || 0);
+}
 
-      gamesGrid.appendChild(btn);
-    });
-
-    if (!list.length) {
-      const empty = document.createElement("div");
-      empty.style.cssText =
-        "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
-      empty.textContent = "No games found";
-      gamesGrid.appendChild(empty);
-    }
-  }
 
   function updateGamesFiltersUI() {
     if (filterValue)
