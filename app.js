@@ -1284,34 +1284,51 @@
   }
 
   function migrateGameCoversIfNeeded() {
-    if (!Array.isArray(state.games) || !state.games.length) return;
+  if (!Array.isArray(state.games) || !state.games.length) return;
 
-    let changed = false;
+  let changed = false;
 
-    state.games = state.games.map((g) => {
-      const id = g?.id;
-      let cover = (g?.cover || "").trim();
+  state.games = state.games.map((g) => {
+    const id = g?.id;
+    let cover = (g?.cover || "").trim();
 
-      const looksLocal =
-        cover.startsWith("assets/") ||
-        cover.startsWith("./") ||
-        (cover.endsWith(".jpg") && !cover.startsWith("http"));
+    const looksLocal =
+      cover.startsWith("assets/") ||
+      cover.startsWith("./") ||
+      (cover.endsWith(".jpg") && !cover.startsWith("http"));
 
-      const missing = !cover;
+    const missing = !cover;
 
-      if ((missing || looksLocal) && COVER_LIBRARY[id]) {
-        cover = COVER_LIBRARY[id];
-        changed = true;
-        return { ...g, cover }; // ✅ درست
-      }
-
-      return g;
-    });
-
-    if (changed) {
-      saveJson(STORAGE.games, state.games);
+    if ((missing || looksLocal) && COVER_LIBRARY[id]) {
+      cover = COVER_LIBRARY[id];
+      changed = true;
+      return { ...g, cover }; // ✅ درست
     }
+
+    return g;
+  });
+
+  if (changed) saveJson(STORAGE.games, state.games);
+}
+
+function getVisibleGames() {
+  let list = [...state.games]; // ✅ درست
+
+  if (state.gamesUI.filter === "installed") {
+    list = list.filter((g) => !!g.installed);
   }
+
+  const q = (state.gamesUI.search || "").trim().toLowerCase();
+  if (q) list = list.filter((g) => g.title.toLowerCase().includes(q));
+
+  if (state.gamesUI.sort === "az") {
+    list.sort((a, b) => a.title.localeCompare(b.title));
+  } else {
+    list.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+  }
+
+  return list;
+}
 
   function saveGamesState() {
     saveJson(STORAGE.games, state.games);
@@ -1364,7 +1381,7 @@
   const list = getVisibleGames();
   gamesGrid.innerHTML = "";
 
-  list.forEach((g, idx) => {
+  list.forEach((g) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "game-card";
@@ -1372,49 +1389,78 @@
     btn.setAttribute("aria-selected", "false");
     btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
 
-    const coverStyle = g.cover
-      ? `background-image:url("${g.cover}")`
-      : `background-image:
-        radial-gradient(800px 420px at 20% 20%, rgba(124,195,255,0.22), transparent 60%),
-        radial-gradient(700px 420px at 85% 25%, rgba(255,77,230,0.14), transparent 60%),
-        radial-gradient(900px 520px at 55% 95%, rgba(169,255,107,0.10), transparent 65%),
-        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.35))`;
+    // ✅ Cover element
+    const cover = document.createElement("span");
+    cover.className = "gc-cover";
+    // اول خالی می‌ذاریم، بعد با applyCardCover پر می‌کنیم (با onload/onerror)
+    cover.style.backgroundImage =
+      "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.35))";
 
-    btn.innerHTML = `
-      <span class="gc-cover" aria-hidden="true" style="${coverStyle}"></span>
+    // ✅ Badge
+    const badge = document.createElement("span");
+    badge.className = "gc-badge" + (g.installed ? " is-installed" : "");
+    badge.textContent = g.installed ? "Installed" : "Get";
 
-      <span class="gc-badge ${g.installed ? "is-installed" : "is-store"}">
-        ${g.installed ? "INSTALLED" : "STORE"}
-      </span>
+    // ✅ Info wrapper
+    const info = document.createElement("div");
+    info.className = "gc-info";
 
-      <span class="gc-info">
-        <span>
-          <span class="gc-title">${g.title}</span>
-          <div class="gc-line">${(g.genre || "—").toUpperCase()} • ${
-            g.installed ? "INSTALLED" : "NOT INSTALLED"
-          }</div>
-        </span>
+    const left = document.createElement("div");
 
-        <span class="gc-meta">
-          <span class="gc-chip ${g.installed ? "" : "is-get"}">
-            ${g.installed ? "PLAY" : "GET"}
-          </span>
-          <span class="gc-chip" style="opacity:.7">
-            ${g.size ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB` : "--"}
-          </span>
-        </span>
-      </span>
-    `;
+    const title = document.createElement("div");
+    title.className = "gc-title";
+    title.textContent = (g.title || "").toUpperCase();
 
-    // کلیک روی کارت
-    btn.addEventListener("click", () => openGameDetails(g.id));
+    const line = document.createElement("div");
+    line.className = "gc-line";
+    line.textContent = `${(g.genre || "Game").toUpperCase()} • ${
+      g.installed ? "INSTALLED" : "AVAILABLE"
+    }`;
+
+    left.appendChild(title);
+    left.appendChild(line);
+
+    const meta = document.createElement("div");
+    meta.className = "gc-meta";
+
+    const chip1 = document.createElement("div");
+    chip1.className = "gc-chip";
+    chip1.textContent = g.installed ? "PLAY" : "GET";
+
+    const chip2 = document.createElement("div");
+    chip2.className = "gc-chip is-get";
+    chip2.textContent = g.installed ? `${(g.size || 0).toFixed(0)} GB` : "—";
+
+    meta.appendChild(chip1);
+    meta.appendChild(chip2);
+
+    info.appendChild(left);
+    info.appendChild(meta);
+
+    // assemble
+    btn.appendChild(badge);
+    btn.appendChild(cover);
+    btn.appendChild(info);
+
+    // ✅ این خط باعث میشه کاور واقعاً لود بشه
+    applyCardCover(cover, g.cover, btn);
+
+    // click
+    btn.onclick = () => openGameDetails(g.id);
 
     gamesGrid.appendChild(btn);
   });
 
-  // فوکوس هم اگر داری
-  // focusGamesGrid(state.gamesUI.lastGridFocus || 0);
+  // empty state
+  if (!list.length) {
+    const empty = document.createElement("div");
+    empty.style.cssText =
+      "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
+    empty.textContent = "No games found";
+    gamesGrid.appendChild(empty);
+  }
 }
+
 
 
   function updateGamesFiltersUI() {
@@ -2138,10 +2184,11 @@
     syncClock();
 
     loadGamesState();
-    updateQuickResumeUI();
-    updateProfileUI();
     migrateGameCoversIfNeeded();
     renderGamesGrid();
+    updateQuickResumeUI();
+    updateProfileUI();
+    
 
     bindNav();
     bindBackButtons();
