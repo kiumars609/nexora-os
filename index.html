@@ -187,17 +187,33 @@
           <div class="games-title">GAMES LIBRARY</div>
 
           <section class="games-grid" id="gamesGrid">
-            <button class="game-card" data-game="tlou2">
-              <img
-                src="assets/images/games/tlou2/thumb.jpg"
-                alt="The Last of Us Part II"
-              />
-              <div class="game-meta">
-                <div class="game-name">THE LAST OF US PART II</div>
-                <div class="game-sub">ACTION • INSTALLED</div>
+            <button
+              class="game-card"
+              data-game="tlou2"
+              data-cover="assets/images/games/tlou2/cover.jpg"
+            >
+              <span class="gc-badge is-installed">Installed</span>
+
+              <span
+                class="gc-cover"
+                style="
+                  background-image: url('assets/images/games/tlou2/thumb.jpg');
+                "
+              ></span>
+
+              <div class="gc-info">
+                <div>
+                  <div class="gc-title">THE LAST OF US PART II</div>
+                  <div class="gc-line">ACTION • INSTALLED</div>
+                </div>
+
+                <div class="gc-meta">
+                  <div class="gc-chip">PLAY</div>
+                  <div class="gc-chip is-get">89 GB</div>
+                </div>
               </div>
-              <div class="game-chip">PLAY</div>
             </button>
+
             <button class="game-card" data-game="God of War Ragnarok">
               God of War Ragnarok
             </button>

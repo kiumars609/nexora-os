@@ -2578,19 +2578,16 @@
   });
 })();
 const hero = document.getElementById("hero");
+const gamesGrid = document.getElementById("gamesGrid");
 
-const gameCovers = {
-  tlou2: "assets/images/games/tlou2/cover.jpg",
-};
+if (gamesGrid && hero) {
+  gamesGrid.addEventListener("click", (e) => {
+    const card = e.target.closest(".game-card");
+    if (!card) return;
 
-document.querySelectorAll(".game-card").forEach((card) => {
-  card.addEventListener("click", () => {
-    const key = card.dataset.game; // مثلا tlou2
-    if (gameCovers[key] && hero) {
-      document.documentElement.style.setProperty(
-        "--hero-bg",
-        `url("${gameCovers[key]}")`
-      );
-    }
+    const cover = card.getAttribute("data-cover");
+    if (!cover) return;
+
+    document.documentElement.style.setProperty("--hero-bg", `url("${cover}")`);
   });
-});
+}
