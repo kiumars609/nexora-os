@@ -1382,7 +1382,7 @@
           linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.35))`;
 
       btn.innerHTML = `
-  <span class="gc-cover" aria-hidden="true"></span>
+  <span class="gc-cover" aria-hidden="true" style="${coverStyle}"></span>
 
   <span class="gc-badge ${g.installed ? "is-installed" : "is-store"}">
     ${g.installed ? "INSTALLED" : "STORE"}
