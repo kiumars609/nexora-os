@@ -49,7 +49,7 @@ Build a brand-new console-like OS experience that feels:
 ---
 
 ## Local Run
-Open `index.html` directly, or use any local server (recommended)
+Open `index.html` directly, or use any local server (recommended).
 
 ---
 
