@@ -20,6 +20,31 @@
     achievements: "nexora_achievements",
   };
 
+  const AMBIENT = {
+  tlou2: ["rgba(120,170,255,.24)", "rgba(255,255,255,.10)"],
+  gow:   ["rgba(255,210,125,.22)", "rgba(120,200,255,.10)"],
+  sp2:   ["rgba(255,90,90,.20)",  "rgba(255,255,255,.10)"],
+};
+
+function setAmbientForGame(gameId){
+  const root = document.documentElement;
+  const c = AMBIENT[gameId];
+  const main = document.querySelector(".main-os");
+  if(!main) return;
+
+  main.classList.add("has-ambient");
+
+  if(!c){
+    // اگر بازی رنگ نداشت، یه حالت پیشفرض
+    main.style.setProperty("--a1", "rgba(184,220,255,.18)");
+    main.style.setProperty("--a2", "rgba(255,255,255,.08)");
+    return;
+  }
+  main.style.setProperty("--a1", c[0]);
+  main.style.setProperty("--a2", c[1]);
+}
+
+
   function loadBool(key, def) {
     try {
       const v = localStorage.getItem(key);
@@ -1334,22 +1359,6 @@
     saveJson(STORAGE.games, state.games);
   }
 
-  function getVisibleGames() {
-    let list = [...state.games]; // ✅ درست
-
-    if (state.gamesUI.filter === "installed") {
-      list = list.filter((g) => !!g.installed);
-    }
-
-    const q = (state.gamesUI.search || "").trim().toLowerCase();
-    if (q) list = list.filter((g) => g.title.toLowerCase().includes(q));
-
-    if (state.gamesUI.sort === "az")
-      list.sort((a, b) => a.title.localeCompare(b.title));
-    else list.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
-
-    return list;
-  }
 
   function applyCardCover(coverEl, url, cardEl) {
     cardEl?.classList.remove("cover-loaded");
@@ -1386,6 +1395,7 @@
       btn.type = "button";
       btn.className = "game-card";
       btn.dataset.id = g.id;
+      btn.dataset.cover = g.cover || "";
       btn.setAttribute("aria-selected", "false");
       btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
 
@@ -1446,7 +1456,29 @@
       applyCardCover(cover, g.cover, btn);
 
       // click
-      btn.onclick = () => openGameDetails(g.id);
+      btn.onclick = () => {
+        // PS5-like hero background + ambient glow
+        try {
+          const coverUrl = g.cover || "";
+          document.documentElement.style.setProperty(
+            "--hero-bg",
+            coverUrl ? `url("${coverUrl}")` : ""
+          );
+        } catch (_) {}
+        try { setAmbientForGame(g.id); } catch (_) {}
+        openGameDetails(g.id);
+      };
+
+      btn.addEventListener("focus", () => {
+        try {
+          const coverUrl = g.cover || "";
+          document.documentElement.style.setProperty(
+            "--hero-bg",
+            coverUrl ? `url("${coverUrl}")` : ""
+          );
+        } catch (_) {}
+        try { setAmbientForGame(g.id); } catch (_) {}
+      });
 
       gamesGrid.appendChild(btn);
     });
@@ -1609,6 +1641,10 @@
   function openGameDetails(gameId) {
     const game = getGameById(gameId);
     if (!game) return;
+
+
+    // ambient glow for selected game
+    try { setAmbientForGame(game.id); } catch (_) {}
 
     // ✅ background cover for details screen (optional)
     const bg = document.getElementById("gameDetailsBg");
@@ -2606,17 +2642,3 @@
     }
   });
 })();
-const hero = document.getElementById("hero");
-const gamesGrid = document.getElementById("gamesGrid");
-
-if (gamesGrid && hero) {
-  gamesGrid.addEventListener("click", (e) => {
-    const card = e.target.closest(".game-card");
-    if (!card) return;
-
-    const cover = card.getAttribute("data-cover");
-    if (!cover) return;
-
-    document.documentElement.style.setProperty("--hero-bg", `url("${cover}")`);
-  });
-}
