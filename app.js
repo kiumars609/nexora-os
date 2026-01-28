@@ -23,21 +23,39 @@ console.log("main-os:", document.querySelector(".main-os"));
     achievements: "nexora_achievements",
   };
 
-  // ===== AMBIENT (SINGLE SOURCE OF TRUTH) =====
+  // ===== AMBIENT (ROBUST) =====
   const AMBIENT = {
     tlou2: ["rgba(120,170,255,.25)", "rgba(255,255,255,.10)"],
     gow: ["rgba(255,210,125,.22)", "rgba(120,200,255,.10)"],
     sp2: ["rgba(255,90,90,.22)", "rgba(255,255,255,.10)"],
+    re4: ["rgba(255,110,110,.18)", "rgba(255,255,255,.08)"],
+    eldenring: ["rgba(180,140,255,.18)", "rgba(255,255,255,.08)"],
+    hzd: ["rgba(120,200,255,.18)", "rgba(255,255,255,.08)"],
+    gt7: ["rgba(180,220,255,.16)", "rgba(255,255,255,.08)"],
+    stray: ["rgba(255,160,120,.18)", "rgba(255,255,255,.08)"],
   };
 
-  function setAmbientForGame(gameId) {
+  // هر چیزی رو تبدیل می‌کنه به یه کلید قابل مقایسه
+  function normKey(x) {
+    return String(x || "")
+      .toLowerCase()
+      .replace(/part\s*ii|part\s*2/g, "2")
+      .replace(/[^a-z0-9]/g, "");
+  }
+
+  function setAmbientForGame(gameId, gameTitle) {
     const main = document.querySelector(".main-os");
     if (!main) return;
 
     main.classList.add("has-ambient");
 
-    const c = AMBIENT[gameId];
+    const k1 = normKey(gameId);
+    const k2 = normKey(gameTitle);
+
+    const c = AMBIENT[k1] || AMBIENT[k2];
+
     if (!c) {
+      // پیش‌فرض (همونی که تو اسکرین‌شات می‌بینیم)
       main.style.setProperty("--a1", "rgba(184,220,255,.18)");
       main.style.setProperty("--a2", "rgba(255,255,255,.08)");
       return;
@@ -1436,8 +1454,10 @@ console.log("main-os:", document.querySelector(".main-os"));
       applyCardCover(cover, g.cover, btn);
 
       // ✅ Ambient روی hover/focus
-      btn.addEventListener("mouseenter", () => setAmbientForGame(g.id));
-      btn.addEventListener("focus", () => setAmbientForGame(g.id));
+      btn.addEventListener("mouseenter", () =>
+        setAmbientForGame(g.id, g.title)
+      );
+      btn.addEventListener("focus", () => setAmbientForGame(g.id, g.title));
 
       // ✅ Hero + Ambient + رفتن به details
       btn.addEventListener("click", () => {
@@ -1447,7 +1467,7 @@ console.log("main-os:", document.querySelector(".main-os"));
             `url("${g.cover}")`
           );
         }
-        setAmbientForGame(g.id);
+        setAmbientForGame(g.id, g.title);
         openGameDetails(g.id);
       });
 
