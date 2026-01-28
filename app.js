@@ -21,29 +21,62 @@
   };
 
   const AMBIENT = {
-  tlou2: ["rgba(120,170,255,.24)", "rgba(255,255,255,.10)"],
-  gow:   ["rgba(255,210,125,.22)", "rgba(120,200,255,.10)"],
-  sp2:   ["rgba(255,90,90,.20)",  "rgba(255,255,255,.10)"],
-};
+    tlou2: ["rgba(120,170,255,.24)", "rgba(255,255,255,.10)"],
+    gow: ["rgba(255,210,125,.22)", "rgba(120,200,255,.10)"],
+    sp2: ["rgba(255,90,90,.20)", "rgba(255,255,255,.10)"],
+  };
 
-function setAmbientForGame(gameId){
-  const root = document.documentElement;
-  const c = AMBIENT[gameId];
-  const main = document.querySelector(".main-os");
-  if(!main) return;
+  // ================== PS5 AMBIENT SYSTEM ==================
 
-  main.classList.add("has-ambient");
+  const AMBIENT_COLORS = {
+    tlou2: ["rgba(120,170,255,.25)", "rgba(255,255,255,.10)"],
+    gow: ["rgba(255,210,125,.22)", "rgba(120,200,255,.10)"],
+    sp2: ["rgba(255,90,90,.22)", "rgba(255,255,255,.10)"],
+  };
 
-  if(!c){
-    // اگر بازی رنگ نداشت، یه حالت پیشفرض
-    main.style.setProperty("--a1", "rgba(184,220,255,.18)");
-    main.style.setProperty("--a2", "rgba(255,255,255,.08)");
-    return;
+  function setAmbientForGame(id) {
+    const main = document.querySelector(".main-os");
+    const colors = AMBIENT_COLORS[id];
+    if (!main) return;
+
+    main.classList.add("has-ambient");
+
+    if (colors) {
+      main.style.setProperty("--a1", colors[0]);
+      main.style.setProperty("--a2", colors[1]);
+    }
   }
-  main.style.setProperty("--a1", c[0]);
-  main.style.setProperty("--a2", c[1]);
-}
 
+  function setAmbientForGame(id) {
+    const main = document.querySelector(".main-os");
+    const colors = AMBIENT_COLORS[id];
+    if (!main) return;
+
+    main.classList.add("has-ambient");
+
+    if (colors) {
+      main.style.setProperty("--a1", colors[0]);
+      main.style.setProperty("--a2", colors[1]);
+    }
+  }
+
+  function setAmbientForGame(gameId) {
+    const root = document.documentElement;
+    const c = AMBIENT[gameId];
+    const main = document.querySelector(".main-os");
+    if (!main) return;
+
+    main.classList.add("has-ambient");
+
+    if (!c) {
+      // اگر بازی رنگ نداشت، یه حالت پیشفرض
+      main.style.setProperty("--a1", "rgba(184,220,255,.18)");
+      main.style.setProperty("--a2", "rgba(255,255,255,.08)");
+      return;
+    }
+    main.style.setProperty("--a1", c[0]);
+    main.style.setProperty("--a2", c[1]);
+  }
 
   function loadBool(key, def) {
     try {
@@ -1359,7 +1392,6 @@ function setAmbientForGame(gameId){
     saveJson(STORAGE.games, state.games);
   }
 
-
   function applyCardCover(coverEl, url, cardEl) {
     cardEl?.classList.remove("cover-loaded");
     cardEl?.classList.remove("cover-failed");
@@ -1395,102 +1427,62 @@ function setAmbientForGame(gameId){
       btn.type = "button";
       btn.className = "game-card";
       btn.dataset.id = g.id;
-      btn.dataset.cover = g.cover || "";
-      btn.setAttribute("aria-selected", "false");
-      btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
+      btn.title = g.title;
 
-      // ✅ Cover element
-      const cover = document.createElement("span");
-      cover.className = "gc-cover";
-      // اول خالی می‌ذاریم، بعد با applyCardCover پر می‌کنیم (با onload/onerror)
-      cover.style.backgroundImage =
-        "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.35))";
+      const coverStyle = g.cover ? `background-image:url("${g.cover}")` : "";
 
-      // ✅ Badge
-      const badge = document.createElement("span");
-      badge.className = "gc-badge" + (g.installed ? " is-installed" : "");
-      badge.textContent = g.installed ? "Installed" : "Get";
+      btn.innerHTML = `
+      <span class="gc-cover" style="${coverStyle}"></span>
 
-      // ✅ Info wrapper
-      const info = document.createElement("div");
-      info.className = "gc-info";
+      <span class="gc-badge ${g.installed ? "is-installed" : "is-store"}">
+        ${g.installed ? "INSTALLED" : "STORE"}
+      </span>
 
-      const left = document.createElement("div");
-
-      const title = document.createElement("div");
-      title.className = "gc-title";
-      title.textContent = (g.title || "").toUpperCase();
-
-      const line = document.createElement("div");
-      line.className = "gc-line";
-      line.textContent = `${(g.genre || "Game").toUpperCase()} • ${
+      <span class="gc-info">
+        <span>
+          <span class="gc-title">${g.title}</span>
+          <div class="gc-line">
+            ${(g.genre || "GAME").toUpperCase()} • ${
         g.installed ? "INSTALLED" : "AVAILABLE"
-      }`;
+      }
+          </div>
+        </span>
 
-      left.appendChild(title);
-      left.appendChild(line);
+        <span class="gc-meta">
+          <span class="gc-chip ${g.installed ? "" : "is-get"}">
+            ${g.installed ? "PLAY" : "GET"}
+          </span>
+          <span class="gc-chip" style="opacity:.7">
+            ${g.size ? `${g.size} GB` : "--"}
+          </span>
+        </span>
+      </span>
+    `;
 
-      const meta = document.createElement("div");
-      meta.className = "gc-meta";
+      // ================== PS5 MAGIC ==================
 
-      const chip1 = document.createElement("div");
-      chip1.className = "gc-chip";
-      chip1.textContent = g.installed ? "PLAY" : "GET";
-
-      const chip2 = document.createElement("div");
-      chip2.className = "gc-chip is-get";
-      chip2.textContent = g.installed ? `${(g.size || 0).toFixed(0)} GB` : "—";
-
-      meta.appendChild(chip1);
-      meta.appendChild(chip2);
-
-      info.appendChild(left);
-      info.appendChild(meta);
-
-      // assemble
-      btn.appendChild(badge);
-      btn.appendChild(cover);
-      btn.appendChild(info);
-
-      // ✅ این خط باعث میشه کاور واقعاً لود بشه
-      applyCardCover(cover, g.cover, btn);
-
-      // click
-      btn.onclick = () => {
-        // PS5-like hero background + ambient glow
-        try {
-          const coverUrl = g.cover || "";
-          document.documentElement.style.setProperty(
-            "--hero-bg",
-            coverUrl ? `url("${coverUrl}")` : ""
-          );
-        } catch (_) {}
-        try { setAmbientForGame(g.id); } catch (_) {}
-        openGameDetails(g.id);
-      };
+      btn.addEventListener("mouseenter", () => {
+        setAmbientForGame(g.id);
+      });
 
       btn.addEventListener("focus", () => {
-        try {
-          const coverUrl = g.cover || "";
+        setAmbientForGame(g.id);
+      });
+
+      btn.addEventListener("click", () => {
+        if (g.cover) {
           document.documentElement.style.setProperty(
             "--hero-bg",
-            coverUrl ? `url("${coverUrl}")` : ""
+            `url("${g.cover}")`
           );
-        } catch (_) {}
-        try { setAmbientForGame(g.id); } catch (_) {}
+        }
+
+        setAmbientForGame(g.id);
+        openGameDetails(g.id);
       });
 
       gamesGrid.appendChild(btn);
     });
-
-    // empty state
-    if (!list.length) {
-      const empty = document.createElement("div");
-      empty.style.cssText =
-        "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
-      empty.textContent = "No games found";
-      gamesGrid.appendChild(empty);
-    }
   }
 
   function updateGamesFiltersUI() {
@@ -1642,9 +1634,10 @@ function setAmbientForGame(gameId){
     const game = getGameById(gameId);
     if (!game) return;
 
-
     // ambient glow for selected game
-    try { setAmbientForGame(game.id); } catch (_) {}
+    try {
+      setAmbientForGame(game.id);
+    } catch (_) {}
 
     // ✅ background cover for details screen (optional)
     const bg = document.getElementById("gameDetailsBg");

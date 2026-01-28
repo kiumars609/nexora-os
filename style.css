@@ -347,7 +347,7 @@ body.theme-neon {
   inset: 0;
   padding: 0 32px 32px; /* چون padding رو از main-os برداشتی */
   opacity: 0;
-  transform: translateY(14px) scale(.985);
+  transform: translateY(14px) scale(0.985);
   filter: blur(2px);
   pointer-events: none;
   transition: opacity 220ms ease, transform 220ms ease, filter 220ms ease;
@@ -3299,32 +3299,67 @@ audio {
   }
 }
 /* Ambient light layer */
-.main-os::before{
-  content:"";
-  position:absolute;
-  inset:-20%;
-  pointer-events:none;
-  z-index:0;
-  opacity:.0;
+.main-os::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
   transition: opacity 260ms ease, transform 260ms ease, filter 260ms ease;
-  background:
-    radial-gradient(650px 380px at 35% 30%, var(--a1, rgba(184,220,255,.22)), transparent 60%),
-    radial-gradient(900px 520px at 65% 70%, var(--a2, rgba(255,255,255,.10)), transparent 65%);
+  background: radial-gradient(
+      650px 380px at 35% 30%,
+      var(--a1, rgba(184, 220, 255, 0.22)),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 520px at 65% 70%,
+      var(--a2, rgba(255, 255, 255, 0.1)),
+      transparent 65%
+    );
   filter: blur(18px);
   transform: scale(1.02);
 }
 
-.main-os.has-ambient::before{
+.main-os.has-ambient::before {
   opacity: 1;
 }
 
 /* وقتی کارت فوکوس میشه، عمق بیشتر */
-.game-card{
+.game-card {
   transform: translateZ(0);
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  transition: transform 180ms ease, box-shadow 180ms ease,
+    border-color 180ms ease;
 }
 .game-card.is-focused,
-.game-card:focus-visible{
+.game-card:focus-visible {
   transform: translateY(-3px) scale(1.01);
-  box-shadow: 0 24px 60px rgba(0,0,0,.55);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+.main-os::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 260ms ease, filter 260ms ease, transform 260ms ease;
+
+  background: radial-gradient(
+      650px 380px at 35% 30%,
+      var(--a1, rgba(184, 220, 255, 0.22)),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 520px at 65% 70%,
+      var(--a2, rgba(255, 255, 255, 0.1)),
+      transparent 65%
+    );
+
+  filter: blur(24px);
+  transform: scale(1.05);
+}
+
+.main-os.has-ambient::before {
+  opacity: 1;
 }
