@@ -1,3 +1,6 @@
+console.log("APP JS LOADED ✅");
+console.log("main-os:", document.querySelector(".main-os"));
+
 (() => {
   // -------------------- Helpers --------------------
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -20,21 +23,11 @@
     achievements: "nexora_achievements",
   };
 
-  // ================== PS5 AMBIENT SYSTEM ==================
-
-  const AMBIENT_COLORS = {
-    tlou2: ["rgba(120,170,255,.25)", "rgba(255,255,255,.10)"],
-    gow: ["rgba(255,210,125,.22)", "rgba(120,200,255,.10)"],
-    sp2: ["rgba(255,90,90,.22)", "rgba(255,255,255,.10)"],
-  };
-
-  // ================== PS5 AMBIENT (FIXED) ==================
+  // ===== AMBIENT (SINGLE SOURCE OF TRUTH) =====
   const AMBIENT = {
     tlou2: ["rgba(120,170,255,.25)", "rgba(255,255,255,.10)"],
     gow: ["rgba(255,210,125,.22)", "rgba(120,200,255,.10)"],
     sp2: ["rgba(255,90,90,.22)", "rgba(255,255,255,.10)"],
-    gtavi: ["rgba(255,90,180,.18)", "rgba(120,170,255,.10)"],
-    minecraft: ["rgba(120,255,170,.18)", "rgba(255,255,255,.10)"],
   };
 
   function setAmbientForGame(gameId) {
@@ -1403,48 +1396,50 @@
       btn.type = "button";
       btn.className = "game-card";
       btn.dataset.id = g.id;
-      btn.title = g.title;
+      btn.setAttribute("aria-selected", "false");
+      btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
 
-      const coverStyle = g.cover ? `background-image:url("${g.cover}")` : "";
+      const cover = document.createElement("span");
+      cover.className = "gc-cover";
+      cover.style.backgroundImage =
+        "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.35))";
 
-      btn.innerHTML = `
-      <span class="gc-cover" style="${coverStyle}"></span>
+      const badge = document.createElement("span");
+      badge.className =
+        "gc-badge" + (g.installed ? " is-installed" : " is-store");
+      badge.textContent = g.installed ? "INSTALLED" : "STORE";
 
-      <span class="gc-badge ${g.installed ? "is-installed" : "is-store"}">
-        ${g.installed ? "INSTALLED" : "STORE"}
-      </span>
-
-      <span class="gc-info">
-        <span>
-          <span class="gc-title">${g.title}</span>
-          <div class="gc-line">
-            ${(g.genre || "GAME").toUpperCase()} • ${
+      const info = document.createElement("div");
+      info.className = "gc-info";
+      info.innerHTML = `
+      <div>
+        <div class="gc-title">${(g.title || "").toUpperCase()}</div>
+        <div class="gc-line">${(g.genre || "GAME").toUpperCase()} • ${
         g.installed ? "INSTALLED" : "AVAILABLE"
-      }
-          </div>
-        </span>
-
-        <span class="gc-meta">
-          <span class="gc-chip ${g.installed ? "" : "is-get"}">
-            ${g.installed ? "PLAY" : "GET"}
-          </span>
-          <span class="gc-chip" style="opacity:.7">
-            ${g.size ? `${g.size} GB` : "--"}
-          </span>
-        </span>
-      </span>
+      }</div>
+      </div>
+      <div class="gc-meta">
+        <div class="gc-chip ${g.installed ? "" : "is-get"}">${
+        g.installed ? "PLAY" : "GET"
+      }</div>
+        <div class="gc-chip" style="opacity:.7">${
+          g.size ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB` : "--"
+        }</div>
+      </div>
     `;
 
-      // ================== PS5 MAGIC ==================
+      btn.appendChild(cover);
+      btn.appendChild(badge);
+      btn.appendChild(info);
 
-      btn.addEventListener("mouseenter", () => {
-        setAmbientForGame(g.id);
-      });
+      // ✅ کاور واقعی
+      applyCardCover(cover, g.cover, btn);
 
-      btn.addEventListener("focus", () => {
-        setAmbientForGame(g.id);
-      });
+      // ✅ Ambient روی hover/focus
+      btn.addEventListener("mouseenter", () => setAmbientForGame(g.id));
+      btn.addEventListener("focus", () => setAmbientForGame(g.id));
 
+      // ✅ Hero + Ambient + رفتن به details
       btn.addEventListener("click", () => {
         if (g.cover) {
           document.documentElement.style.setProperty(
@@ -1458,6 +1453,14 @@
 
       gamesGrid.appendChild(btn);
     });
+
+    if (!list.length) {
+      const empty = document.createElement("div");
+      empty.style.cssText =
+        "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
+      empty.textContent = "No games found";
+      gamesGrid.appendChild(empty);
+    }
   }
 
   function updateGamesFiltersUI() {
