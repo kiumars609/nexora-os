@@ -20,7 +20,7 @@ body {
 }
 /* Optional theme hooks */
 body.theme-dark {
-  /* default */
+  /* deflt */
 }
 body.theme-ice {
   /* مثلا کمی روشن‌تر یا آبی‌تر */
@@ -36,7 +36,6 @@ body.theme-neon {
   border: 1px solid rgba(220, 235, 255, 0.08);
   border-radius: 24px;
   overflow: hidden;
-  /* padding: 32px; */
   box-shadow: 0 40px 80px rgba(0, 0, 0, 0.55),
     inset 0 0 0 1px rgba(220, 235, 255, 0.03);
 }
@@ -124,7 +123,7 @@ body.theme-neon {
   width: 45px;
 }
 /* Header - Right Side (End) */
-/* Header (End) */
+/* Header(End) */
 
 /* Hero (Start) */
 .hero {
