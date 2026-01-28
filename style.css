@@ -388,8 +388,11 @@ body.theme-neon {
   letter-spacing: 0.08em;
   cursor: pointer;
   outline: none;
+  position: relative;
+  overflow: hidden;
   transition: transform 180ms ease-out, border-color 180ms ease-out,
     background 180ms ease-out;
+    
 }
 
 .game-card:hover {
@@ -596,7 +599,7 @@ body.theme-neon {
 .os-bg {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
 }
@@ -2107,14 +2110,13 @@ body.theme-pulse::before {
 
 /* cover layer */
 .game-card .gc-cover {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  filter: saturate(1.05) contrast(1.02);
-  transform: scale(1.06);
-  transition: transform var(--t-slow) var(--ease-soft),
-    filter var(--t-slow) var(--ease-soft);
+  position:absolute;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+  z-index:0;
+  filter: brightness(.55);
+  transition: .35s ease;
 }
 
 /* cinematic gradient + vignette */
@@ -3300,23 +3302,18 @@ audio {
 }
 /* Ambient light layer */
 .main-os::before {
-  content: "";
-  position: absolute;
-  inset: -20%;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0;
-  transition: opacity 260ms ease, transform 260ms ease, filter 260ms ease;
-  background: radial-gradient(
-      650px 380px at 35% 30%,
-      var(--a1, rgba(184, 220, 255, 0.22)),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 520px at 65% 70%,
-      var(--a2, rgba(255, 255, 255, 0.1)),
-      transparent 65%
-    );
+  content:"";
+  position:absolute;
+  inset:-30%;
+  pointer-events:none;
+  z-index:0;
+  opacity:0;
+  transition: opacity 260ms ease, filter 260ms ease, transform 260ms ease;
+
+  background:
+    radial-gradient(650px 380px at 35% 30%, var(--a1, rgba(184,220,255,.22)), transparent 60%),
+    radial-gradient(900px 520px at 65% 70%, var(--a2, rgba(255,255,255,.10)), transparent 65%);
+
   filter: blur(18px);
   transform: scale(1.02);
 }
@@ -3362,4 +3359,35 @@ audio {
 
 .main-os.has-ambient::before {
   opacity: 1;
+}
+/* ===== Game Card Cover (FIX) ===== */
+.game-card{
+  position: relative;
+  overflow: hidden;
+}
+
+.gc-cover{
+  position: absolute;
+  inset: 0;
+  display: block;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  filter: brightness(.55);
+  transform: scale(1.02);
+  transition: filter 260ms ease, transform 260ms ease;
+}
+
+.game-card:hover .gc-cover,
+.game-card:focus-visible .gc-cover{
+  filter: brightness(.85);
+  transform: scale(1.06);
+}
+
+/* محتوا روی کاور بیاد */
+.gc-badge,
+.gc-info{
+  position: relative;
+  z-index: 1;
 }

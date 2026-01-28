@@ -20,12 +20,6 @@
     achievements: "nexora_achievements",
   };
 
-  const AMBIENT = {
-    tlou2: ["rgba(120,170,255,.24)", "rgba(255,255,255,.10)"],
-    gow: ["rgba(255,210,125,.22)", "rgba(120,200,255,.10)"],
-    sp2: ["rgba(255,90,90,.20)", "rgba(255,255,255,.10)"],
-  };
-
   // ================== PS5 AMBIENT SYSTEM ==================
 
   const AMBIENT_COLORS = {
@@ -34,46 +28,28 @@
     sp2: ["rgba(255,90,90,.22)", "rgba(255,255,255,.10)"],
   };
 
-  function setAmbientForGame(id) {
-    const main = document.querySelector(".main-os");
-    const colors = AMBIENT_COLORS[id];
-    if (!main) return;
-
-    main.classList.add("has-ambient");
-
-    if (colors) {
-      main.style.setProperty("--a1", colors[0]);
-      main.style.setProperty("--a2", colors[1]);
-    }
-  }
-
-  function setAmbientForGame(id) {
-    const main = document.querySelector(".main-os");
-    const colors = AMBIENT_COLORS[id];
-    if (!main) return;
-
-    main.classList.add("has-ambient");
-
-    if (colors) {
-      main.style.setProperty("--a1", colors[0]);
-      main.style.setProperty("--a2", colors[1]);
-    }
-  }
+  // ================== PS5 AMBIENT (FIXED) ==================
+  const AMBIENT = {
+    tlou2: ["rgba(120,170,255,.25)", "rgba(255,255,255,.10)"],
+    gow: ["rgba(255,210,125,.22)", "rgba(120,200,255,.10)"],
+    sp2: ["rgba(255,90,90,.22)", "rgba(255,255,255,.10)"],
+    gtavi: ["rgba(255,90,180,.18)", "rgba(120,170,255,.10)"],
+    minecraft: ["rgba(120,255,170,.18)", "rgba(255,255,255,.10)"],
+  };
 
   function setAmbientForGame(gameId) {
-    const root = document.documentElement;
-    const c = AMBIENT[gameId];
     const main = document.querySelector(".main-os");
     if (!main) return;
 
     main.classList.add("has-ambient");
 
+    const c = AMBIENT[gameId];
     if (!c) {
-      // اگر بازی رنگ نداشت، یه حالت پیشفرض
       main.style.setProperty("--a1", "rgba(184,220,255,.18)");
       main.style.setProperty("--a2", "rgba(255,255,255,.08)");
       return;
     }
+
     main.style.setProperty("--a1", c[0]);
     main.style.setProperty("--a2", c[1]);
   }
@@ -1476,7 +1452,6 @@
             `url("${g.cover}")`
           );
         }
-
         setAmbientForGame(g.id);
         openGameDetails(g.id);
       });
