@@ -65,7 +65,7 @@ console.log("main-os:", document.querySelector(".main-os"));
     main.style.setProperty("--a2", c[1]);
   }
 
-    // ==================== HERO PREVIEW ENGINE ====================
+  // ==================== HERO PREVIEW ENGINE ====================
   // Hero BG uses CSS var: --hero-bg  (تو کدت همینو قبلاً داری)
   let heroPreviewTimer = null;
   let lastHeroBg = null;
@@ -124,7 +124,6 @@ console.log("main-os:", document.querySelector(".main-os"));
     lastHeroBg = null;
   }
   // ==============================================================
-
 
   function loadBool(key, def) {
     try {
@@ -958,6 +957,15 @@ console.log("main-os:", document.querySelector(".main-os"));
     }
 
     state.currentScreen = name;
+
+    // ✅ Stop hero preview when leaving games/details contexts (avoid sticky preview)
+    if (name !== "games") {
+      try {
+        stopHeroPreview();
+        // اگر می‌خوای بعد از خروج، بک‌گراند رو هم از حالت "prev saved" پاک کنی:
+        resetHeroPreviewMemory();
+      } catch (_) {}
+    }
 
     screens.forEach((s) => {
       const sName = screenNameOf(s);
