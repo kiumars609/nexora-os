@@ -36,7 +36,8 @@ body.theme-neon {
   border: 1px solid rgba(220, 235, 255, 0.08);
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.55),
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.55),
     inset 0 0 0 1px rgba(220, 235, 255, 0.03);
 }
 /* Header (Start) */
@@ -133,7 +134,8 @@ body.theme-neon {
   padding: 38px 44px;
   border-radius: 22px;
 
-  background: linear-gradient(to top, rgba(5, 6, 7, 0.92), rgba(5, 6, 7, 0.25)),
+  background:
+    linear-gradient(to top, rgba(5, 6, 7, 0.92), rgba(5, 6, 7, 0.25)),
     var(--hero-bg);
 
   background-position: center;
@@ -141,7 +143,8 @@ body.theme-neon {
   background-repeat: no-repeat;
   border: 1px solid rgba(220, 235, 255, 0.18);
 
-  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.45),
+  box-shadow:
+    0 22px 44px rgba(0, 0, 0, 0.45),
     inset 0 0 0 1px rgba(220, 235, 255, 0.04);
   display: flex;
   align-items: center;
@@ -190,7 +193,9 @@ body.theme-neon {
   justify-content: center;
 
   box-shadow: inset 0 0 0 1px rgba(220, 235, 255, 0.03);
-  transition: transform 180ms ease-out, background 180ms ease-out,
+  transition:
+    transform 180ms ease-out,
+    background 180ms ease-out,
     border-color 180ms ease-out;
 }
 
@@ -298,7 +303,9 @@ body.theme-neon {
   box-shadow: inset 0 0 0 1px rgba(220, 235, 255, 0.03);
   cursor: pointer;
 
-  transition: background 180ms ease-out, border-color 180ms ease-out,
+  transition:
+    background 180ms ease-out,
+    border-color 180ms ease-out,
     transform 180ms ease-out;
 }
 
@@ -350,7 +357,10 @@ body.theme-neon {
   transform: translateY(14px) scale(0.985);
   filter: blur(2px);
   pointer-events: none;
-  transition: opacity 220ms ease, transform 220ms ease, filter 220ms ease;
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease,
+    filter 220ms ease;
 }
 
 /* Active screen */
@@ -390,9 +400,10 @@ body.theme-neon {
   outline: none;
   position: relative;
   overflow: hidden;
-  transition: transform 180ms ease-out, border-color 180ms ease-out,
+  transition:
+    transform 180ms ease-out,
+    border-color 180ms ease-out,
     background 180ms ease-out;
-    
 }
 
 .game-card:hover {
@@ -454,7 +465,8 @@ body.theme-neon {
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(220, 235, 255, 0.16);
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.55),
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.55),
     inset 0 0 0 1px rgba(220, 235, 255, 0.04);
   text-align: center;
 }
@@ -483,8 +495,10 @@ body.theme-neon {
   border-color: rgba(184, 220, 255, 0.55);
   background: rgba(184, 220, 255, 0.1);
   transform: translateY(-1px) scale(1.03);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(184, 220, 255, 0.22), 0 0 0 6px rgba(184, 220, 255, 0.1),
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(184, 220, 255, 0.22),
+    0 0 0 6px rgba(184, 220, 255, 0.1),
     inset 0 0 0 1px rgba(220, 235, 255, 0.06);
 }
 
@@ -497,15 +511,19 @@ body.theme-neon {
 .hero-btn.primary:focus-visible {
   background: rgba(184, 220, 255, 0.14);
   border-color: rgba(184, 220, 255, 0.7);
-  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(184, 220, 255, 0.28), 0 0 0 7px rgba(184, 220, 255, 0.12),
+  box-shadow:
+    0 22px 44px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(184, 220, 255, 0.28),
+    0 0 0 7px rgba(184, 220, 255, 0.12),
     inset 0 0 0 1px rgba(220, 235, 255, 0.08);
 }
 
 /* احترام به کاربرانی که motion رو کم می‌خوان */
 @media (prefers-reduced-motion: reduce) {
   .hero-btn {
-    transition: background 180ms ease-out, border-color 180ms ease-out;
+    transition:
+      background 180ms ease-out,
+      border-color 180ms ease-out;
   }
   .hero-btn:focus-visible,
   .hero-btn:hover {
@@ -520,8 +538,10 @@ body.theme-neon {
   border-color: rgba(184, 220, 255, 0.55);
   background: rgba(184, 220, 255, 0.08);
   transform: translateY(-2px);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(184, 220, 255, 0.2), 0 0 0 6px rgba(184, 220, 255, 0.09),
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(184, 220, 255, 0.2),
+    0 0 0 6px rgba(184, 220, 255, 0.09),
     inset 0 0 0 1px rgba(220, 235, 255, 0.06);
 }
 .screen {
@@ -899,8 +919,10 @@ body.theme-neon {
   border-color: rgba(184, 220, 255, 0.55);
   background: rgba(184, 220, 255, 0.08);
   transform: translateY(-2px);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(184, 220, 255, 0.2), 0 0 0 6px rgba(184, 220, 255, 0.09),
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(184, 220, 255, 0.2),
+    0 0 0 6px rgba(184, 220, 255, 0.09),
     inset 0 0 0 1px rgba(220, 235, 255, 0.06);
 }
 /* IMPORTANT: چون nav از home جدا شد، باید layout رو آپدیت کنیم */
@@ -938,7 +960,9 @@ body.theme-neon {
 }
 .wifi,
 .controller {
-  transition: opacity 180ms ease-out, transform 180ms ease-out,
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out,
     filter 180ms ease-out;
 }
 
@@ -957,7 +981,8 @@ body.theme-neon {
 
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(220, 235, 255, 0.16);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45),
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.45),
     inset 0 0 0 1px rgba(220, 235, 255, 0.04);
   backdrop-filter: blur(10px);
 
@@ -971,7 +996,9 @@ body.theme-neon {
   transform: translateY(10px) scale(0.98);
   pointer-events: none;
 
-  transition: opacity 180ms ease-out, transform 180ms ease-out;
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out;
   z-index: 99999;
 }
 
@@ -992,8 +1019,12 @@ body.theme-neon {
   cursor: pointer;
   user-select: none;
 
-  transition: transform 180ms ease-out, opacity 180ms ease-out,
-    filter 180ms ease-out, box-shadow 180ms ease-out, background 180ms ease-out;
+  transition:
+    transform 180ms ease-out,
+    opacity 180ms ease-out,
+    filter 180ms ease-out,
+    box-shadow 180ms ease-out,
+    background 180ms ease-out;
 }
 
 .wifi:hover,
@@ -1004,7 +1035,8 @@ body.theme-neon {
 .wifi:focus-visible,
 .controller:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 1px rgba(184, 220, 255, 0.28),
+  box-shadow:
+    0 0 0 1px rgba(184, 220, 255, 0.28),
     0 0 0 6px rgba(184, 220, 255, 0.1);
 }
 
@@ -1065,7 +1097,8 @@ body.theme-neon {
    ========================= */
 body.high-contrast .main-os {
   border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.65),
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.65),
     inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
@@ -1422,7 +1455,8 @@ body.reduce-motion .boot-bar-fill {
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(220, 235, 255, 0.18);
 
-  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.65),
+  box-shadow:
+    0 40px 90px rgba(0, 0, 0, 0.65),
     inset 0 0 0 1px rgba(220, 235, 255, 0.04);
 
   transform: translateY(10px) scale(0.98);
@@ -1479,8 +1513,11 @@ body.reduce-motion .boot-bar-fill {
   gap: 12px;
 
   box-shadow: inset 0 0 0 1px rgba(220, 235, 255, 0.03);
-  transition: transform 180ms ease-out, background 180ms ease-out,
-    border-color 180ms ease-out, box-shadow 180ms ease-out,
+  transition:
+    transform 180ms ease-out,
+    background 180ms ease-out,
+    border-color 180ms ease-out,
+    box-shadow 180ms ease-out,
     filter 180ms ease-out;
 }
 
@@ -1533,8 +1570,10 @@ body.reduce-motion .boot-bar-fill {
   border-color: rgba(184, 220, 255, 0.72);
   background: rgba(184, 220, 255, 0.1);
 
-  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(184, 220, 255, 0.22), 0 0 0 8px rgba(184, 220, 255, 0.1),
+  box-shadow:
+    0 26px 60px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(184, 220, 255, 0.22),
+    0 0 0 8px rgba(184, 220, 255, 0.1),
     inset 0 0 0 1px rgba(220, 235, 255, 0.06);
 }
 
@@ -1554,8 +1593,10 @@ body.reduce-motion .boot-bar-fill {
 .power-option.danger.is-focused {
   border-color: rgba(255, 150, 150, 0.72);
   background: rgba(255, 120, 120, 0.08);
-  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 150, 150, 0.2), 0 0 0 8px rgba(255, 150, 150, 0.08),
+  box-shadow:
+    0 26px 60px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 150, 150, 0.2),
+    0 0 0 8px rgba(255, 150, 150, 0.08),
     inset 0 0 0 1px rgba(220, 235, 255, 0.04);
 }
 
@@ -1586,7 +1627,9 @@ body.reduce-motion .boot-bar-fill {
     animation: none !important;
   }
   .power-item {
-    transition: background 180ms ease-out, border-color 180ms ease-out;
+    transition:
+      background 180ms ease-out,
+      border-color 180ms ease-out;
   }
   .power-item:hover {
     transform: none;
@@ -1693,7 +1736,8 @@ body.reduce-motion .off-overlay {
 
 /* ---------- Global background: aurora + subtle noise ---------- */
 body {
-  background: radial-gradient(
+  background:
+    radial-gradient(
       1200px 900px at 20% 10%,
       rgba(124, 195, 255, 0.14),
       transparent 60%
@@ -1719,11 +1763,8 @@ body::before {
   position: fixed;
   inset: -40px;
   z-index: -2;
-  background: radial-gradient(
-      700px 500px at 20% 30%,
-      var(--aurora-a),
-      transparent 65%
-    ),
+  background:
+    radial-gradient(700px 500px at 20% 30%, var(--aurora-a), transparent 65%),
     radial-gradient(700px 500px at 85% 25%, var(--aurora-b), transparent 62%),
     radial-gradient(900px 650px at 60% 95%, var(--aurora-c), transparent 66%);
   filter: blur(18px);
@@ -1778,7 +1819,9 @@ body::after {
 #bootScreen .boot-box {
   background: var(--panel);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  box-shadow:
+    var(--shadow),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(12px);
 }
 
@@ -1799,7 +1842,9 @@ body::after {
     rgba(124, 195, 255, 0.12),
     rgba(255, 77, 230, 0.07)
   );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
@@ -1811,44 +1856,54 @@ body::after {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(210, 230, 255, 0.16);
   color: var(--text);
-  transition: transform var(--t-fast) var(--ease),
-    box-shadow var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+  transition:
+    transform var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
     background var(--t-fast) var(--ease);
 }
 
 .hero-btn:hover {
   transform: translateY(-1px);
   border-color: rgba(210, 230, 255, 0.26);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35),
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.35),
     0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .hero-btn.primary {
   border-color: rgba(124, 195, 255, 0.4);
-  box-shadow: 0 0 0 1px rgba(124, 195, 255, 0.18),
+  box-shadow:
+    0 0 0 1px rgba(124, 195, 255, 0.18),
     0 18px 40px rgba(0, 0, 0, 0.45);
 }
 
 /* ---------- Focus (console) ---------- */
 .is-focused {
   outline: none !important;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08),
-    0 0 0 3px rgba(124, 195, 255, 0.5), 0 0 22px var(--glow),
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.08),
+    0 0 0 3px rgba(124, 195, 255, 0.5),
+    0 0 22px var(--glow),
     0 18px 50px rgba(0, 0, 0, 0.55) !important;
   transform: translateY(-1px) scale(1.01);
-  transition: transform var(--t-fast) var(--ease),
+  transition:
+    transform var(--t-fast) var(--ease),
     box-shadow var(--t-fast) var(--ease);
 }
 
 /* game cards: extra glow */
 .game-card.is-focused {
-  box-shadow: 0 0 0 2px rgba(124, 195, 255, 0.55), 0 0 28px var(--glow),
+  box-shadow:
+    0 0 0 2px rgba(124, 195, 255, 0.55),
+    0 0 28px var(--glow),
     0 22px 55px rgba(0, 0, 0, 0.6) !important;
 }
 
 /* ---------- Nav: PS-like underline + subtle glow ---------- */
 .nav-item {
-  transition: opacity var(--t-fast) var(--ease),
+  transition:
+    opacity var(--t-fast) var(--ease),
     transform var(--t-fast) var(--ease);
   opacity: 0.8;
 }
@@ -1863,7 +1918,8 @@ body::after {
 
 /* ---------- Screen transitions (new-gen) ---------- */
 .screen {
-  transition: opacity var(--t-mid) var(--ease),
+  transition:
+    opacity var(--t-mid) var(--ease),
     transform var(--t-mid) var(--ease);
   opacity: 0;
   transform: translate3d(0, 10px, 0) scale(0.995);
@@ -1907,7 +1963,8 @@ body::after {
   border: 1px solid rgba(210, 230, 255, 0.14);
   background: rgba(255, 255, 255, 0.02);
   padding: 6px 10px;
-  transition: opacity var(--t-fast) var(--ease),
+  transition:
+    opacity var(--t-fast) var(--ease),
     box-shadow var(--t-fast) var(--ease);
 }
 #sndStatus.is-off,
@@ -2056,13 +2113,17 @@ body.theme-frost {
 /* ---------- Optional: neon highlights on primary buttons ---------- */
 body.theme-neon .hero-btn.primary {
   border-color: rgba(255, 77, 230, 0.52);
-  box-shadow: 0 0 0 1px rgba(255, 77, 230, 0.18),
-    0 0 26px rgba(255, 77, 230, 0.22), 0 18px 40px rgba(0, 0, 0, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 230, 0.18),
+    0 0 26px rgba(255, 77, 230, 0.22),
+    0 18px 40px rgba(0, 0, 0, 0.55);
 }
 body.theme-ice .hero-btn.primary {
   border-color: rgba(166, 240, 255, 0.52);
-  box-shadow: 0 0 0 1px rgba(166, 240, 255, 0.18),
-    0 0 26px rgba(166, 240, 255, 0.2), 0 18px 40px rgba(0, 0, 0, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(166, 240, 255, 0.18),
+    0 0 26px rgba(166, 240, 255, 0.2),
+    0 18px 40px rgba(0, 0, 0, 0.55);
 }
 body.theme-pulse::before {
   animation: nexora-pulse 620ms var(--ease) 1;
@@ -2095,7 +2156,8 @@ body.theme-pulse::before {
   border-radius: 22px;
   border: 1px solid rgba(210, 230, 255, 0.14);
   background: rgba(255, 255, 255, 0.02);
-  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.55),
+  box-shadow:
+    0 26px 60px rgba(0, 0, 0, 0.55),
     inset 0 0 0 1px rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
 
@@ -2103,20 +2165,22 @@ body.theme-pulse::before {
   min-height: 160px;
 
   /* smooth */
-  transition: transform var(--t-mid) var(--ease),
-    box-shadow var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease);
+  transition:
+    transform var(--t-mid) var(--ease),
+    box-shadow var(--t-mid) var(--ease),
+    border-color var(--t-mid) var(--ease);
   transform: translate3d(0, 0, 0);
 }
 
 /* cover layer */
 .game-card .gc-cover {
-  position:absolute;
-  inset:0;
-  background-size:cover;
-  background-position:center;
-  z-index:0;
-  filter: brightness(.55);
-  transition: .35s ease;
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+  filter: brightness(0.55);
+  transition: 0.35s ease;
 }
 
 /* cinematic gradient + vignette */
@@ -2124,7 +2188,8 @@ body.theme-pulse::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(
+  background:
+    radial-gradient(
       900px 360px at 50% 10%,
       rgba(255, 255, 255, 0.1),
       transparent 62%
@@ -2192,7 +2257,9 @@ body.theme-pulse::before {
 .game-card.is-focused {
   border-color: rgba(124, 195, 255, 0.42);
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 0 0 3px rgba(124, 195, 255, 0.45), 0 0 30px var(--glow),
+  box-shadow:
+    0 0 0 3px rgba(124, 195, 255, 0.45),
+    0 0 30px var(--glow),
     0 30px 80px rgba(0, 0, 0, 0.65) !important;
 }
 
@@ -2226,7 +2293,9 @@ body.reduce-motion .game-card .gc-cover {
 
   opacity: 0;
   transform: translateY(2px); /* از پایین بیاد بالا */
-  transition: opacity 180ms var(--ease), transform 180ms var(--ease);
+  transition:
+    opacity 180ms var(--ease),
+    transform 180ms var(--ease);
 
   z-index: 3; /* ✅ بالاتر از gc-info (که 2 بود) */
   pointer-events: none;
@@ -2340,14 +2409,16 @@ body.reduce-motion .loading-overlay {
   border-radius: 22px;
   border: 1px solid rgba(210, 230, 255, 0.14);
   background: rgba(255, 255, 255, 0.02);
-  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.55),
+  box-shadow:
+    0 26px 60px rgba(0, 0, 0, 0.55),
     inset 0 0 0 1px rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
   min-height: 180px;
   padding: 0;
   cursor: pointer;
   transform: translate3d(0, 0, 0);
-  transition: transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1),
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1),
     box-shadow 220ms cubic-bezier(0.2, 0.9, 0.2, 1),
     border-color 220ms cubic-bezier(0.2, 0.9, 0.2, 1);
 }
@@ -2359,7 +2430,8 @@ body.reduce-motion .loading-overlay {
   background-position: center;
   transform: scale(1.08);
   filter: saturate(1.08) contrast(1.02);
-  transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+  transition:
+    transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
     filter 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -2367,7 +2439,8 @@ body.reduce-motion .loading-overlay {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(
+  background:
+    radial-gradient(
       900px 360px at 50% 10%,
       rgba(255, 255, 255, 0.1),
       transparent 62%
@@ -2443,8 +2516,10 @@ body.reduce-motion .loading-overlay {
 .game-card.is-focused {
   border-color: rgba(124, 195, 255, 0.42);
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 0 0 3px rgba(124, 195, 255, 0.45),
-    0 0 30px rgba(124, 195, 255, 0.25), 0 30px 80px rgba(0, 0, 0, 0.65) !important;
+  box-shadow:
+    0 0 0 3px rgba(124, 195, 255, 0.45),
+    0 0 30px rgba(124, 195, 255, 0.25),
+    0 30px 80px rgba(0, 0, 0, 0.65) !important;
 }
 .game-card.is-focused .gc-cover {
   transform: scale(1.14);
@@ -2457,7 +2532,8 @@ body.reduce-motion .game-card .gc-cover {
 }
 /* fallback وقتی cover لود نشد */
 .game-card.cover-failed .gc-cover {
-  background-image: radial-gradient(
+  background-image:
+    radial-gradient(
       800px 420px at 20% 20%,
       rgba(124, 195, 255, 0.35),
       transparent 60%
@@ -2737,7 +2813,9 @@ body.reduce-motion .game-card .gc-cover {
   background: linear-gradient(180deg, var(--panel2), var(--panel));
   color: var(--text);
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease,
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
     border-color 0.18s ease;
 }
 
@@ -2747,7 +2825,8 @@ body.reduce-motion .game-card .gc-cover {
 
 .qr-item.is-focused {
   border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent),
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent),
     0 14px 44px rgba(0, 0, 0, 0.35);
 }
 
@@ -2807,7 +2886,8 @@ body.reduce-motion .game-card .gc-cover {
   content: "";
   position: absolute;
   inset: -30%;
-  background: radial-gradient(
+  background:
+    radial-gradient(
       circle at 50% 55%,
       rgba(184, 220, 255, 0.14),
       rgba(0, 0, 0, 0) 55%
@@ -2925,7 +3005,8 @@ body.reduce-motion .game-card .gc-cover {
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: rgba(184, 220, 255, 0.65);
-  box-shadow: 0 0 18px rgba(184, 220, 255, 0.25),
+  box-shadow:
+    0 0 18px rgba(184, 220, 255, 0.25),
     0 0 60px rgba(184, 220, 255, 0.12);
   opacity: 0.55;
   animation: corePulse 1.9s ease-in-out infinite;
@@ -2980,7 +3061,8 @@ body.reduce-motion .game-card .gc-cover {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(
+  background:
+    radial-gradient(
       circle at 50% 55%,
       rgba(184, 220, 255, 0.12),
       rgba(0, 0, 0, 0) 55%
@@ -3026,7 +3108,8 @@ body.reduce-motion .game-card .gc-cover {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(
+  background:
+    radial-gradient(
       circle at 50% 55%,
       rgba(184, 220, 255, 0.12),
       rgba(0, 0, 0, 0) 55%
@@ -3302,17 +3385,28 @@ audio {
 }
 /* Ambient light layer */
 .main-os::before {
-  content:"";
-  position:absolute;
-  inset:-30%;
-  pointer-events:none;
-  z-index:0;
-  opacity:0;
-  transition: opacity 260ms ease, filter 260ms ease, transform 260ms ease;
+  content: "";
+  position: absolute;
+  inset: -30%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition:
+    opacity 260ms ease,
+    filter 260ms ease,
+    transform 260ms ease;
 
   background:
-    radial-gradient(650px 380px at 35% 30%, var(--a1, rgba(184,220,255,.22)), transparent 60%),
-    radial-gradient(900px 520px at 65% 70%, var(--a2, rgba(255,255,255,.10)), transparent 65%);
+    radial-gradient(
+      650px 380px at 35% 30%,
+      var(--a1, rgba(184, 220, 255, 0.22)),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 520px at 65% 70%,
+      var(--a2, rgba(255, 255, 255, 0.1)),
+      transparent 65%
+    );
 
   filter: blur(18px);
   transform: scale(1.02);
@@ -3325,7 +3419,9 @@ audio {
 /* وقتی کارت فوکوس میشه، عمق بیشتر */
 .game-card {
   transform: translateZ(0);
-  transition: transform 180ms ease, box-shadow 180ms ease,
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
     border-color 180ms ease;
 }
 .game-card.is-focused,
@@ -3340,9 +3436,13 @@ audio {
   pointer-events: none;
   z-index: 0;
   opacity: 0;
-  transition: opacity 260ms ease, filter 260ms ease, transform 260ms ease;
+  transition:
+    opacity 260ms ease,
+    filter 260ms ease,
+    transform 260ms ease;
 
-  background: radial-gradient(
+  background:
+    radial-gradient(
       650px 380px at 35% 30%,
       var(--a1, rgba(184, 220, 255, 0.22)),
       transparent 60%
@@ -3361,12 +3461,12 @@ audio {
   opacity: 1;
 }
 /* ===== Game Card Cover (FIX) ===== */
-.game-card{
+.game-card {
   position: relative;
   overflow: hidden;
 }
 
-.gc-cover{
+.gc-cover {
   position: absolute;
   inset: 0;
   display: block;
@@ -3374,54 +3474,76 @@ audio {
   background-position: center;
   background-repeat: no-repeat;
   z-index: 0;
-  filter: brightness(.55);
+  filter: brightness(0.55);
   transform: scale(1.02);
-  transition: filter 260ms ease, transform 260ms ease;
+  transition:
+    filter 260ms ease,
+    transform 260ms ease;
 }
 
 .game-card:hover .gc-cover,
-.game-card:focus-visible .gc-cover{
-  filter: brightness(.85);
+.game-card:focus-visible .gc-cover {
+  filter: brightness(0.85);
   transform: scale(1.06);
 }
 
 /* محتوا روی کاور بیاد */
 .gc-badge,
-.gc-info{
+.gc-info {
   position: relative;
   z-index: 1;
 }
 /* ===== Ambient Light (FIX OVERRIDE) ===== */
-.main-os{ position: relative; }
+.main-os {
+  position: relative;
+}
 
-.main-os::before{
-  content:"";
-  position:absolute;
-  inset:-30%;
-  pointer-events:none;
-  z-index:0;
-  opacity:0;
-  transition: opacity 260ms ease, filter 260ms ease, transform 260ms ease;
+.main-os::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition:
+    opacity 260ms ease,
+    filter 260ms ease,
+    transform 260ms ease;
 
   background:
-    radial-gradient(650px 380px at 35% 30%, var(--a1, rgba(184,220,255,.22)), transparent 60%),
-    radial-gradient(900px 520px at 65% 70%, var(--a2, rgba(255,255,255,.10)), transparent 65%);
+    radial-gradient(
+      650px 380px at 35% 30%,
+      var(--a1, rgba(184, 220, 255, 0.22)),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 520px at 65% 70%,
+      var(--a2, rgba(255, 255, 255, 0.1)),
+      transparent 65%
+    );
 
   filter: blur(18px);
   transform: scale(1.02);
 }
 
-.main-os.has-ambient::before{ opacity: 1; }
+.main-os.has-ambient::before {
+  opacity: 1;
+}
 
 /* مطمئن می‌شیم محتوا روی نور میاد */
-.header-os, .nav, .screens{ position: relative; z-index: 1; }
+.header-os,
+.nav,
+.screens {
+  position: relative;
+  z-index: 1;
+}
 /* ===== Game Card Cover (FIX OVERRIDE) ===== */
-.game-card{
+.game-card {
   position: relative;
   overflow: hidden;
 }
 
-.gc-cover{
+.gc-cover {
   position: absolute;
   inset: 0;
   display: block;
@@ -3429,16 +3551,228 @@ audio {
   background-position: center;
   background-repeat: no-repeat;
   z-index: 0;
-  filter: brightness(.55);
+  filter: brightness(0.55);
   transform: scale(1.02);
-  transition: filter 260ms ease, transform 260ms ease, opacity 260ms ease;
-  opacity: .95;
+  transition:
+    filter 260ms ease,
+    transform 260ms ease,
+    opacity 260ms ease;
+  opacity: 0.95;
 }
 
 .game-card:hover .gc-cover,
-.game-card:focus-visible .gc-cover{
-  filter: brightness(.85);
+.game-card:focus-visible .gc-cover {
+  filter: brightness(0.85);
   transform: scale(1.06);
 }
 
-.gc-badge, .gc-info{ position: relative; z-index: 2; }
+.gc-badge,
+.gc-info {
+  position: relative;
+  z-index: 2;
+}
+/* =========================================
+   NEXORA - GAMES CARDS FINAL OVERRIDE (PASTE AT END)
+   Works with: gc-cover + gc-overlay + gc-badge + gc-info + gc-chip + gc-line
+   ========================================= */
+
+/* grid: responsive + کنسولی */
+.games-grid,
+#gamesGrid {
+  width: 80%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+/* کارت سینمایی */
+.game-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(210, 230, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  min-height: 180px;
+  padding: 0;
+  cursor: pointer;
+
+  box-shadow:
+    0 26px 60px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1),
+    box-shadow 220ms cubic-bezier(0.2, 0.9, 0.2, 1),
+    border-color 220ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+/* کاور واقعی (از applyCardCover میاد) */
+.game-card .gc-cover {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  z-index: 0;
+  filter: brightness(0.55) saturate(1.05);
+  transform: scale(1.06);
+  opacity: 0.98;
+
+  transition:
+    transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 260ms ease;
+}
+
+/* overlay سینمایی (این همون عنصر gc-overlay تو JSه) */
+.game-card .gc-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      900px 360px at 50% 10%,
+      rgba(255, 255, 255, 0.1),
+      transparent 62%
+    ),
+    radial-gradient(
+      900px 420px at 50% 115%,
+      rgba(0, 0, 0, 0.82),
+      rgba(0, 0, 0, 0.4) 55%,
+      transparent 78%
+    ),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.62));
+}
+
+/* badge */
+.game-card .gc-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+
+  border: 1px solid rgba(210, 230, 255, 0.18);
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(230, 237, 245, 0.92);
+}
+
+.game-card .gc-badge.is-store {
+  opacity: 0.55;
+}
+.game-card .gc-badge.is-installed {
+  opacity: 0.95;
+}
+
+/* info bar پایین */
+.game-card .gc-info {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 12px;
+  z-index: 3;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* عنوان */
+.game-card .gc-title {
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 13px;
+  line-height: 1.15;
+  color: rgba(245, 250, 255, 0.95);
+  text-shadow: 0 10px 20px rgba(0, 0, 0, 0.55);
+
+  max-width: 320px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* خط توضیح */
+.game-card .gc-line {
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.7;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* meta chips */
+.game-card .gc-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.game-card .gc-chip {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+
+  border: 1px solid rgba(210, 230, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(230, 237, 245, 0.86);
+}
+
+.game-card .gc-chip.is-get {
+  opacity: 0.55;
+}
+.game-card .gc-chip.gc-size {
+  opacity: 0.7;
+}
+
+/* hover / focus */
+.game-card:hover {
+  transform: translateY(-3px) scale(1.01);
+  border-color: rgba(220, 235, 255, 0.22);
+}
+
+.game-card:hover .gc-cover {
+  filter: brightness(0.78) saturate(1.12);
+  transform: scale(1.12);
+}
+
+/* focus کنسولی */
+.game-card.is-focused,
+.game-card:focus-visible {
+  outline: none;
+  border-color: rgba(124, 195, 255, 0.42);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow:
+    0 0 0 3px rgba(124, 195, 255, 0.45),
+    0 0 30px rgba(124, 195, 255, 0.25),
+    0 30px 80px rgba(0, 0, 0, 0.65) !important;
+}
+
+.game-card.is-focused .gc-cover,
+.game-card:focus-visible .gc-cover {
+  filter: brightness(0.85) saturate(1.18) contrast(1.06);
+  transform: scale(1.14);
+}
+
+/* reduce motion */
+body.reduce-motion .game-card,
+body.reduce-motion .game-card .gc-cover {
+  transition: none !important;
+}

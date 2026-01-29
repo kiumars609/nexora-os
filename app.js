@@ -1404,84 +1404,96 @@ console.log("main-os:", document.querySelector(".main-os"));
   }
 
   function renderGamesGrid() {
-    if (!gamesGrid) return;
+  if (!gamesGrid) return;
 
-    const list = getVisibleGames();
-    gamesGrid.innerHTML = "";
+  const list = getVisibleGames();
+  gamesGrid.innerHTML = "";
 
-    list.forEach((g) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "game-card";
-      btn.dataset.id = g.id;
-      btn.setAttribute("aria-selected", "false");
-      btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
+  list.forEach((g) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "game-card";
+    btn.dataset.id = g.id;
+    btn.setAttribute("aria-selected", "false");
+    btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
 
-      const cover = document.createElement("span");
-      cover.className = "gc-cover";
-      cover.style.backgroundImage =
-        "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.35))";
+    // ✅ Cover (تصویر واقعی اینجا میاد)
+    const cover = document.createElement("span");
+    cover.className = "gc-cover";
 
-      const badge = document.createElement("span");
-      badge.className =
-        "gc-badge" + (g.installed ? " is-installed" : " is-store");
-      badge.textContent = g.installed ? "INSTALLED" : "STORE";
+    // ✅ Overlay سینمایی (برای اینکه نوشته‌ها خوانا بشن)
+    const overlay = document.createElement("span");
+    overlay.className = "gc-overlay";
+    overlay.setAttribute("aria-hidden", "true");
 
-      const info = document.createElement("div");
-      info.className = "gc-info";
-      info.innerHTML = `
-      <div>
+    // ✅ Badge
+    const badge = document.createElement("span");
+    badge.className =
+      "gc-badge" + (g.installed ? " is-installed" : " is-store");
+    badge.textContent = g.installed ? "INSTALLED" : "STORE";
+
+    // ✅ Info
+    const info = document.createElement("div");
+    info.className = "gc-info";
+    info.innerHTML = `
+      <div class="gc-left">
         <div class="gc-title">${(g.title || "").toUpperCase()}</div>
-        <div class="gc-line">${(g.genre || "GAME").toUpperCase()} • ${
-        g.installed ? "INSTALLED" : "AVAILABLE"
-      }</div>
+        <div class="gc-line">
+          ${(g.genre || "GAME").toUpperCase()} • ${
+            g.installed ? "INSTALLED" : "AVAILABLE"
+          }
+        </div>
       </div>
+
       <div class="gc-meta">
-        <div class="gc-chip ${g.installed ? "" : "is-get"}">${
-        g.installed ? "PLAY" : "GET"
-      }</div>
-        <div class="gc-chip" style="opacity:.7">${
-          g.size ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB` : "--"
-        }</div>
+        <div class="gc-chip ${g.installed ? "" : "is-get"}">
+          ${g.installed ? "PLAY" : "GET"}
+        </div>
+        <div class="gc-chip gc-size">
+          ${
+            g.size
+              ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB`
+              : "--"
+          }
+        </div>
       </div>
     `;
 
-      btn.appendChild(cover);
-      btn.appendChild(badge);
-      btn.appendChild(info);
+    // ✅ Assemble
+    btn.appendChild(cover);
+    btn.appendChild(overlay);
+    btn.appendChild(badge);
+    btn.appendChild(info);
 
-      // ✅ کاور واقعی
-      applyCardCover(cover, g.cover, btn);
+    // ✅ کاور واقعی (همون تابع خودت)
+    // نکته: اینجا cover باید تصویر بگیره و overlay خودش گرادیانت رو میده
+    applyCardCover(cover, g.cover, btn);
 
-      // ✅ Ambient روی hover/focus
-      btn.addEventListener("mouseenter", () =>
-        setAmbientForGame(g.id, g.title)
-      );
-      btn.addEventListener("focus", () => setAmbientForGame(g.id, g.title));
+    // ✅ Ambient روی hover/focus
+    btn.addEventListener("mouseenter", () => setAmbientForGame(g.id, g.title));
+    btn.addEventListener("focus", () => setAmbientForGame(g.id, g.title));
 
-      // ✅ Hero + Ambient + رفتن به details
-      btn.addEventListener("click", () => {
-        if (g.cover) {
-          document.documentElement.style.setProperty(
-            "--hero-bg",
-            `url("${g.cover}")`
-          );
-        }
-        setAmbientForGame(g.id, g.title);
-        openGameDetails(g.id);
-      });
-
-      gamesGrid.appendChild(btn);
+    // ✅ Hero + Ambient + رفتن به details
+    btn.addEventListener("click", () => {
+      if (g.cover) {
+        document.documentElement.style.setProperty("--hero-bg", `url("${g.cover}")`);
+      }
+      setAmbientForGame(g.id, g.title);
+      openGameDetails(g.id);
     });
 
-    if (!list.length) {
-      const empty = document.createElement("div");
-      empty.style.cssText =
-        "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
-      empty.textContent = "No games found";
-      gamesGrid.appendChild(empty);
-    }
+    gamesGrid.appendChild(btn);
+  });
+
+  if (!list.length) {
+    const empty = document.createElement("div");
+    empty.style.cssText =
+      "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
+    empty.textContent = "No games found";
+    gamesGrid.appendChild(empty);
   }
+}
+
 
   function updateGamesFiltersUI() {
     if (filterValue)
