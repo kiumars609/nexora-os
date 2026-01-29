@@ -1486,11 +1486,11 @@ console.log("main-os:", document.querySelector(".main-os"));
       btn.setAttribute("aria-selected", "false");
       btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
 
-      // ✅ Cover (تصویر واقعی اینجا میاد)
+      // ✅ Cover
       const cover = document.createElement("span");
       cover.className = "gc-cover";
 
-      // ✅ Overlay سینمایی (برای اینکه نوشته‌ها خوانا بشن)
+      // ✅ Overlay سینمایی
       const overlay = document.createElement("span");
       overlay.className = "gc-overlay";
       overlay.setAttribute("aria-hidden", "true");
@@ -1505,29 +1505,30 @@ console.log("main-os:", document.querySelector(".main-os"));
       const info = document.createElement("div");
       info.className = "gc-info";
       info.innerHTML = `
-      <div class="gc-left">
-        <div class="gc-title">${(g.title || "").toUpperCase()}</div>
-        <div class="gc-line">
-          ${(g.genre || "GAME").toUpperCase()} • ${
-            g.installed ? "INSTALLED" : "AVAILABLE"
-          }
+        <div class="gc-left">
+          <div class="gc-title">${(g.title || "").toUpperCase()}</div>
+          <div class="gc-line">
+            ${(g.genre || "GAME").toUpperCase()} • ${
+              g.installed ? "INSTALLED" : "AVAILABLE"
+            }
+          </div>
         </div>
-      </div>
 
-      <div class="gc-meta">
-        <div class="gc-chip ${g.installed ? "" : "is-get"}">
-          ${g.installed ? "PLAY" : "GET"}
+        <div class="gc-meta">
+          <div class="gc-chip ${g.installed ? "" : "is-get"}">
+            ${g.installed ? "PLAY" : "GET"}
+          </div>
+          <div class="gc-chip gc-size">
+            ${
+              g.size
+                ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB`
+                : "--"
+            }
+          </div>
         </div>
-        <div class="gc-chip gc-size">
-          ${
-            g.size ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB` : "--"
-          }
-        </div>
-      </div>
-    `;
+      `;
 
       const bringIntoView = () => {
-        // کارت فوکوس‌شده رو بیار تو دید کاربر (کنسولی)
         btn.scrollIntoView({
           behavior: "smooth",
           block: "nearest",
@@ -1536,10 +1537,7 @@ console.log("main-os:", document.querySelector(".main-os"));
       };
 
       btn.addEventListener("focus", bringIntoView);
-      btn.addEventListener("mouseenter", () => {
-        // با موس هم حس کنسولی بده (اختیاری)
-        bringIntoView();
-      });
+      btn.addEventListener("mouseenter", () => bringIntoView());
 
       // ✅ Assemble
       btn.appendChild(cover);
@@ -1547,8 +1545,7 @@ console.log("main-os:", document.querySelector(".main-os"));
       btn.appendChild(badge);
       btn.appendChild(info);
 
-      // ✅ کاور واقعی (همون تابع خودت)
-      // نکته: اینجا cover باید تصویر بگیره و overlay خودش گرادیانت رو میده
+      // ✅ load cover
       applyCardCover(cover, g.cover, btn);
 
       // ✅ Ambient روی hover/focus
@@ -1557,8 +1554,22 @@ console.log("main-os:", document.querySelector(".main-os"));
       );
       btn.addEventListener("focus", () => setAmbientForGame(g.id, g.title));
 
-      // ✅ Hero + Ambient + رفتن به details
+      // ================== ✅ HERO PREVIEW (NEW) ==================
+      btn.addEventListener("mouseenter", () => startHeroPreview(g));
+      btn.addEventListener("focus", () => startHeroPreview(g));
+
+      btn.addEventListener("mouseleave", () => stopHeroPreview());
+      btn.addEventListener("blur", () => stopHeroPreview());
+      // ===========================================================
+
+      // ✅ Click => تثبیت بک‌گراند + رفتن به details
       btn.addEventListener("click", () => {
+        // وقتی کلیک شد، دیگه preview نیست؛ این انتخابه
+        try {
+          stopHeroPreview();
+          resetHeroPreviewMemory();
+        } catch (_) {}
+
         if (g.cover) {
           document.documentElement.style.setProperty(
             "--hero-bg",
