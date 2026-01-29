@@ -3776,3 +3776,102 @@ body.reduce-motion .game-card,
 body.reduce-motion .game-card .gc-cover {
   transition: none !important;
 }
+/* =========================================
+   GAMES ROW (Console Carousel) - PASTE AT END
+   ========================================= */
+
+.games-grid,
+#gamesGrid {
+  width: 86%;
+  margin: 0 auto;
+
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(240px, 1fr);
+
+  gap: 18px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding: 6px 4px 18px;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 4px;
+
+  scrollbar-width: none; /* Firefox */
+}
+.games-grid::-webkit-scrollbar,
+#gamesGrid::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* هر کارت روی snap بشینه */
+.game-card {
+  scroll-snap-align: start;
+}
+
+/* نرم‌تر */
+.games-grid,
+#gamesGrid {
+  scroll-behavior: smooth;
+}
+
+/* روی موبایل کمی کوچک‌تر */
+@media (max-width: 700px) {
+  .games-grid,
+  #gamesGrid {
+    width: 92%;
+    grid-auto-columns: minmax(200px, 1fr);
+  }
+}
+/* =========================================
+   HERO PREVIEW FX (PASTE AT END)
+   ========================================= */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+}
+
+/* یه لایه‌ی نرم روی hero که تغییرات رو لوکس‌تر می‌کنه */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+      700px 420px at 30% 35%,
+      rgba(184, 220, 255, 0.12),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 520px at 70% 75%,
+      rgba(255, 255, 255, 0.06),
+      transparent 65%
+    );
+  opacity: 0;
+  transform: scale(1.02);
+  filter: blur(10px);
+  transition: opacity 260ms ease, transform 260ms ease;
+}
+
+/* وقتی preview فعال شد */
+.hero.is-previewing::after {
+  opacity: 1;
+  transform: scale(1.06);
+}
+
+/* نرم‌تر شدن تغییر بک‌گراند */
+:root {
+  /* فقط برای خوانایی، لازم نیست چیزی اضافه کنی */
+}
+.hero {
+  transition: background 260ms ease;
+}
+
+/* احترام به reduce motion */
+body.reduce-motion .hero,
+body.reduce-motion .hero::after {
+  transition: none !important;
+}

@@ -65,6 +65,67 @@ console.log("main-os:", document.querySelector(".main-os"));
     main.style.setProperty("--a2", c[1]);
   }
 
+    // ==================== HERO PREVIEW ENGINE ====================
+  // Hero BG uses CSS var: --hero-bg  (تو کدت همینو قبلاً داری)
+  let heroPreviewTimer = null;
+  let lastHeroBg = null;
+
+  function getHeroBg() {
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue("--hero-bg")
+      .trim();
+  }
+
+  function setHeroBg(url) {
+    if (!url) return;
+    document.documentElement.style.setProperty("--hero-bg", `url("${url}")`);
+  }
+
+  function startHeroPreview(game) {
+    const hero = document.querySelector(".hero");
+    if (!hero || !game || !game.cover) return;
+
+    // Respect reduce motion
+    if (document.body.classList.contains("reduce-motion")) {
+      // بدون delay، فقط سریع ست کن
+      if (!lastHeroBg) lastHeroBg = getHeroBg() || null;
+      setHeroBg(game.cover);
+      hero.classList.add("is-previewing");
+      setAmbientForGame(game.id, game.title);
+      return;
+    }
+
+    clearTimeout(heroPreviewTimer);
+    heroPreviewTimer = setTimeout(() => {
+      if (!lastHeroBg) lastHeroBg = getHeroBg() || null;
+
+      setHeroBg(game.cover);
+      hero.classList.add("is-previewing");
+
+      // هماهنگ با ambient
+      setAmbientForGame(game.id, game.title);
+    }, 90);
+  }
+
+  function stopHeroPreview() {
+    const hero = document.querySelector(".hero");
+    if (!hero) return;
+
+    clearTimeout(heroPreviewTimer);
+
+    if (lastHeroBg) {
+      document.documentElement.style.setProperty("--hero-bg", lastHeroBg);
+    }
+    hero.classList.remove("is-previewing");
+  }
+
+  // اگر خواستی دستی ریست کامل:
+  function resetHeroPreviewMemory() {
+    lastHeroBg = null;
+  }
+  // ==============================================================
+
+
   function loadBool(key, def) {
     try {
       const v = localStorage.getItem(key);
@@ -332,7 +393,7 @@ console.log("main-os:", document.querySelector(".main-os"));
     gain.gain.setValueAtTime(0.0001, t0);
     gain.gain.exponentialRampToValueAtTime(
       Math.max(0.0002, finalVol),
-      t0 + 0.01
+      t0 + 0.01,
     );
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
 
@@ -419,7 +480,7 @@ console.log("main-os:", document.querySelector(".main-os"));
   function applyReduceMotion() {
     document.body.classList.toggle(
       "reduce-motion",
-      !!state.settings.reduceMotion
+      !!state.settings.reduceMotion,
     );
     if (reduceMotionValue)
       reduceMotionValue.textContent = state.settings.reduceMotion
@@ -433,7 +494,7 @@ console.log("main-os:", document.querySelector(".main-os"));
   function applyHighContrast() {
     document.body.classList.toggle(
       "high-contrast",
-      !!state.settings.highContrast
+      !!state.settings.highContrast,
     );
     if (contrastValue)
       contrastValue.textContent = state.settings.highContrast ? "ON" : "OFF";
@@ -489,7 +550,7 @@ console.log("main-os:", document.querySelector(".main-os"));
       "theme-aurora",
       "theme-lava",
       "theme-sakura",
-      "theme-frost"
+      "theme-frost",
     );
     const t = state.settings.theme || "dark";
     document.body.classList.add(`theme-${t}`);
@@ -578,7 +639,7 @@ console.log("main-os:", document.querySelector(".main-os"));
     state.controllerOn = !state.controllerOn;
     syncControllerUI();
     showToast(
-      `Controller: ${state.controllerOn ? "Connected" : "Disconnected"}`
+      `Controller: ${state.controllerOn ? "Connected" : "Disconnected"}`,
     );
   }
 
@@ -780,7 +841,7 @@ console.log("main-os:", document.querySelector(".main-os"));
       row.setAttribute("role", "option");
       row.setAttribute(
         "aria-selected",
-        idx === state.focus.index ? "true" : "false"
+        idx === state.focus.index ? "true" : "false",
       );
       row.innerHTML = `
         <div>
@@ -1404,38 +1465,38 @@ console.log("main-os:", document.querySelector(".main-os"));
   }
 
   function renderGamesGrid() {
-  if (!gamesGrid) return;
+    if (!gamesGrid) return;
 
-  const list = getVisibleGames();
-  gamesGrid.innerHTML = "";
+    const list = getVisibleGames();
+    gamesGrid.innerHTML = "";
 
-  list.forEach((g) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "game-card";
-    btn.dataset.id = g.id;
-    btn.setAttribute("aria-selected", "false");
-    btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
+    list.forEach((g) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "game-card";
+      btn.dataset.id = g.id;
+      btn.setAttribute("aria-selected", "false");
+      btn.title = `${g.title}${g.installed ? " (Installed)" : ""}`;
 
-    // ✅ Cover (تصویر واقعی اینجا میاد)
-    const cover = document.createElement("span");
-    cover.className = "gc-cover";
+      // ✅ Cover (تصویر واقعی اینجا میاد)
+      const cover = document.createElement("span");
+      cover.className = "gc-cover";
 
-    // ✅ Overlay سینمایی (برای اینکه نوشته‌ها خوانا بشن)
-    const overlay = document.createElement("span");
-    overlay.className = "gc-overlay";
-    overlay.setAttribute("aria-hidden", "true");
+      // ✅ Overlay سینمایی (برای اینکه نوشته‌ها خوانا بشن)
+      const overlay = document.createElement("span");
+      overlay.className = "gc-overlay";
+      overlay.setAttribute("aria-hidden", "true");
 
-    // ✅ Badge
-    const badge = document.createElement("span");
-    badge.className =
-      "gc-badge" + (g.installed ? " is-installed" : " is-store");
-    badge.textContent = g.installed ? "INSTALLED" : "STORE";
+      // ✅ Badge
+      const badge = document.createElement("span");
+      badge.className =
+        "gc-badge" + (g.installed ? " is-installed" : " is-store");
+      badge.textContent = g.installed ? "INSTALLED" : "STORE";
 
-    // ✅ Info
-    const info = document.createElement("div");
-    info.className = "gc-info";
-    info.innerHTML = `
+      // ✅ Info
+      const info = document.createElement("div");
+      info.className = "gc-info";
+      info.innerHTML = `
       <div class="gc-left">
         <div class="gc-title">${(g.title || "").toUpperCase()}</div>
         <div class="gc-line">
@@ -1451,49 +1512,66 @@ console.log("main-os:", document.querySelector(".main-os"));
         </div>
         <div class="gc-chip gc-size">
           ${
-            g.size
-              ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB`
-              : "--"
+            g.size ? `${Number(g.size).toFixed(g.size >= 10 ? 0 : 1)} GB` : "--"
           }
         </div>
       </div>
     `;
 
-    // ✅ Assemble
-    btn.appendChild(cover);
-    btn.appendChild(overlay);
-    btn.appendChild(badge);
-    btn.appendChild(info);
+      const bringIntoView = () => {
+        // کارت فوکوس‌شده رو بیار تو دید کاربر (کنسولی)
+        btn.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "nearest",
+        });
+      };
 
-    // ✅ کاور واقعی (همون تابع خودت)
-    // نکته: اینجا cover باید تصویر بگیره و overlay خودش گرادیانت رو میده
-    applyCardCover(cover, g.cover, btn);
+      btn.addEventListener("focus", bringIntoView);
+      btn.addEventListener("mouseenter", () => {
+        // با موس هم حس کنسولی بده (اختیاری)
+        bringIntoView();
+      });
 
-    // ✅ Ambient روی hover/focus
-    btn.addEventListener("mouseenter", () => setAmbientForGame(g.id, g.title));
-    btn.addEventListener("focus", () => setAmbientForGame(g.id, g.title));
+      // ✅ Assemble
+      btn.appendChild(cover);
+      btn.appendChild(overlay);
+      btn.appendChild(badge);
+      btn.appendChild(info);
 
-    // ✅ Hero + Ambient + رفتن به details
-    btn.addEventListener("click", () => {
-      if (g.cover) {
-        document.documentElement.style.setProperty("--hero-bg", `url("${g.cover}")`);
-      }
-      setAmbientForGame(g.id, g.title);
-      openGameDetails(g.id);
+      // ✅ کاور واقعی (همون تابع خودت)
+      // نکته: اینجا cover باید تصویر بگیره و overlay خودش گرادیانت رو میده
+      applyCardCover(cover, g.cover, btn);
+
+      // ✅ Ambient روی hover/focus
+      btn.addEventListener("mouseenter", () =>
+        setAmbientForGame(g.id, g.title),
+      );
+      btn.addEventListener("focus", () => setAmbientForGame(g.id, g.title));
+
+      // ✅ Hero + Ambient + رفتن به details
+      btn.addEventListener("click", () => {
+        if (g.cover) {
+          document.documentElement.style.setProperty(
+            "--hero-bg",
+            `url("${g.cover}")`,
+          );
+        }
+        setAmbientForGame(g.id, g.title);
+        openGameDetails(g.id);
+      });
+
+      gamesGrid.appendChild(btn);
     });
 
-    gamesGrid.appendChild(btn);
-  });
-
-  if (!list.length) {
-    const empty = document.createElement("div");
-    empty.style.cssText =
-      "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
-    empty.textContent = "No games found";
-    gamesGrid.appendChild(empty);
+    if (!list.length) {
+      const empty = document.createElement("div");
+      empty.style.cssText =
+        "grid-column:1/-1;opacity:.7;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:18px;";
+      empty.textContent = "No games found";
+      gamesGrid.appendChild(empty);
+    }
   }
-}
-
 
   function updateGamesFiltersUI() {
     if (filterValue)
@@ -1621,7 +1699,7 @@ console.log("main-os:", document.querySelector(".main-os"));
         updateQuickResume(game.id);
         unlockAchievement(
           `FIRST_LAUNCH_${game.id}`,
-          `First launch: ${game.title}`
+          `First launch: ${game.title}`,
         );
 
         // XP tick
@@ -1738,7 +1816,7 @@ console.log("main-os:", document.querySelector(".main-os"));
   function updatePowerFocus() {
     const items = getContextItems("power");
     items.forEach((el, i) =>
-      el.classList.toggle("is-focused", i === powerIndex)
+      el.classList.toggle("is-focused", i === powerIndex),
     );
     const el = items[powerIndex];
     el?.focus?.();
@@ -1801,69 +1879,69 @@ console.log("main-os:", document.querySelector(".main-os"));
   function bindSystemUI() {
     clock12Btn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setClockFormat(false))
+      () => (uiSound.ok(), setClockFormat(false)),
     );
     clock24Btn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setClockFormat(true))
+      () => (uiSound.ok(), setClockFormat(true)),
     );
 
     soundOnBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setSoundEnabled(true))
+      () => (uiSound.ok(), setSoundEnabled(true)),
     );
     soundOffBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setSoundEnabled(false))
+      () => (uiSound.ok(), setSoundEnabled(false)),
     );
 
     volumeSlider?.addEventListener("input", (e) => setVolume(e.target.value));
 
     motionOffBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setReduceMotion(false))
+      () => (uiSound.ok(), setReduceMotion(false)),
     );
     motionOnBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setReduceMotion(true))
+      () => (uiSound.ok(), setReduceMotion(true)),
     );
 
     contrastOffBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setHighContrast(false))
+      () => (uiSound.ok(), setHighContrast(false)),
     );
     contrastOnBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setHighContrast(true))
+      () => (uiSound.ok(), setHighContrast(true)),
     );
 
     themeDarkBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setTheme("dark"))
+      () => (uiSound.ok(), setTheme("dark")),
     );
     themeIceBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setTheme("ice"))
+      () => (uiSound.ok(), setTheme("ice")),
     );
     themeNeonBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setTheme("neon"))
+      () => (uiSound.ok(), setTheme("neon")),
     );
     themeAuroraBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setTheme("aurora"))
+      () => (uiSound.ok(), setTheme("aurora")),
     );
     themeLavaBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setTheme("lava"))
+      () => (uiSound.ok(), setTheme("lava")),
     );
     themeSakuraBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setTheme("sakura"))
+      () => (uiSound.ok(), setTheme("sakura")),
     );
     themeFrostBtn?.addEventListener(
       "click",
-      () => (uiSound.ok(), setTheme("frost"))
+      () => (uiSound.ok(), setTheme("frost")),
     );
   }
 
@@ -2066,7 +2144,7 @@ console.log("main-os:", document.querySelector(".main-os"));
         e.preventDefault();
         const idx = Math.min(
           state.focus.index,
-          (state.quickResume?.length || 0) - 1
+          (state.quickResume?.length || 0) - 1,
         );
         if ((state.quickResume?.length || 0) === 0) {
           closeQuickResumeOverlay();
@@ -2252,7 +2330,7 @@ console.log("main-os:", document.querySelector(".main-os"));
     // but for safety keep this small observer:
     const observer = new MutationObserver(() => onScreenChange());
     screens.forEach((s) =>
-      observer.observe(s, { attributes: true, attributeFilter: ["class"] })
+      observer.observe(s, { attributes: true, attributeFilter: ["class"] }),
     );
   }
   ["pointerdown", "keydown", "touchstart", "mousedown"].forEach((evt) => {
@@ -2505,7 +2583,7 @@ console.log("main-os:", document.querySelector(".main-os"));
       20,
       W * 0.5,
       H * 0.55,
-      Math.max(W, H) * 0.75
+      Math.max(W, H) * 0.75,
     );
     vg.addColorStop(0, "rgba(10,14,18,0)");
     vg.addColorStop(1, "rgba(0,0,0,0.55)");
