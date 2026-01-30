@@ -1136,6 +1136,21 @@ console.log("main-os:", document.querySelector(".main-os"));
         const isActive = n.classList.contains("active");
         n.setAttribute("aria-selected", isActive ? "true" : "false");
       });
+
+      // Premium pulse on focus
+      el.classList.remove("focus-pulse");
+      void el.offsetWidth;
+      el.classList.add("focus-pulse");
+      setTimeout(() => el.classList.remove("focus-pulse"), 420);
+
+      // Smooth keep-in-view (console feel)
+      try {
+        el.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "nearest",
+        });
+      } catch (_) {}
     }
   }
 
@@ -2399,7 +2414,7 @@ console.log("main-os:", document.querySelector(".main-os"));
   // -------------------- Initial Apply --------------------
   function init() {
     injectPolishCSS();
-    
+
     // Apply settings to DOM
     applySoundUI();
     applyVolumeUI();
