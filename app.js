@@ -2133,6 +2133,14 @@ console.log("main-os:", document.querySelector(".main-os"));
   });
 
   // -------------------- Keyboard Shortcuts (Console feel) --------------------
+  function cycleMainTabs(dir = 1) {
+    const tabs = ["home", "games", "media", "system"];
+    const cur = state.currentTab || "home";
+    const i = Math.max(0, tabs.indexOf(cur));
+    const next = tabs[(i + dir + tabs.length) % tabs.length];
+    openTab(next);
+  }
+
   document.addEventListener("keydown", (e) => {
     // Wake / power-on overrides
     if (state.sleeping) {
@@ -2146,6 +2154,15 @@ console.log("main-os:", document.querySelector(".main-os"));
     }
 
     if (state.booting) return;
+
+    // LB/RB tab cycle ( [ ] ) — console-like
+    if (!e.repeat && (e.key === "[" || e.key === "]")) {
+      if (isTypingContext()) return;
+      e.preventDefault();
+      uiSound.move();
+      cycleMainTabs(e.key === "]" ? +1 : -1);
+      return;
+    }
 
     // Sound toggle (M)
     if (!e.repeat && e.key.toLowerCase() === "m" && !e.shiftKey) {
