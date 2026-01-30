@@ -66,7 +66,7 @@ console.log("main-os:", document.querySelector(".main-os"));
   }
 
   // ==================== HERO PREVIEW ENGINE ====================
-  // Hero BG uses CSS var: --hero-bg  (تو کدت همینو قبلاً داری)
+  // Hero BG uses CSS var: --hero-bg
   let heroPreviewTimer = null;
   let lastHeroBg = null;
 
@@ -87,7 +87,6 @@ console.log("main-os:", document.querySelector(".main-os"));
 
     // Respect reduce motion
     if (document.body.classList.contains("reduce-motion")) {
-      // بدون delay، فقط سریع ست کن
       if (!lastHeroBg) lastHeroBg = getHeroBg() || null;
       setHeroBg(game.cover);
       hero.classList.add("is-previewing");
@@ -98,11 +97,8 @@ console.log("main-os:", document.querySelector(".main-os"));
     clearTimeout(heroPreviewTimer);
     heroPreviewTimer = setTimeout(() => {
       if (!lastHeroBg) lastHeroBg = getHeroBg() || null;
-
       setHeroBg(game.cover);
       hero.classList.add("is-previewing");
-
-      // هماهنگ با ambient
       setAmbientForGame(game.id, game.title);
     }, 90);
   }
@@ -119,11 +115,10 @@ console.log("main-os:", document.querySelector(".main-os"));
     hero.classList.remove("is-previewing");
   }
 
-  // اگر خواستی دستی ریست کامل:
   function resetHeroPreviewMemory() {
     lastHeroBg = null;
   }
-  // ==============================================================
+  // =============================================================
 
   function loadBool(key, def) {
     try {
@@ -958,11 +953,10 @@ console.log("main-os:", document.querySelector(".main-os"));
 
     state.currentScreen = name;
 
-    // ✅ Stop hero preview when leaving games/details contexts (avoid sticky preview)
+    // ✅ Stop hero preview when leaving games (avoid sticky preview)
     if (name !== "games") {
       try {
         stopHeroPreview();
-        // اگر می‌خوای بعد از خروج، بک‌گراند رو هم از حالت "prev saved" پاک کنی:
         resetHeroPreviewMemory();
       } catch (_) {}
     }
@@ -1019,6 +1013,11 @@ console.log("main-os:", document.querySelector(".main-os"));
   function setFocusContext(ctx) {
     state.focus.context = ctx;
     state.focus.index = 0;
+  }
+
+  // NOTE: setFocusIndex is used below; keep compatible even if not originally defined elsewhere.
+  function setFocusIndex(i) {
+    state.focus.index = i;
   }
 
   function clearAllFocusClasses() {
@@ -1472,6 +1471,7 @@ console.log("main-os:", document.querySelector(".main-os"));
     img.src = url;
   }
 
+  // ✅✅✅ PATCHED: renderGamesGrid with Hero Preview on hover/focus
   function renderGamesGrid() {
     if (!gamesGrid) return;
 
@@ -1537,7 +1537,7 @@ console.log("main-os:", document.querySelector(".main-os"));
       };
 
       btn.addEventListener("focus", bringIntoView);
-      btn.addEventListener("mouseenter", () => bringIntoView());
+      btn.addEventListener("mouseenter", bringIntoView);
 
       // ✅ Assemble
       btn.appendChild(cover);
@@ -1554,17 +1554,14 @@ console.log("main-os:", document.querySelector(".main-os"));
       );
       btn.addEventListener("focus", () => setAmbientForGame(g.id, g.title));
 
-      // ================== ✅ HERO PREVIEW (NEW) ==================
+      // ✅ Hero Preview روی hover/focus
       btn.addEventListener("mouseenter", () => startHeroPreview(g));
       btn.addEventListener("focus", () => startHeroPreview(g));
-
       btn.addEventListener("mouseleave", () => stopHeroPreview());
       btn.addEventListener("blur", () => stopHeroPreview());
-      // ===========================================================
 
-      // ✅ Click => تثبیت بک‌گراند + رفتن به details
+      // ✅ Click => تثبیت BG + رفتن به details
       btn.addEventListener("click", () => {
-        // وقتی کلیک شد، دیگه preview نیست؛ این انتخابه
         try {
           stopHeroPreview();
           resetHeroPreviewMemory();
@@ -1760,6 +1757,12 @@ console.log("main-os:", document.querySelector(".main-os"));
   }
 
   // -------------------- In-Game / Now Playing --------------------
+  function updateInGameUI() {
+    const g = getGameById(state.runningGameId);
+    inGameTitle && (inGameTitle.textContent = "IN GAME");
+    inGameSub && (inGameSub.textContent = g ? g.title : "—");
+  }
+
   function openInGame(gameId) {
     const g = getGameById(gameId);
     if (!g) return;
@@ -2309,6 +2312,7 @@ console.log("main-os:", document.querySelector(".main-os"));
   });
 
   qrCloseBtn?.addEventListener("click", () => closeQuickResumeOverlay());
+
   // -------------------- Initial Apply --------------------
   function init() {
     // Apply settings to DOM
@@ -2352,11 +2356,14 @@ console.log("main-os:", document.querySelector(".main-os"));
       observer.observe(s, { attributes: true, attributeFilter: ["class"] }),
     );
   }
+
   ["pointerdown", "keydown", "touchstart", "mousedown"].forEach((evt) => {
     document.addEventListener(evt, unlockAudio, { passive: true });
   });
+
   init();
 })();
+
 (function initNexoraPS6BootFx() {
   const bootScreen = document.getElementById("bootScreen");
   if (!bootScreen) return;
@@ -2595,7 +2602,7 @@ console.log("main-os:", document.querySelector(".main-os"));
     ctx.fillStyle = `rgba(5,6,7,${CFG.bgFade})`;
     ctx.fillRect(0, 0, W, H);
 
-    // subtle vignette (draw as big radial gradient)
+    // subtle vignette
     const vg = ctx.createRadialGradient(
       W * 0.5,
       H * 0.55,
@@ -2625,7 +2632,6 @@ console.log("main-os:", document.querySelector(".main-os"));
       if (g.x < -0.12) g.x = 1.12;
       if (g.x > 1.12) g.x = -0.12;
 
-      // fade by distance to center (keeps it premium, not "biology")
       const dx = g.x - 0.5;
       const dy = g.y - 0.55;
       const d = Math.hypot(dx, dy);
@@ -2636,7 +2642,6 @@ console.log("main-os:", document.querySelector(".main-os"));
 
   resize();
 
-  // Start with clean frame
   ctx.fillStyle = "#050607";
   ctx.fillRect(0, 0, W, H);
 
@@ -2644,7 +2649,6 @@ console.log("main-os:", document.querySelector(".main-os"));
   ro.observe(bootScreen);
   window.addEventListener("resize", resize);
 
-  // Sync with boot fade-out
   const mo = new MutationObserver(() => {
     if (bootScreen.classList.contains("is-leaving")) {
       canvas.style.transition = "opacity 420ms ease-in";
@@ -2691,8 +2695,6 @@ console.log("main-os:", document.querySelector(".main-os"));
   let prev = new Map(); // gamepadIndex -> buttons pressed boolean[]
 
   const fireKey = (key) => {
-    // Dispatch both keydown+keyup so existing logic that listens to keydown works,
-    // and keyup-based behaviors (if any) won't get stuck.
     const down = new KeyboardEvent("keydown", { key, bubbles: true });
     const up = new KeyboardEvent("keyup", { key, bubbles: true });
     document.dispatchEvent(down);
@@ -2726,7 +2728,6 @@ console.log("main-os:", document.querySelector(".main-os"));
     requestAnimationFrame(tick);
   };
 
-  // Start loop once user interacts (some browsers require a gesture)
   window.addEventListener("gamepadconnected", () => {
     if (!window.__nexora_gp_loop_started) {
       window.__nexora_gp_loop_started = true;
@@ -2734,7 +2735,6 @@ console.log("main-os:", document.querySelector(".main-os"));
     }
   });
 
-  // Also start when page loads (works in many browsers)
   window.addEventListener("load", () => {
     if (!window.__nexora_gp_loop_started) {
       window.__nexora_gp_loop_started = true;
