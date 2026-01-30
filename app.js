@@ -3,89 +3,6 @@ console.log("main-os:", document.querySelector(".main-os"));
 
 (() => {
   // -------------------- Helpers --------------------
-  // -------------------- UI POLISH (Injected CSS) --------------------
-  function injectPolishCSS() {
-    if (document.getElementById("nexora-polish-css")) return;
-
-    const css = `
-  /* ===== Nexora Polish Pack (JS Inject) ===== */
-  .is-focused{ outline:none !important; transform: translateZ(0); }
-
-  .focus-pulse{ animation: nexoraFocusPulse .38s ease-out; }
-  @keyframes nexoraFocusPulse{
-    0%{ transform: scale(1); }
-    55%{ transform: scale(1.012); }
-    100%{ transform: scale(1); }
-  }
-
-  .game-card, .hero-btn, .context-card, .media-card, .nav-item, [data-setting-card], .qr-item, .power-option {
-    transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
-    will-change: transform;
-  }
-
-  .game-card.is-focused, .hero-btn.is-focused, .context-card.is-focused, .media-card.is-focused, .nav-item.is-focused,
-  [data-setting-card].is-focused, .qr-item.is-focused, .power-option.is-focused{
-    transform: translateY(-1px) scale(1.01);
-    filter: saturate(1.08) contrast(1.05);
-  }
-
-  .game-card .gc-cover{
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    transform: scale(1.02);
-    transition: transform .35s ease, filter .35s ease;
-  }
-  .game-card.cover-loaded .gc-cover{
-    transform: scale(1);
-    filter: saturate(1.08) contrast(1.05);
-  }
-  .game-card.cover-failed .gc-cover{
-    background-image: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.45)) !important;
-  }
-
-  .main-os.has-ambient::before{
-    content:"";
-    position:absolute;
-    inset:-2px;
-    pointer-events:none;
-    background:
-      radial-gradient(900px 600px at 18% 8%, var(--a1, rgba(184,220,255,.18)), transparent 60%),
-      radial-gradient(900px 600px at 84% 14%, var(--a2, rgba(255,255,255,.08)), transparent 60%);
-    opacity:.95;
-    transition: opacity .35s ease;
-    z-index:0;
-  }
-  .main-os > *{ position:relative; z-index:1; }
-
-  .game-card.is-focused::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.06) 22%, transparent 45%);
-    transform: translateX(-35%);
-    animation: sheen 1.2s ease-out;
-    border-radius: inherit;
-  }
-  @keyframes sheen{
-    0%{ transform: translateX(-55%); opacity:0; }
-    18%{ opacity:1; }
-    100%{ transform: translateX(55%); opacity:0; }
-  }
-
-  .reduce-motion .focus-pulse,
-  .reduce-motion .game-card.is-focused::after{
-    animation: none !important;
-  }
-  `;
-
-    const style = document.createElement("style");
-    style.id = "nexora-polish-css";
-    style.textContent = css;
-    document.head.appendChild(style);
-  }
-
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
@@ -1136,21 +1053,6 @@ console.log("main-os:", document.querySelector(".main-os"));
         const isActive = n.classList.contains("active");
         n.setAttribute("aria-selected", isActive ? "true" : "false");
       });
-
-      // Premium pulse on focus
-      el.classList.remove("focus-pulse");
-      void el.offsetWidth;
-      el.classList.add("focus-pulse");
-      setTimeout(() => el.classList.remove("focus-pulse"), 420);
-
-      // Smooth keep-in-view (console feel)
-      try {
-        el.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "nearest",
-        });
-      } catch (_) {}
     }
   }
 
@@ -1647,25 +1549,10 @@ console.log("main-os:", document.querySelector(".main-os"));
       applyCardCover(cover, g.cover, btn);
 
       // ✅ Ambient روی hover/focus
-      btn.addEventListener("mouseenter", () => {
-        setAmbientForGame(g.id, g.title);
-        if (g.cover) {
-          document.documentElement.style.setProperty(
-            "--hero-bg",
-            `url("${g.cover}")`,
-          );
-        }
-      });
-
-      btn.addEventListener("focus", () => {
-        setAmbientForGame(g.id, g.title);
-        if (g.cover) {
-          document.documentElement.style.setProperty(
-            "--hero-bg",
-            `url("${g.cover}")`,
-          );
-        }
-      });
+      btn.addEventListener("mouseenter", () =>
+        setAmbientForGame(g.id, g.title),
+      );
+      btn.addEventListener("focus", () => setAmbientForGame(g.id, g.title));
 
       // ✅ Hero Preview روی hover/focus
       btn.addEventListener("mouseenter", () => startHeroPreview(g));
@@ -2148,14 +2035,6 @@ console.log("main-os:", document.querySelector(".main-os"));
   });
 
   // -------------------- Keyboard Shortcuts (Console feel) --------------------
-  function cycleMainTabs(dir = 1) {
-    const tabs = ["home", "games", "media", "system"];
-    const cur = state.currentTab || "home";
-    const i = Math.max(0, tabs.indexOf(cur));
-    const next = tabs[(i + dir + tabs.length) % tabs.length];
-    openTab(next);
-  }
-
   document.addEventListener("keydown", (e) => {
     // Wake / power-on overrides
     if (state.sleeping) {
@@ -2169,15 +2048,6 @@ console.log("main-os:", document.querySelector(".main-os"));
     }
 
     if (state.booting) return;
-
-    // LB/RB tab cycle ( [ ] ) — console-like
-    if (!e.repeat && (e.key === "[" || e.key === "]")) {
-      if (isTypingContext()) return;
-      e.preventDefault();
-      uiSound.move();
-      cycleMainTabs(e.key === "]" ? +1 : -1);
-      return;
-    }
 
     // Sound toggle (M)
     if (!e.repeat && e.key.toLowerCase() === "m" && !e.shiftKey) {
@@ -2445,8 +2315,6 @@ console.log("main-os:", document.querySelector(".main-os"));
 
   // -------------------- Initial Apply --------------------
   function init() {
-    injectPolishCSS();
-
     // Apply settings to DOM
     applySoundUI();
     applyVolumeUI();
