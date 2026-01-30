@@ -1647,10 +1647,25 @@ console.log("main-os:", document.querySelector(".main-os"));
       applyCardCover(cover, g.cover, btn);
 
       // ✅ Ambient روی hover/focus
-      btn.addEventListener("mouseenter", () =>
-        setAmbientForGame(g.id, g.title),
-      );
-      btn.addEventListener("focus", () => setAmbientForGame(g.id, g.title));
+      btn.addEventListener("mouseenter", () => {
+        setAmbientForGame(g.id, g.title);
+        if (g.cover) {
+          document.documentElement.style.setProperty(
+            "--hero-bg",
+            `url("${g.cover}")`,
+          );
+        }
+      });
+
+      btn.addEventListener("focus", () => {
+        setAmbientForGame(g.id, g.title);
+        if (g.cover) {
+          document.documentElement.style.setProperty(
+            "--hero-bg",
+            `url("${g.cover}")`,
+          );
+        }
+      });
 
       // ✅ Hero Preview روی hover/focus
       btn.addEventListener("mouseenter", () => startHeroPreview(g));
