@@ -273,11 +273,11 @@ console.log("main-os:", document.querySelector(".main-os"));
   // System Screen
   const clock12Btn = $("#clock12Btn");
   const clock24Btn = $("#clock24Btn");
-  const clockValue = $("#clockValue");
+  const clockValue = $("#clockValue") || $("#clockFormatValue");
 
   const soundOnBtn = $("#soundOnBtn");
   const soundOffBtn = $("#soundOffBtn");
-  const soundValue = $("#soundValue");
+  const soundValue = $("#soundValue") || $("#systemSoundValue");
 
   const volumeSlider = $("#volumeSlider");
   const volumeValue = $("#volumeValue");

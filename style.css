@@ -3840,7 +3840,8 @@ body.reduce-motion .game-card .gc-cover {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(
+  background:
+    radial-gradient(
       700px 420px at 30% 35%,
       rgba(184, 220, 255, 0.12),
       transparent 60%
@@ -3853,7 +3854,9 @@ body.reduce-motion .game-card .gc-cover {
   opacity: 0;
   transform: scale(1.02);
   filter: blur(10px);
-  transition: opacity 260ms ease, transform 260ms ease;
+  transition:
+    opacity 260ms ease,
+    transform 260ms ease;
 }
 
 /* وقتی preview فعال شد */
@@ -3874,4 +3877,78 @@ body.reduce-motion .game-card .gc-cover {
 body.reduce-motion .hero,
 body.reduce-motion .hero::after {
   transition: none !important;
+}
+
+/* ===== Games Toolbar ===== */
+.games-toolbar {
+  width: 80%;
+  margin: 0 auto 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr 0.9fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.games-search {
+  height: 55px;
+  border-radius: 999px;
+  border: 1px solid rgba(220, 235, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(230, 237, 245, 0.9);
+  padding: 0 18px;
+  outline: none;
+  letter-spacing: 0.08em;
+}
+
+.games-search:focus {
+  border-color: rgba(184, 220, 255, 0.45);
+  box-shadow: 0 0 0 6px rgba(184, 220, 255, 0.08);
+}
+
+/* ===== Details Meta ===== */
+.details-meta {
+  width: min(920px, 92%);
+  margin: 22px auto 0;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.details-cover {
+  border-radius: 18px;
+  border: 1px solid rgba(220, 235, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px rgba(220, 235, 255, 0.03);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  min-height: 170px;
+}
+
+.details-kv {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.kv {
+  padding: 14px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(220, 235, 255, 0.12);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.kv-k {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(230, 237, 245, 0.55);
+}
+
+.kv-v {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: 650;
+  color: rgba(230, 237, 245, 0.92);
 }

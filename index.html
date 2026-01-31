@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -186,6 +186,29 @@
           <div style="height: 24px"></div>
           <div class="games-title">GAMES LIBRARY</div>
 
+          <!-- Games Toolbar (NEW) -->
+          <div class="games-toolbar" role="region" aria-label="Games controls">
+            <button class="hero-btn" id="filterBtn" type="button">
+              Filter: <span id="filterValue">ALL</span>
+            </button>
+
+            <button class="hero-btn" id="sortBtn" type="button">
+              Sort: <span id="sortValue">RECENT</span>
+            </button>
+
+            <input
+              class="games-search"
+              id="searchInput"
+              type="search"
+              placeholder="Search games..."
+              aria-label="Search games"
+            />
+
+            <button class="hero-btn primary" id="applyFiltersBtn" type="button">
+              Apply
+            </button>
+          </div>
+
           <section class="games-grid" id="gamesGrid">
             <!-- <button
               class="game-card"
@@ -298,6 +321,27 @@
 
           <div style="height: 24px"></div>
           <div class="games-title">SYSTEM</div>
+
+          <!-- Profile Stats (NEW) -->
+          <section class="context-cards" style="margin-top: 18px">
+            <div class="context-card" tabindex="0">
+              <div class="context-title">XP</div>
+              <div class="context-value" id="xpValue">0</div>
+              <div class="context-sub">Progress</div>
+            </div>
+
+            <div class="context-card" tabindex="0">
+              <div class="context-title">Achievements</div>
+              <div class="context-value" id="achValue">0</div>
+              <div class="context-sub">Unlocked</div>
+            </div>
+
+            <div class="context-card" tabindex="0">
+              <div class="context-title">Last Achievement</div>
+              <div class="context-value" id="achLastValue">—</div>
+              <div class="context-sub">Recent</div>
+            </div>
+          </section>
 
           <section class="system-grid" id="systemGrid">
             <!-- Clock Format -->
@@ -433,6 +477,32 @@
           <div style="height: 24px"></div>
           <div class="details-title" id="detailsTitle">GAME TITLE</div>
           <div class="details-sub" id="detailsSub">Some info...</div>
+
+          <!-- Details Meta (NEW) -->
+          <div class="details-meta">
+            <div
+              class="details-cover"
+              id="detailsCover"
+              aria-hidden="true"
+            ></div>
+
+            <div class="details-kv">
+              <div class="kv">
+                <div class="kv-k">Genre</div>
+                <div class="kv-v" id="detailsGenre">--</div>
+              </div>
+
+              <div class="kv">
+                <div class="kv-k">Size</div>
+                <div class="kv-v" id="detailsSize">--</div>
+              </div>
+
+              <div class="kv">
+                <div class="kv-k">Last Played</div>
+                <div class="kv-v" id="detailsLastPlayed">Never</div>
+              </div>
+            </div>
+          </div>
 
           <div class="details-actions">
             <button class="hero-btn primary" id="playBtn">Play</button>
