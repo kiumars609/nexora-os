@@ -45,6 +45,18 @@ console.log("main-os:", document.querySelector(".main-os"));
 
   function setAmbientForGame(gameId, gameTitle) {
     const main = document.querySelector(".main-os");
+
+    const osRoot = document.querySelector(".main-os");
+    if (osRoot) {
+      osRoot.addEventListener("pointermove", (e) => {
+        const r = osRoot.getBoundingClientRect();
+        const x = ((e.clientX - r.left) / r.width) * 100;
+        const y = ((e.clientY - r.top) / r.height) * 100;
+        osRoot.style.setProperty("--mx", `${x}%`);
+        osRoot.style.setProperty("--my", `${y}%`);
+      });
+    }
+
     if (!main) return;
 
     main.classList.add("has-ambient");
