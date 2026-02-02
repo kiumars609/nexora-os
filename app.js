@@ -2888,6 +2888,7 @@ function makeWindow({ id, title, contentHTML }) {
 
   bar.addEventListener("pointerdown", (e) => {
     // if snapped, un-snap before dragging
+    if (e.target.closest(".win-action")) return;
     win.classList.remove("is-snap-left", "is-snap-right");
 
     dragging = true;
@@ -3017,4 +3018,8 @@ window.addEventListener("keydown", (e) => {
       bringToFront(minimized);
     }
   }
+});
+
+win.querySelectorAll(".win-action").forEach((btn) => {
+  btn.addEventListener("pointerdown", (e) => e.stopPropagation());
 });
