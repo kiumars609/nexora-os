@@ -2754,3 +2754,23 @@ console.log("main-os:", document.querySelector(".main-os"));
     }
   });
 })();
+function pulseAt(el, clientX, clientY) {
+  const r = el.getBoundingClientRect();
+  const x = clientX - r.left;
+  const y = clientY - r.top;
+  el.style.position = el.style.position || "relative";
+  const p = document.createElement("span");
+  p.className = "pulse";
+  p.style.left = `${x}px`;
+  p.style.top = `${y}px`;
+  el.appendChild(p);
+  setTimeout(() => p.remove(), 600);
+}
+
+document.addEventListener("pointerdown", (e) => {
+  const target = e.target.closest(
+    ".hero-btn, .context-card, .game-card, .nav-item, .power-item",
+  );
+  if (!target) return;
+  pulseAt(target, e.clientX, e.clientY);
+});

@@ -3998,3 +3998,22 @@ body.reduce-motion .screens {
   transform: none;
   transition: none;
 }
+
+/* Click pulse */
+.pulse {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  pointer-events: none;
+  background: rgba(184, 220, 255, 0.35);
+  transform: translate(-50%, -50%) scale(1);
+  filter: blur(0.5px);
+  animation: pulseOut 520ms ease-out forwards;
+}
+@keyframes pulseOut {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(18);
+  }
+}
