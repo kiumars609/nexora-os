@@ -3952,3 +3952,24 @@ body.reduce-motion .hero::after {
   font-weight: 650;
   color: rgba(230, 237, 245, 0.92);
 }
+/* Light follow overlay */
+.main-os::before{
+  content:"";
+  position:absolute;
+  inset:-40%;
+  pointer-events:none;
+  opacity:0;
+  transition: opacity 180ms ease-out;
+  background: radial-gradient(
+    380px 280px at var(--mx, 50%) var(--my, 50%),
+    rgba(184,220,255,0.14),
+    rgba(184,220,255,0.06) 35%,
+    rgba(0,0,0,0) 70%
+  );
+  mix-blend-mode: screen;
+  z-index: 0;
+}
+.main-os:hover::before{ opacity:1; }
+
+/* Reduce motion respect */
+body.reduce-motion .main-os::before{ transition:none; }
