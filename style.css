@@ -3981,3 +3981,140 @@ body.reduce-motion .main-os::after {
   position: relative;
   z-index: 1;
 }
+
+/* =========================
+   Window Manager (Glass)
+   ========================= */
+.wm {
+  position: fixed;
+  inset: 0;
+  pointer-events: none; /* windows enable their own pointer */
+  z-index: 200000; /* بالاتر از UI، پایین‌تر از power اگر خواستی */
+}
+
+.win {
+  position: absolute;
+  width: min(860px, 92vw);
+  height: min(520px, 74vh);
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%) scale(0.98);
+  opacity: 0;
+
+  border-radius: 24px;
+  border: 1px solid rgba(220, 235, 255, 0.16);
+  background: rgba(255, 255, 255, 0.045);
+
+  box-shadow:
+    0 40px 90px rgba(0, 0, 0, 0.65),
+    inset 0 0 0 1px rgba(220, 235, 255, 0.04);
+
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+
+  pointer-events: auto;
+  transition:
+    transform 220ms ease-out,
+    opacity 220ms ease-out;
+  will-change: transform, opacity;
+}
+
+.win.is-open {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.win.is-focused {
+  border-color: rgba(184, 220, 255, 0.35);
+  box-shadow:
+    0 55px 120px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(184, 220, 255, 0.18),
+    inset 0 0 0 1px rgba(220, 235, 255, 0.05);
+}
+
+/* Titlebar */
+.win-bar {
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px 0 16px;
+  border-bottom: 1px solid rgba(220, 235, 255, 0.1);
+  background: rgba(0, 0, 0, 0.18);
+  user-select: none;
+  cursor: grab;
+}
+
+.win-bar:active {
+  cursor: grabbing;
+}
+
+.win-title {
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: rgba(230, 237, 245, 0.9);
+}
+
+.win-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.win-action {
+  width: 40px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(220, 235, 255, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(230, 237, 245, 0.9);
+  cursor: pointer;
+}
+.win-action:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(220, 235, 255, 0.22);
+}
+.win-action.danger {
+  border-color: rgba(255, 120, 120, 0.22);
+}
+.win-action.danger:hover {
+  background: rgba(255, 120, 120, 0.08);
+  border-color: rgba(255, 120, 120, 0.35);
+}
+
+.win-body {
+  height: calc(100% - 54px);
+  padding: 16px;
+  overflow: auto;
+}
+
+/* Snap states */
+.win.is-snap-left,
+.win.is-snap-right {
+  top: 50%;
+  transform: translate(0, -50%) scale(1);
+  width: 50vw;
+  height: 86vh;
+  border-radius: 26px;
+  opacity: 1;
+}
+
+.win.is-snap-left {
+  left: 0;
+}
+.win.is-snap-right {
+  left: 50vw;
+}
+
+/* Minimize animation */
+.win.is-minimized {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.92);
+  pointer-events: none;
+}
+
+/* Reduce motion */
+body.reduce-motion .win {
+  transition: none !important;
+}
