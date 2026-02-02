@@ -3384,33 +3384,6 @@ audio {
   }
 }
 /* Ambient light layer */
-.main-os::before {
-  content: "";
-  position: absolute;
-  inset: -30%;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0;
-  transition:
-    opacity 260ms ease,
-    filter 260ms ease,
-    transform 260ms ease;
-
-  background:
-    radial-gradient(
-      650px 380px at 35% 30%,
-      var(--a1, rgba(184, 220, 255, 0.22)),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 520px at 65% 70%,
-      var(--a2, rgba(255, 255, 255, 0.1)),
-      transparent 65%
-    );
-
-  filter: blur(18px);
-  transform: scale(1.02);
-}
 
 .main-os.has-ambient::before {
   opacity: 1;
@@ -3428,33 +3401,6 @@ audio {
 .game-card:focus-visible {
   transform: translateY(-3px) scale(1.01);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
-}
-.main-os::before {
-  content: "";
-  position: absolute;
-  inset: -30%;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0;
-  transition:
-    opacity 260ms ease,
-    filter 260ms ease,
-    transform 260ms ease;
-
-  background:
-    radial-gradient(
-      650px 380px at 35% 30%,
-      var(--a1, rgba(184, 220, 255, 0.22)),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 520px at 65% 70%,
-      var(--a2, rgba(255, 255, 255, 0.1)),
-      transparent 65%
-    );
-
-  filter: blur(24px);
-  transform: scale(1.05);
 }
 
 .main-os.has-ambient::before {
@@ -3496,34 +3442,6 @@ audio {
 /* ===== Ambient Light (FIX OVERRIDE) ===== */
 .main-os {
   position: relative;
-}
-
-.main-os::before {
-  content: "";
-  position: absolute;
-  inset: -30%;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0;
-  transition:
-    opacity 260ms ease,
-    filter 260ms ease,
-    transform 260ms ease;
-
-  background:
-    radial-gradient(
-      650px 380px at 35% 30%,
-      var(--a1, rgba(184, 220, 255, 0.22)),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 520px at 65% 70%,
-      var(--a2, rgba(255, 255, 255, 0.1)),
-      transparent 65%
-    );
-
-  filter: blur(18px);
-  transform: scale(1.02);
 }
 
 .main-os.has-ambient::before {
@@ -4032,4 +3950,34 @@ body.theme-neon .os-bg {
 }
 body.theme-ice .os-bg {
   filter: hue-rotate(200deg) saturate(110%) brightness(1.05);
+}
+
+.main-os::after {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+  background: radial-gradient(
+    380px 280px at var(--mx, 50%) var(--my, 50%),
+    rgba(184, 220, 255, 0.14),
+    rgba(184, 220, 255, 0.06) 35%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  mix-blend-mode: screen;
+  z-index: 0;
+}
+.main-os:hover::after {
+  opacity: 1;
+}
+body.reduce-motion .main-os::after {
+  transition: none;
+}
+
+.header-os,
+.nav,
+.screens {
+  position: relative;
+  z-index: 1;
 }
