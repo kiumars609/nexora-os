@@ -4118,3 +4118,104 @@ body.reduce-motion .main-os::after {
 body.reduce-motion .win {
   transition: none !important;
 }
+
+/* =========================
+   Dock / Taskbar
+   ========================= */
+.dock {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 210000;
+  pointer-events: none;
+}
+
+.dock-inner {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(220, 235, 255, 0.16);
+  backdrop-filter: blur(14px);
+
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(220, 235, 255, 0.04);
+}
+
+.dock-item {
+  position: relative;
+  height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  border-radius: 999px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  border: 1px solid rgba(220, 235, 255, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(230, 237, 245, 0.92);
+
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    transform 160ms ease-out,
+    background 160ms ease-out,
+    border-color 160ms ease-out;
+}
+
+.dock-item:hover {
+  transform: translateY(-2px) scale(1.02);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(220, 235, 255, 0.22);
+}
+
+.dock-item.is-active {
+  border-color: rgba(184, 220, 255, 0.42);
+  box-shadow: 0 0 0 6px rgba(184, 220, 255, 0.08);
+}
+
+.dock-dot {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(184, 220, 255, 0.75);
+  box-shadow: 0 0 14px rgba(184, 220, 255, 0.25);
+  opacity: 0.9;
+}
+
+.dock-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .dock-label {
+    display: none;
+  }
+  .dock-item {
+    padding: 0 10px;
+  }
+}
+
+body.reduce-motion .dock-item {
+  transition: none !important;
+}
