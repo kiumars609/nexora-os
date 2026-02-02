@@ -2793,3 +2793,228 @@ function beep(freq = 420, dur = 0.035, vol = 0.03) {
     o.stop();
   }, dur * 1000);
 }
+
+// =========================
+// Window Manager (NEW)
+// =========================
+const wm = document.getElementById("wm");
+let zTop = 10;
+
+function bringToFront(win) {
+  zTop += 1;
+  win.style.zIndex = String(zTop);
+  document
+    .querySelectorAll(".win")
+    .forEach((w) => w.classList.remove("is-focused"));
+  win.classList.add("is-focused");
+}
+
+function makeWindow({ id, title, contentHTML }) {
+  if (!wm) return;
+
+  // prevent duplicates
+  const existing = document.querySelector(`.win[data-win="${id}"]`);
+  if (existing) {
+    existing.classList.remove("is-minimized");
+    bringToFront(existing);
+    return existing;
+  }
+
+  const win = document.createElement("section");
+  win.className = "win";
+  win.dataset.win = id;
+
+  win.innerHTML = `
+    <div class="win-bar" data-drag-handle>
+      <div class="win-title">${title}</div>
+      <div class="win-actions">
+        <button class="win-action" data-win-min title="Minimize">—</button>
+        <button class="win-action" data-win-snap title="Snap (L/R)">⟷</button>
+        <button class="win-action danger" data-win-close title="Close">×</button>
+      </div>
+    </div>
+    <div class="win-body">${contentHTML}</div>
+  `;
+
+  wm.appendChild(win);
+  bringToFront(win);
+
+  // open animation
+  requestAnimationFrame(() => win.classList.add("is-open"));
+
+  // actions
+  win.addEventListener("pointerdown", () => bringToFront(win));
+
+  win.querySelector("[data-win-close]").addEventListener("click", () => {
+    win.classList.remove("is-open");
+    setTimeout(() => win.remove(), 220);
+  });
+
+  win.querySelector("[data-win-min]").addEventListener("click", () => {
+    win.classList.add("is-minimized");
+  });
+
+  // snap toggle: first left, then right, then normal
+  win.querySelector("[data-win-snap]").addEventListener("click", () => {
+    if (win.classList.contains("is-snap-left")) {
+      win.classList.remove("is-snap-left");
+      win.classList.add("is-snap-right");
+    } else if (win.classList.contains("is-snap-right")) {
+      win.classList.remove("is-snap-right");
+      // back to centered
+      win.style.left = "50%";
+      win.style.top = "52%";
+      win.style.transform = "translate(-50%, -50%) scale(1)";
+    } else {
+      win.classList.add("is-snap-left");
+      win.style.left = "0";
+      win.style.top = "50%";
+    }
+  });
+
+  // drag
+  const bar = win.querySelector("[data-drag-handle]");
+  let dragging = false,
+    startX = 0,
+    startY = 0,
+    baseX = 0,
+    baseY = 0;
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+  function px(n) {
+    return `${n}px`;
+  }
+
+  bar.addEventListener("pointerdown", (e) => {
+    // if snapped, un-snap before dragging
+    win.classList.remove("is-snap-left", "is-snap-right");
+
+    dragging = true;
+    bringToFront(win);
+    bar.setPointerCapture(e.pointerId);
+
+    const r = win.getBoundingClientRect();
+    startX = e.clientX;
+    startY = e.clientY;
+    baseX = r.left;
+    baseY = r.top;
+
+    // switch to pixel positioning
+    win.style.left = px(baseX);
+    win.style.top = px(baseY);
+    win.style.transform = "none";
+  });
+
+  bar.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    const maxX = window.innerWidth - win.offsetWidth;
+    const maxY = window.innerHeight - win.offsetHeight;
+
+    const nx = clamp(baseX + dx, 8, maxX - 8);
+    const ny = clamp(baseY + dy, 8, maxY - 8);
+
+    win.style.left = px(nx);
+    win.style.top = px(ny);
+
+    // edge snap hint (auto snap when close)
+    const snapZone = 22;
+    if (e.clientX < snapZone) {
+      win.classList.add("is-snap-left");
+      win.classList.remove("is-snap-right");
+    } else if (e.clientX > window.innerWidth - snapZone) {
+      win.classList.add("is-snap-right");
+      win.classList.remove("is-snap-left");
+    } else {
+      win.classList.remove("is-snap-left", "is-snap-right");
+    }
+  });
+
+  bar.addEventListener("pointerup", (e) => {
+    dragging = false;
+    try {
+      bar.releasePointerCapture(e.pointerId);
+    } catch {}
+    // if snapped, normalize positioning for snap layout
+    if (win.classList.contains("is-snap-left")) {
+      win.style.left = "0";
+      win.style.top = "50%";
+      win.style.transform = "translate(0, -50%) scale(1)";
+    }
+    if (win.classList.contains("is-snap-right")) {
+      win.style.left = "50vw";
+      win.style.top = "50%";
+      win.style.transform = "translate(0, -50%) scale(1)";
+    }
+  });
+
+  return win;
+}
+
+// quick helper: open a demo app
+function openApp(appId) {
+  if (appId === "spotify") {
+    makeWindow({
+      id: "spotify",
+      title: "Spotify",
+      contentHTML: `
+        <div style="display:grid; gap:12px">
+          <div style="font-weight:800; letter-spacing:.14em">NOW PLAYING</div>
+          <div style="opacity:.75">Nexora Beats — Ambient Mix</div>
+          <div style="display:flex; gap:10px; margin-top:6px">
+            <button class="hero-btn">Prev</button>
+            <button class="hero-btn primary">Play</button>
+            <button class="hero-btn">Next</button>
+          </div>
+          <div style="margin-top:8px; opacity:.65; font-size:12px">
+            Tip: Drag the titlebar • Snap from edges
+          </div>
+        </div>
+      `,
+    });
+  }
+
+  if (appId === "settings") {
+    makeWindow({
+      id: "settings",
+      title: "Settings",
+      contentHTML: `
+        <div style="display:grid; gap:10px">
+          <div style="opacity:.85">This is a windowed panel.</div>
+          <div style="opacity:.65; font-size:12px">
+            You can move this, minimize it, or snap it left/right.
+          </div>
+        </div>
+      `,
+    });
+  }
+}
+
+// Bind to your existing UI:
+// 1) Media cards
+document.querySelectorAll(".media-card").forEach((card) => {
+  card.addEventListener("click", () => {
+    const key = card.getAttribute("data-media")?.toLowerCase();
+    if (key === "spotify") openApp("spotify");
+    else openApp("settings");
+  });
+});
+
+// 2) Quick Resume card example
+const qr = document.getElementById("quickResumeCard");
+if (qr) qr.addEventListener("click", () => openApp("settings"));
+
+// Optional: restore minimized with key `O`
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "o") {
+    const minimized = document.querySelector(".win.is-minimized");
+    if (minimized) {
+      minimized.classList.remove("is-minimized");
+      bringToFront(minimized);
+    }
+  }
+});
