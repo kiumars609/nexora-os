@@ -3953,23 +3953,48 @@ body.reduce-motion .hero::after {
   color: rgba(230, 237, 245, 0.92);
 }
 /* Light follow overlay */
-.main-os::before{
-  content:"";
-  position:absolute;
-  inset:-40%;
-  pointer-events:none;
-  opacity:0;
+.main-os::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  opacity: 0;
   transition: opacity 180ms ease-out;
   background: radial-gradient(
     380px 280px at var(--mx, 50%) var(--my, 50%),
-    rgba(184,220,255,0.14),
-    rgba(184,220,255,0.06) 35%,
-    rgba(0,0,0,0) 70%
+    rgba(184, 220, 255, 0.14),
+    rgba(184, 220, 255, 0.06) 35%,
+    rgba(0, 0, 0, 0) 70%
   );
   mix-blend-mode: screen;
   z-index: 0;
 }
-.main-os:hover::before{ opacity:1; }
+.main-os:hover::before {
+  opacity: 1;
+}
 
 /* Reduce motion respect */
-body.reduce-motion .main-os::before{ transition:none; }
+body.reduce-motion .main-os::before {
+  transition: none;
+}
+
+.main-os {
+  perspective: 1200px;
+}
+.hero,
+.context-card,
+.setting-card,
+.game-card {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.screens {
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-origin: center;
+  transition: transform 120ms ease-out;
+}
+body.reduce-motion .screens {
+  transform: none;
+  transition: none;
+}
