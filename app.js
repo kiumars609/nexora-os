@@ -2774,3 +2774,21 @@ document.addEventListener("pointerdown", (e) => {
   if (!target) return;
   pulseAt(target, e.clientX, e.clientY);
 });
+
+let audioCtx;
+function beep(freq = 420, dur = 0.035, vol = 0.03) {
+  if (document.body.classList.contains("reduce-motion")) return;
+  if (!audioCtx)
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = "sine";
+  o.frequency.value = freq;
+  g.gain.value = vol;
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.start();
+  setTimeout(() => {
+    o.stop();
+  }, dur * 1000);
+}

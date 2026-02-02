@@ -4017,3 +4017,19 @@ body.reduce-motion .screens {
     transform: translate(-50%, -50%) scale(18);
   }
 }
+
+body.theme-sakura .os-bg {
+  filter: hue-rotate(320deg) saturate(135%);
+}
+body.theme-lava .os-bg {
+  filter: hue-rotate(35deg) saturate(150%);
+}
+body.theme-frost .os-bg {
+  filter: hue-rotate(210deg) saturate(120%);
+}
+body.theme-neon .os-bg {
+  filter: hue-rotate(160deg) saturate(170%);
+}
+body.theme-ice .os-bg {
+  filter: hue-rotate(200deg) saturate(110%) brightness(1.05);
+}
