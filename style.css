@@ -3871,7 +3871,7 @@ body.reduce-motion .hero::after {
   color: rgba(230, 237, 245, 0.92);
 }
 /* Light follow overlay */
-.main-os::before {
+/* .main-os::before {
   content: "";
   position: absolute;
   inset: -40%;
@@ -3889,7 +3889,7 @@ body.reduce-motion .hero::after {
 }
 .main-os:hover::before {
   opacity: 1;
-}
+} */
 
 /* Reduce motion respect */
 body.reduce-motion .main-os::before {

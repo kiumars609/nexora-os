@@ -25,10 +25,10 @@ console.log("main-os:", document.querySelector(".main-os"));
 
   // ===== AMBIENT (ROBUST) =====
   const AMBIENT = {
-    tlou2: ["rgba(120,170,255,.25)", "rgba(255,255,255,.10)"],
-    gow: ["rgba(255,210,125,.22)", "rgba(120,200,255,.10)"],
-    sp2: ["rgba(255,90,90,.22)", "rgba(255,255,255,.10)"],
-    re4: ["rgba(255,110,110,.18)", "rgba(255,255,255,.08)"],
+    tlou2: ["rgba(120,170,255,0.25)", "rgba(255,255,255,0.10)"],
+    gow: ["rgba(255,210,125,0.22)", "rgba(120,200,255,0.10)"],
+    sp2: ["rgba(255,90,90,0.22)", "rgba(255,255,255,0.10)"],
+    re4: ["rgba(255,110,110,0.18)", "rgba(255,255,255,0.08)"],
     eldenring: ["rgba(180,140,255,.18)", "rgba(255,255,255,.08)"],
     hzd: ["rgba(120,200,255,.18)", "rgba(255,255,255,.08)"],
     gt7: ["rgba(180,220,255,.16)", "rgba(255,255,255,.08)"],
@@ -47,7 +47,8 @@ console.log("main-os:", document.querySelector(".main-os"));
     const main = document.querySelector(".main-os");
 
     const osRoot = document.querySelector(".main-os");
-    if (osRoot) {
+    if (osRoot && !osRoot.__mxmyBound) {
+      osRoot.__mxmyBound = true;
       osRoot.addEventListener("pointermove", (e) => {
         const r = osRoot.getBoundingClientRect();
         const x = ((e.clientX - r.left) / r.width) * 100;
