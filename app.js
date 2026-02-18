@@ -2809,6 +2809,73 @@ function bringToFront(win) {
   win.classList.add("is-focused");
 }
 
+function getWinTitle(win) {
+  const t = win.querySelector(".win-title");
+  return t ? t.textContent.trim() : win.dataset.win || "APP";
+}
+
+function ensureDockItem(win) {
+  if (!dockInner) return null;
+
+  const id = win.dataset.win;
+  let item = dockInner.querySelector(`.dock-item[data-win="${id}"]`);
+  if (item) return item;
+
+  item = document.createElement("button");
+  item.type = "button";
+  item.className = "dock-item";
+  item.dataset.win = id;
+
+  item.innerHTML = `
+    <span class="dock-label">${getWinTitle(win)}</span>
+    <span class="dock-dot" aria-hidden="true"></span>
+  `;
+
+  item.addEventListener("click", () => {
+    // toggle restore/minimize
+    if (win.classList.contains("is-minimized")) {
+      win.classList.remove("is-minimized");
+      bringToFront(win);
+    } else {
+      win.classList.add("is-minimized");
+      refreshDockActive();
+    }
+  });
+
+  dockInner.appendChild(item);
+  refreshDockActive();
+  return item;
+}
+
+function removeDockItem(win) {
+  if (!dockInner) return;
+  const id = win.dataset.win;
+  const item = dockInner.querySelector(`.dock-item[data-win="${id}"]`);
+  if (item) item.remove();
+  refreshDockActive();
+}
+
+function refreshDockActive() {
+  if (!dockInner) return;
+  const wins = Array.from(document.querySelectorAll(".win"));
+  const focused = wins
+    .filter((w) => !w.classList.contains("is-minimized"))
+    .sort(
+      (a, b) => parseInt(b.style.zIndex || 0) - parseInt(a.style.zIndex || 0),
+    )[0];
+
+  dockInner.querySelectorAll(".dock-item").forEach((btn) => {
+    const w = document.querySelector(`.win[data-win="${btn.dataset.win}"]`);
+    const isActive = focused && w === focused;
+    btn.classList.toggle("is-active", !!isActive);
+    // اگر پنجره حذف شد، آیتم رو هم حذف کن
+    if (!w) btn.remove();
+  });
+}
+
+const dock = document.getElementById("dock");
+const dockInner = document.getElementById("dockInner");
+
 function makeWindow({ id, title, contentHTML }) {
   if (!wm) return;
 
@@ -2837,6 +2904,7 @@ function makeWindow({ id, title, contentHTML }) {
   `;
 
   wm.appendChild(win);
+  ensureDockItem(win);
   bringToFront(win);
 
   // open animation
