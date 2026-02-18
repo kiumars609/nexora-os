@@ -1,9 +1,5 @@
-console.log("APP JS LOADED ✅");
-console.log("main-os:", document.querySelector(".main-os"));
-
 (() => {
-  // -------------------- Helpers --------------------
-  const $ = (sel, root = document) => root.querySelector(sel);
+const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const now = () => Date.now();
@@ -1460,6 +1456,8 @@ console.log("main-os:", document.querySelector(".main-os"));
     saveJson(STORAGE.games, state.games);
   }
 
+  const __coverCache = new Map();
+
   function applyCardCover(coverEl, url, cardEl) {
     cardEl?.classList.remove("cover-loaded");
     cardEl?.classList.remove("cover-failed");
@@ -1468,21 +1466,32 @@ console.log("main-os:", document.querySelector(".main-os"));
       cardEl?.classList.add("cover-failed");
       return;
     }
+    // cache image decode/load results to avoid re-loading on every re-render
+    const cached = __coverCache.get(url);
+    if (cached === "loaded") {
+      coverEl.style.backgroundImage = `url("${url}")`;
+      cardEl?.classList.add("cover-loaded");
+      return;
+    }
+    if (cached === "failed") {
+      cardEl?.classList.add("cover-failed");
+      return;
+    }
 
     const img = new Image();
     img.referrerPolicy = "no-referrer";
     img.onload = () => {
+      __coverCache.set(url, "loaded");
       coverEl.style.backgroundImage = `url("${url}")`;
       cardEl?.classList.add("cover-loaded"); // ✅ جدید
       cardEl?.classList.remove("cover-failed");
     };
     img.onerror = () => {
+      __coverCache.set(url, "failed");
       cardEl?.classList.add("cover-failed");
-      cardEl?.classList.remove("cover-loaded");
-      coverEl.style.backgroundImage = "";
     };
     img.src = url;
-  }
+}
 
   // ✅✅✅ PATCHED: renderGamesGrid with Hero Preview on hover/focus
   function renderGamesGrid() {
@@ -1490,6 +1499,7 @@ console.log("main-os:", document.querySelector(".main-os"));
 
     const list = getVisibleGames();
     gamesGrid.innerHTML = "";
+    const frag = document.createDocumentFragment();
 
     list.forEach((g) => {
       const btn = document.createElement("button");
@@ -1541,18 +1551,21 @@ console.log("main-os:", document.querySelector(".main-os"));
         </div>
       `;
 
-      const bringIntoView = () => {
+      const bringIntoView = (smooth = true) => {
         btn.scrollIntoView({
-          behavior: "smooth",
+          behavior: smooth ? "smooth" : "auto",
           block: "nearest",
           inline: "nearest",
         });
       };
 
-      btn.addEventListener("focus", bringIntoView);
-      btn.addEventListener("mouseenter", bringIntoView);
-
-      // ✅ Assemble
+      // Smooth scrolling is great for keyboard focus, but expensive on hover.
+      btn.addEventListener("focus", () => bringIntoView(true));
+      btn.addEventListener("mouseenter", () => {
+        if (prefersReduced) return;
+        bringIntoView(false);
+      });
+// ✅ Assemble
       btn.appendChild(cover);
       btn.appendChild(overlay);
       btn.appendChild(badge);
@@ -1590,8 +1603,10 @@ console.log("main-os:", document.querySelector(".main-os"));
         openGameDetails(g.id);
       });
 
-      gamesGrid.appendChild(btn);
+      frag.appendChild(btn);
     });
+
+    gamesGrid.appendChild(frag);
 
     if (!list.length) {
       const empty = document.createElement("div");
@@ -2287,10 +2302,13 @@ console.log("main-os:", document.querySelector(".main-os"));
     applyFiltersBtn?.addEventListener("click", () => applyGamesFilters());
     searchInput?.addEventListener("input", (e) => {
       state.gamesUI.search = e.target.value || "";
-      renderGamesGrid();
-      updateGamesFiltersUI();
+      clearTimeout(window.__nexora_games_search_t);
+      window.__nexora_games_search_t = setTimeout(() => {
+        renderGamesGrid();
+        updateGamesFiltersUI();
+      }, 120);
     });
-  }
+}
 
   // -------------------- Buttons in now playing / in game --------------------
   resumeBtn?.addEventListener("click", () => resumeGame());
@@ -2365,9 +2383,9 @@ console.log("main-os:", document.querySelector(".main-os"));
     // whenever screen changes via nav clicks we call onEnter* through setActiveScreen,
     // but for safety keep this small observer:
     const observer = new MutationObserver(() => onScreenChange());
-    screens.forEach((s) =>
-      observer.observe(s, { attributes: true, attributeFilter: ["class"] }),
-    );
+    screens.forEach((s) => {
+      observer.observe(s, { attributes: true, attributeFilter: ["class"] });
+    });
   }
 
   ["pointerdown", "keydown", "touchstart", "mousedown"].forEach((evt) => {
@@ -2378,6 +2396,8 @@ console.log("main-os:", document.querySelector(".main-os"));
 })();
 
 (function initNexoraPS6BootFx() {
+  if (window.__nexora_boot_fx_initialized) return;
+  window.__nexora_boot_fx_initialized = true;
   const bootScreen = document.getElementById("bootScreen");
   if (!bootScreen) return;
 
@@ -2601,13 +2621,18 @@ console.log("main-os:", document.querySelector(".main-os"));
     ctx.restore();
   }
 
+  let bootRAF = null;
+
   function frame() {
-    requestAnimationFrame(frame);
-
     // only render while boot is visible
-    if (!bootScreen.classList.contains("is-active")) return;
-    if (prefersReduced) return;
-
+    if (!bootScreen.classList.contains("is-active")) {
+      bootRAF = null;
+      return;
+    }
+    if (prefersReduced) {
+      bootRAF = null;
+      return;
+    }
     t += CFG.speed;
 
     // Trail fade
@@ -2651,7 +2676,11 @@ console.log("main-os:", document.querySelector(".main-os"));
       const a = CFG.glyphAlpha * Math.max(0, 1 - d * 1.4);
       if (a > 0.01) drawGlyph(g, a);
     }
-  }
+  
+
+    // schedule next frame only while active
+    bootRAF = requestAnimationFrame(frame);
+}
 
   resize();
 
@@ -2662,6 +2691,20 @@ console.log("main-os:", document.querySelector(".main-os"));
   ro.observe(bootScreen);
   window.addEventListener("resize", resize);
 
+  function startBootFx() {
+    if (bootRAF) return;
+    if (prefersReduced) return;
+    bootRAF = requestAnimationFrame(frame);
+  }
+  function stopBootFx() {
+    if (bootRAF) cancelAnimationFrame(bootRAF);
+    bootRAF = null;
+  }
+  function syncBootFx() {
+    if (bootScreen.classList.contains("is-active") && !prefersReduced) startBootFx();
+    else stopBootFx();
+  }
+
   const mo = new MutationObserver(() => {
     if (bootScreen.classList.contains("is-leaving")) {
       canvas.style.transition = "opacity 420ms ease-in";
@@ -2670,11 +2713,13 @@ console.log("main-os:", document.querySelector(".main-os"));
       canvas.style.transition = "";
       canvas.style.opacity = prefersReduced ? "0" : "0.95";
     }
+    syncBootFx();
   });
   mo.observe(bootScreen, { attributes: true, attributeFilter: ["class"] });
 
-  requestAnimationFrame(frame);
-})();
+  // initial state
+  syncBootFx();
+})();;
 
 /* --- Patch: Gamepad bridge (maps controller to existing keyboard handlers) --- */
 (() => {
@@ -2716,6 +2761,7 @@ console.log("main-os:", document.querySelector(".main-os"));
 
   const tick = () => {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const hasPad = Array.from(pads).some(Boolean);
     for (const gp of pads) {
       if (!gp) continue;
       const p = prev.get(gp.index) || [];
@@ -2738,22 +2784,29 @@ console.log("main-os:", document.querySelector(".main-os"));
 
       prev.set(gp.index, b);
     }
+    if (hasPad) {
+      requestAnimationFrame(tick);
+    } else {
+      // idle polling (keeps support for controllers that connect without firing the event)
+      setTimeout(() => requestAnimationFrame(tick), 300);
+    }
+  };
+
+  const startLoop = () => {
+    if (window.__nexora_gp_loop_started) return;
+    window.__nexora_gp_loop_started = true;
     requestAnimationFrame(tick);
   };
 
-  window.addEventListener("gamepadconnected", () => {
-    if (!window.__nexora_gp_loop_started) {
-      window.__nexora_gp_loop_started = true;
-      requestAnimationFrame(tick);
-    }
-  });
+  window.addEventListener("gamepadconnected", startLoop);
+  window.addEventListener("load", startLoop);
 
-  window.addEventListener("load", () => {
-    if (!window.__nexora_gp_loop_started) {
-      window.__nexora_gp_loop_started = true;
-      requestAnimationFrame(tick);
-    }
-  });
+  // If a controller is already connected when the page loads, start immediately.
+  try {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    if (Array.from(pads).some(Boolean)) startLoop();
+  } catch (_) {}
+
 })();
 function pulseAt(el, clientX, clientY) {
   const r = el.getBoundingClientRect();
@@ -2776,23 +2829,6 @@ document.addEventListener("pointerdown", (e) => {
   pulseAt(target, e.clientX, e.clientY);
 });
 
-let audioCtx;
-function beep(freq = 420, dur = 0.035, vol = 0.03) {
-  if (document.body.classList.contains("reduce-motion")) return;
-  if (!audioCtx)
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = "sine";
-  o.frequency.value = freq;
-  g.gain.value = vol;
-  o.connect(g);
-  g.connect(audioCtx.destination);
-  o.start();
-  setTimeout(() => {
-    o.stop();
-  }, dur * 1000);
-}
 
 // =========================
 // Window Manager (NEW)
