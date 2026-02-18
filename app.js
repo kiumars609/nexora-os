@@ -419,7 +419,7 @@ const $ = (sel, root = document) => root.querySelector(sel);
   function initBGM() {
     if (bgmAudio) return;
 
-    bgmAudio = new Audio("assets/audio/ambient.mp3");
+    bgmAudio = new Audio("assets/audio/main-menu.mp3");
     bgmAudio.loop = true;
     bgmAudio.preload = "auto";
 
