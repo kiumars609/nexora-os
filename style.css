@@ -20,10 +20,10 @@ body {
 }
 /* Optional theme hooks */
 body.theme-dark {
-  /* deflt */ 
+  /* deflt */
 }
 body.theme-ice {
-  /* مثلا  کمی روشن‌تر یا آبی‌تر */  
+  /* مثلا کمی روشن‌تر یا آبی‌تر */
 }
 body.theme-neon {
   /* مثلا accent نئونی */
@@ -56,7 +56,7 @@ body.theme-neon {
   display: flex;
   align-items: center;
 }
- 
+
 .header-os .left-side .user-info {
   display: flex;
   align-items: center;
