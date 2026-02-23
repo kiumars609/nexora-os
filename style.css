@@ -3,83 +3,25 @@
 *::after {
   box-sizing: border-box;
 }
- 
-/* =========================
-   Nexora UI Tokens (v2)
-   ========================= */
 :root {
-  /* Typography */
-  --font-ui:
-    "Inter", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue",
-    Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-  --fs-11: 11px;
-  --fs-12: 12px;
-  --fs-14: 14px;
-  --fs-16: 16px;
-  --fs-20: 20px;
-  --fs-24: 24px;
-  --lh: 1.55;
-  
-  /* Spacing */
-  --s-2: 2px;
-  --s-4: 4px;
-  --s-6: 6px;
-  --s-8: 8px;
-  --s-10: 10px;
-  --s-12: 12px;
-  --s-16: 16px;
-  --s-20: 20px;
-  --s-24: 24px;
-  --s-32: 32px;
+  --font-sans:
+    Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --radius-xl: 18px;
+  --radius-lg: 14px;
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 14px 40px rgba(0, 0, 0, 0.42);
+  --outline: 0 0 0 2px rgba(255, 255, 255, 0.12);
+  --t-fast: 140ms;
+  --t-med: 200ms;
+  --ease-smooth: cubic-bezier(0.2, 0.9, 0.2, 1);
 
-  /* Radius */
-  --r-12: 12px;
-  --r-16: 16px;
-  --r-20: 20px;
-  --r-24: 24px;
-
-  /* Motion */
-  --t-fast: 120ms;
-  --t-med: 180ms;
-  --t-slow: 260ms;
-  --e-out: cubic-bezier(0.2, 0.9, 0.2, 1);
-  --e-soft: cubic-bezier(0.2, 0.7, 0.2, 1);
-
-  /* Core colors (default theme: dark) */
-  --bg: #050607;
-  --bg-2: #07090c;
-  --surface: rgba(255, 255, 255, 0.06);
-  --surface-2: rgba(255, 255, 255, 0.085);
-  --border: rgba(220, 235, 255, 0.1);
-  --border-2: rgba(220, 235, 255, 0.14);
-  --text: #ffffff;
-  --muted: rgba(255, 255, 255, 0.72);
-  --muted-2: rgba(255, 255, 255, 0.58);
-  --accent: #7bd3ff;
-  --accent-2: #b79cff;
-
-  /* Shadows */
-  --shadow-lg: 0 40px 80px rgba(0, 0, 0, 0.55);
-  --shadow-md: 0 18px 40px rgba(0, 0, 0, 0.45);
-  --shadow-sm: 0 10px 24px rgba(0, 0, 0, 0.35);
-
-  /* Focus ring */
-  --ring: 0 0 0 3px rgba(123, 211, 255, 0.35);
-
-  /* Glass */
-  --glass: saturate(120%) blur(12px);
-}
-
-:root {
   --hero-bg: url("assets/images/games/tlou2/cover.jpg");
 }
+
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-ui);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  line-height: var(--lh);
+  background: #050607;
+  color: #ffffff;
+  font-family: var(--font-sans);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -88,57 +30,6 @@ body {
   overflow: hidden; /* prevent accidental page scrollbars */
 }
 /* Optional theme hooks */
-
-/* Theme palettes via CSS variables (no layout changes) */
-body.theme-dark {
-  --bg: #050607;
-  --bg-2: #07090c;
-  --accent: #7bd3ff;
-  --accent-2: #b79cff;
-}
-body.theme-ice {
-  --bg: #05060b;
-  --bg-2: #060b14;
-  --accent: #86e5ff;
-  --accent-2: #88a9ff;
-  --surface: rgba(134, 229, 255, 0.07);
-}
-body.theme-neon {
-  --bg: #040508;
-  --bg-2: #06060f;
-  --accent: #62ff9a;
-  --accent-2: #ff4fd8;
-  --surface: rgba(98, 255, 154, 0.06);
-  --border: rgba(98, 255, 154, 0.16);
-}
-body.theme-aurora {
-  --bg: #04060a;
-  --bg-2: #070a10;
-  --accent: #7bf7ff;
-  --accent-2: #a9ff6a;
-}
-body.theme-lava {
-  --bg: #070404;
-  --bg-2: #0e0606;
-  --accent: #ff6a3d;
-  --accent-2: #ffd36a;
-  --border: rgba(255, 106, 61, 0.16);
-}
-body.theme-sakura {
-  --bg: #070407;
-  --bg-2: #0b0610;
-  --accent: #ff6adf;
-  --accent-2: #7bd3ff;
-  --surface: rgba(255, 106, 223, 0.06);
-}
-body.theme-frost {
-  --bg: #04070a;
-  --bg-2: #061114;
-  --accent: #a7f3ff;
-  --accent-2: #c7b7ff;
-  --surface: rgba(167, 243, 255, 0.06);
-}
-
 body.theme-dark {
   /* deflt */
 }
@@ -152,15 +43,14 @@ body.theme-neon {
 .main-os {
   width: 90%;
   height: 80%;
-  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
-  border: 1px solid var(--border);
-  border-radius: var(--r-24);
+  background: #050607;
+  border: 1px solid rgba(220, 235, 255, 0.08);
+  border-radius: 24px;
   overflow: hidden;
   box-shadow:
-    var(--shadow-lg),
+    0 40px 80px rgba(0, 0, 0, 0.55),
     inset 0 0 0 1px rgba(220, 235, 255, 0.03);
 }
-
 /* Header (Start) */
 .header-os {
   width: 100%;
@@ -1815,6 +1705,17 @@ body.reduce-motion .off-overlay {
 
 /* ---------- Base tokens ---------- */
 :root {
+  --font-sans:
+    Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --radius-xl: 18px;
+  --radius-lg: 14px;
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 14px 40px rgba(0, 0, 0, 0.42);
+  --outline: 0 0 0 2px rgba(255, 255, 255, 0.12);
+  --t-fast: 140ms;
+  --t-med: 200ms;
+  --ease-smooth: cubic-bezier(0.2, 0.9, 0.2, 1);
+
   /* layout */
   --radius-xl: 26px;
   --radius-lg: 18px;
@@ -2430,6 +2331,17 @@ body.reduce-motion .game-card .gc-cover {
    Themes (next-gen)
    ========================= */
 :root {
+  --font-sans:
+    Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --radius-xl: 18px;
+  --radius-lg: 14px;
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 14px 40px rgba(0, 0, 0, 0.42);
+  --outline: 0 0 0 2px rgba(255, 255, 255, 0.12);
+  --t-fast: 140ms;
+  --t-med: 200ms;
+  --ease-smooth: cubic-bezier(0.2, 0.9, 0.2, 1);
+
   --bg0: #050607;
   --panel: rgba(255, 255, 255, 0.03);
   --stroke: rgba(220, 235, 255, 0.14);
@@ -3906,6 +3818,17 @@ body.reduce-motion .game-card .gc-cover {
 
 /* نرم‌تر شدن تغییر بک‌گراند */
 :root {
+  --font-sans:
+    Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --radius-xl: 18px;
+  --radius-lg: 14px;
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 14px 40px rgba(0, 0, 0, 0.42);
+  --outline: 0 0 0 2px rgba(255, 255, 255, 0.12);
+  --t-fast: 140ms;
+  --t-med: 200ms;
+  --ease-smooth: cubic-bezier(0.2, 0.9, 0.2, 1);
+
   /* فقط برای خوانایی، لازم نیست چیزی اضافه کنی */
 }
 .hero {
@@ -4341,123 +4264,130 @@ body.reduce-motion .dock-item {
   transition: none !important;
 }
 
-/* // -------------------- Helpers -------------------- */
-
-/* Micro interactions (lightweight) */
-button,
-.hero-btn,
-.nav-item,
-.context-card,
-.game-btn,
-.setting-card,
-.back-btn,
-.dock-btn {
-  transition:
-    transform var(--t-fast) var(--e-out),
-    box-shadow var(--t-med) var(--e-soft),
-    background-color var(--t-med) var(--e-soft),
-    border-color var(--t-med) var(--e-soft),
-    opacity var(--t-fast) var(--e-out),
-    filter var(--t-med) var(--e-soft);
+/* -------------------- Status Bar -------------------- */
+.statusbar {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-soft);
+  z-index: 50;
+}
+.status-left,
+.status-center,
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.status-title {
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  opacity: 0.92;
+}
+.status-time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
+.status-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  opacity: 0.92;
+}
+body.theme-cream-light .statusbar {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+body.theme-cream-light .status-pill {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
+/* -------------------- Micro Interactions -------------------- */
 .hero-btn,
-.back-btn,
-.dock-btn,
-.nav-item {
-  will-change: transform;
+button,
+.btn {
+  transition:
+    transform var(--t-fast) var(--ease-smooth),
+    box-shadow var(--t-fast) var(--ease-smooth),
+    background var(--t-fast) var(--ease-smooth),
+    border-color var(--t-fast) var(--ease-smooth),
+    color var(--t-fast) var(--ease-smooth),
+    opacity var(--t-fast) var(--ease-smooth);
+}
+.hero-btn:hover,
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
 .hero-btn:active,
-.back-btn:active,
-.dock-btn:active,
-.nav-item:active {
-  transform: translateY(1px) scale(0.985);
+button:active {
+  transform: translateY(0) scale(0.985);
 }
-.context-card:hover,
-.game-btn:hover,
-.setting-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-.context-card:active,
-.game-btn:active,
-.setting-card:active {
-  transform: translateY(-1px) scale(0.992);
-}
-
-:focus-visible {
+.hero-btn:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
   outline: none;
-  box-shadow: var(--ring);
-  border-color: var(--border-2) !important;
+  box-shadow:
+    var(--outline),
+    0 18px 44px rgba(0, 0, 0, 0.35);
 }
 
-body.reduce-motion *,
-body.reduce-motion *::before,
-body.reduce-motion *::after {
-  transition: none !important;
-  animation: none !important;
-  scroll-behavior: auto !important;
+/* Cards depth (safe generic) */
+.card,
+.tile,
+.game-card,
+.app-card,
+.panel,
+.glass {
+  border-radius: var(--radius-xl);
+}
+.card:hover,
+.tile:hover,
+.game-card:hover,
+.app-card:hover {
+  transform: translateY(-2px);
 }
 
-/* Card depth + glass edge */
-.context-card,
-.setting-card,
-.game-btn {
-  border: 1px solid var(--border);
-  background: linear-gradient(
-    180deg,
-    var(--surface) 0%,
-    rgba(255, 255, 255, 0.03) 100%
-  );
-  border-radius: var(--r-20);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: var(--glass);
+/* -------------------- New Themes -------------------- */
+body.theme-neo-dark {
+  --bg-0: #050607;
+  --bg-1: rgba(255, 255, 255, 0.06);
+  --stroke: rgba(255, 255, 255, 0.12);
+  --text-0: #ffffff;
+  --text-1: rgba(255, 255, 255, 0.82);
+  --accent: #7c5cff;
 }
-body.high-contrast .context-card,
-body.high-contrast .setting-card,
-body.high-contrast .game-btn {
-  border-color: rgba(255, 255, 255, 0.28) !important;
-  background: rgba(0, 0, 0, 0.55) !important;
+body.theme-cream-light {
+  --bg-0: #f6f1e8;
+  --bg-1: rgba(255, 255, 255, 0.75);
+  --stroke: rgba(0, 0, 0, 0.08);
+  --text-0: #141414;
+  --text-1: rgba(20, 20, 20, 0.78);
+  --accent: #ff7a45;
+  color: var(--text-0);
 }
-.context-title {
-  color: var(--muted);
-  letter-spacing: 0.08em;
-  font-size: var(--fs-11);
-  text-transform: uppercase;
-}
-.context-value {
-  font-size: var(--fs-20);
-  font-weight: 600;
-}
-.context-sub {
-  color: var(--muted-2);
-}
-.games-title,
-.details-title {
-  letter-spacing: 0.16em;
-  font-weight: 700;
+body.theme-cyber-purple {
+  --bg-0: #07061a;
+  --bg-1: rgba(124, 92, 255, 0.1);
+  --stroke: rgba(124, 92, 255, 0.22);
+  --text-0: #ffffff;
+  --text-1: rgba(255, 255, 255, 0.82);
+  --accent: #7c5cff;
 }
 
-/* Header / status icons consistency */
-.os-info img {
-  width: 18px;
-  height: 18px;
-  display: inline-block;
-  vertical-align: middle;
-  opacity: 0.9;
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
-}
-.os-info span {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-6);
-}
-.time {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.06em;
-}
-
-/* Optional press class (used by JS) */
-.is-pressed {
-  transform: translateY(1px) scale(0.985) !important;
+.nexora-press {
+  transform: translateY(0) scale(0.985) !important;
 }
