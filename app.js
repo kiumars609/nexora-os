@@ -1,5 +1,5 @@
 (() => {
-const $ = (sel, root = document) => root.querySelector(sel);
+  const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const now = () => Date.now();
@@ -419,7 +419,7 @@ const $ = (sel, root = document) => root.querySelector(sel);
   function initBGM() {
     if (bgmAudio) return;
 
-    bgmAudio = new Audio("assets/audio/main-menu.mp3");
+    bgmAudio = new Audio("assets/audio/ambient.mp3");
     bgmAudio.loop = true;
     bgmAudio.preload = "auto";
 
@@ -1491,7 +1491,7 @@ const $ = (sel, root = document) => root.querySelector(sel);
       cardEl?.classList.add("cover-failed");
     };
     img.src = url;
-}
+  }
 
   // ✅✅✅ PATCHED: renderGamesGrid with Hero Preview on hover/focus
   function renderGamesGrid() {
@@ -1565,7 +1565,7 @@ const $ = (sel, root = document) => root.querySelector(sel);
         if (prefersReduced) return;
         bringIntoView(false);
       });
-// ✅ Assemble
+      // ✅ Assemble
       btn.appendChild(cover);
       btn.appendChild(overlay);
       btn.appendChild(badge);
@@ -2308,7 +2308,7 @@ const $ = (sel, root = document) => root.querySelector(sel);
         updateGamesFiltersUI();
       }, 120);
     });
-}
+  }
 
   // -------------------- Buttons in now playing / in game --------------------
   resumeBtn?.addEventListener("click", () => resumeGame());
@@ -2391,6 +2391,20 @@ const $ = (sel, root = document) => root.querySelector(sel);
   ["pointerdown", "keydown", "touchstart", "mousedown"].forEach((evt) => {
     document.addEventListener(evt, unlockAudio, { passive: true });
   });
+
+  // -------------------- Micro press feedback (no visual removal) --------------------
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      const el = e.target?.closest?.(
+        "button, .hero-btn, .nav-item, .context-card, .game-btn, .setting-card, .dock-btn",
+      );
+      if (!el) return;
+      el.classList.add("is-pressed");
+      setTimeout(() => el.classList.remove("is-pressed"), 160);
+    },
+    { passive: true },
+  );
 
   init();
 })();
@@ -2676,11 +2690,10 @@ const $ = (sel, root = document) => root.querySelector(sel);
       const a = CFG.glyphAlpha * Math.max(0, 1 - d * 1.4);
       if (a > 0.01) drawGlyph(g, a);
     }
-  
 
     // schedule next frame only while active
     bootRAF = requestAnimationFrame(frame);
-}
+  }
 
   resize();
 
@@ -2701,7 +2714,8 @@ const $ = (sel, root = document) => root.querySelector(sel);
     bootRAF = null;
   }
   function syncBootFx() {
-    if (bootScreen.classList.contains("is-active") && !prefersReduced) startBootFx();
+    if (bootScreen.classList.contains("is-active") && !prefersReduced)
+      startBootFx();
     else stopBootFx();
   }
 
@@ -2719,7 +2733,7 @@ const $ = (sel, root = document) => root.querySelector(sel);
 
   // initial state
   syncBootFx();
-})();;
+})();
 
 /* --- Patch: Gamepad bridge (maps controller to existing keyboard handlers) --- */
 (() => {
@@ -2806,7 +2820,6 @@ const $ = (sel, root = document) => root.querySelector(sel);
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     if (Array.from(pads).some(Boolean)) startLoop();
   } catch (_) {}
-
 })();
 function pulseAt(el, clientX, clientY) {
   const r = el.getBoundingClientRect();
@@ -2828,7 +2841,6 @@ document.addEventListener("pointerdown", (e) => {
   if (!target) return;
   pulseAt(target, e.clientX, e.clientY);
 });
-
 
 // =========================
 // Window Manager (NEW)

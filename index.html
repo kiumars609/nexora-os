@@ -2,15 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nexora OS</title>
+    <link rel="stylesheet" href="./style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="./style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
     <link
       rel="icon"
       href="assets/images/icones/nexora-os.ico"
@@ -27,6 +24,19 @@
   <body>
     <!-- Main of OS -->
     <section class="main-os">
+      <!-- Status Bar -->
+      <header class="statusbar" role="banner">
+        <div class="status-left">
+          <span class="status-pill" id="statusNetwork" title="Network">Wi‑Fi</span>
+        </div>
+        <div class="status-center">
+          <span class="status-title">Nexora‑OS</span>
+        </div>
+        <div class="status-right">
+          <span class="status-time" id="statusTime">--:--</span>
+        </div>
+      </header>
+
       <!-- Animated Background -->
       <div class="os-bg" aria-hidden="true">
         <span class="blob b1"></span>
@@ -462,6 +472,15 @@
                 </button>
                 <button class="hero-btn" id="themeNeonBtn" type="button">
                   Neon
+                </button>
+                <button class="hero-btn" id="themeNeoDarkBtn" type="button">
+                  Neo Dark
+                </button>
+                <button class="hero-btn" id="themeCreamLightBtn" type="button">
+                  Cream Light
+                </button>
+                <button class="hero-btn" id="themeCyberPurpleBtn" type="button">
+                  Cyber Purple
                 </button>
               </div>
             </div>
