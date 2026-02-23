@@ -1,4 +1,5 @@
 (() => {
+  // -------------------- Helpers --------------------
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
@@ -300,9 +301,15 @@
   const contrastValue = $("#contrastValue");
 
   const themeValue = $("#themeValue");
+  const statusTime = $("#statusTime");
+  const statusNetwork = $("#statusNetwork");
   const themeDarkBtn = $("#themeDarkBtn");
   const themeIceBtn = $("#themeIceBtn");
   const themeNeonBtn = $("#themeNeonBtn");
+
+  const themeNeoDarkBtn = $("#themeNeoDarkBtn");
+  const themeCreamLightBtn = $("#themeCreamLightBtn");
+  const themeCyberPurpleBtn = $("#themeCyberPurpleBtn");
 
   const themeAuroraBtn = $("#themeAuroraBtn");
   const themeLavaBtn = $("#themeLavaBtn");
@@ -554,6 +561,9 @@
       "theme-lava",
       "theme-sakura",
       "theme-frost",
+      "theme-neo-dark",
+      "theme-cream-light",
+      "theme-cyber-purple",
     );
     const t = state.settings.theme || "dark";
     document.body.classList.add(`theme-${t}`);
@@ -609,11 +619,27 @@
     showToast(`Contrast: ${state.settings.highContrast ? "ON" : "OFF"}`);
   }
 
+  function prettyThemeName(t) {
+    const map = {
+      dark: "Dark",
+      ice: "Ice",
+      neon: "Neon",
+      aurora: "Aurora",
+      lava: "Lava",
+      sakura: "Sakura",
+      frost: "Frost",
+      "neo-dark": "Neo Dark",
+      "cream-light": "Cream Light",
+      "cyber-purple": "Cyber Purple",
+    };
+    return map[String(t || "dark")] || String(t);
+  }
+
   function setTheme(next) {
     state.settings.theme = String(next || "dark");
     applyTheme();
     updateProfileUI();
-    showToast(`Theme: ${state.settings.theme.toUpperCase()}`);
+    showToast(`Theme: ${prettyThemeName(state.settings.theme)}`);
   }
 
   // -------------------- Wi-Fi / Controller --------------------
@@ -1456,8 +1482,6 @@
     saveJson(STORAGE.games, state.games);
   }
 
-  const __coverCache = new Map();
-
   function applyCardCover(coverEl, url, cardEl) {
     cardEl?.classList.remove("cover-loaded");
     cardEl?.classList.remove("cover-failed");
@@ -1466,29 +1490,18 @@
       cardEl?.classList.add("cover-failed");
       return;
     }
-    // cache image decode/load results to avoid re-loading on every re-render
-    const cached = __coverCache.get(url);
-    if (cached === "loaded") {
-      coverEl.style.backgroundImage = `url("${url}")`;
-      cardEl?.classList.add("cover-loaded");
-      return;
-    }
-    if (cached === "failed") {
-      cardEl?.classList.add("cover-failed");
-      return;
-    }
 
     const img = new Image();
     img.referrerPolicy = "no-referrer";
     img.onload = () => {
-      __coverCache.set(url, "loaded");
       coverEl.style.backgroundImage = `url("${url}")`;
       cardEl?.classList.add("cover-loaded"); // ✅ جدید
       cardEl?.classList.remove("cover-failed");
     };
     img.onerror = () => {
-      __coverCache.set(url, "failed");
       cardEl?.classList.add("cover-failed");
+      cardEl?.classList.remove("cover-loaded");
+      coverEl.style.backgroundImage = "";
     };
     img.src = url;
   }
@@ -1499,7 +1512,6 @@
 
     const list = getVisibleGames();
     gamesGrid.innerHTML = "";
-    const frag = document.createDocumentFragment();
 
     list.forEach((g) => {
       const btn = document.createElement("button");
@@ -1551,20 +1563,17 @@
         </div>
       `;
 
-      const bringIntoView = (smooth = true) => {
+      const bringIntoView = () => {
         btn.scrollIntoView({
-          behavior: smooth ? "smooth" : "auto",
+          behavior: "smooth",
           block: "nearest",
           inline: "nearest",
         });
       };
 
-      // Smooth scrolling is great for keyboard focus, but expensive on hover.
-      btn.addEventListener("focus", () => bringIntoView(true));
-      btn.addEventListener("mouseenter", () => {
-        if (prefersReduced) return;
-        bringIntoView(false);
-      });
+      btn.addEventListener("focus", bringIntoView);
+      btn.addEventListener("mouseenter", bringIntoView);
+
       // ✅ Assemble
       btn.appendChild(cover);
       btn.appendChild(overlay);
@@ -1603,10 +1612,8 @@
         openGameDetails(g.id);
       });
 
-      frag.appendChild(btn);
+      gamesGrid.appendChild(btn);
     });
-
-    gamesGrid.appendChild(frag);
 
     if (!list.length) {
       const empty = document.createElement("div");
@@ -1977,6 +1984,18 @@
       "click",
       () => (uiSound.ok(), setTheme("neon")),
     );
+    themeNeoDarkBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("neo-dark")),
+    );
+    themeCreamLightBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("cream-light")),
+    );
+    themeCyberPurpleBtn?.addEventListener(
+      "click",
+      () => (uiSound.ok(), setTheme("cyber-purple")),
+    );
     themeAuroraBtn?.addEventListener(
       "click",
       () => (uiSound.ok(), setTheme("aurora")),
@@ -2302,11 +2321,8 @@
     applyFiltersBtn?.addEventListener("click", () => applyGamesFilters());
     searchInput?.addEventListener("input", (e) => {
       state.gamesUI.search = e.target.value || "";
-      clearTimeout(window.__nexora_games_search_t);
-      window.__nexora_games_search_t = setTimeout(() => {
-        renderGamesGrid();
-        updateGamesFiltersUI();
-      }, 120);
+      renderGamesGrid();
+      updateGamesFiltersUI();
     });
   }
 
@@ -2345,6 +2361,14 @@
   qrCloseBtn?.addEventListener("click", () => closeQuickResumeOverlay());
 
   // -------------------- Initial Apply --------------------
+  function updateStatusTime() {
+    if (!statusTime) return;
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    statusTime.textContent = `${hh}:${mm}`;
+  }
+
   function init() {
     // Apply settings to DOM
     applySoundUI();
@@ -2379,39 +2403,41 @@
 
     // run boot then enter home
     runBootSequence();
+    updateStatusTime();
+    setInterval(updateStatusTime, 10_000);
+    if (statusNetwork) {
+      statusNetwork.style.opacity = state.wifiOn ? "1" : "0.35";
+      statusNetwork.textContent = state.wifiOn ? "Wi‑Fi" : "Offline";
+    }
 
     // whenever screen changes via nav clicks we call onEnter* through setActiveScreen,
     // but for safety keep this small observer:
     const observer = new MutationObserver(() => onScreenChange());
-    screens.forEach((s) => {
-      observer.observe(s, { attributes: true, attributeFilter: ["class"] });
-    });
+    screens.forEach((s) =>
+      observer.observe(s, { attributes: true, attributeFilter: ["class"] }),
+    );
   }
+
+  // Subtle press feedback (no layout thrash)
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      const el = e.target.closest('button, .hero-btn, [role="button"]');
+      if (!el) return;
+      el.classList.add("nexora-press");
+      setTimeout(() => el.classList.remove("nexora-press"), 160);
+    },
+    { passive: true },
+  );
 
   ["pointerdown", "keydown", "touchstart", "mousedown"].forEach((evt) => {
     document.addEventListener(evt, unlockAudio, { passive: true });
   });
 
-  // -------------------- Micro press feedback (no visual removal) --------------------
-  document.addEventListener(
-    "pointerdown",
-    (e) => {
-      const el = e.target?.closest?.(
-        "button, .hero-btn, .nav-item, .context-card, .game-btn, .setting-card, .dock-btn",
-      );
-      if (!el) return;
-      el.classList.add("is-pressed");
-      setTimeout(() => el.classList.remove("is-pressed"), 160);
-    },
-    { passive: true },
-  );
-
   init();
 })();
 
 (function initNexoraPS6BootFx() {
-  if (window.__nexora_boot_fx_initialized) return;
-  window.__nexora_boot_fx_initialized = true;
   const bootScreen = document.getElementById("bootScreen");
   if (!bootScreen) return;
 
@@ -2635,18 +2661,13 @@
     ctx.restore();
   }
 
-  let bootRAF = null;
-
   function frame() {
+    requestAnimationFrame(frame);
+
     // only render while boot is visible
-    if (!bootScreen.classList.contains("is-active")) {
-      bootRAF = null;
-      return;
-    }
-    if (prefersReduced) {
-      bootRAF = null;
-      return;
-    }
+    if (!bootScreen.classList.contains("is-active")) return;
+    if (prefersReduced) return;
+
     t += CFG.speed;
 
     // Trail fade
@@ -2690,9 +2711,6 @@
       const a = CFG.glyphAlpha * Math.max(0, 1 - d * 1.4);
       if (a > 0.01) drawGlyph(g, a);
     }
-
-    // schedule next frame only while active
-    bootRAF = requestAnimationFrame(frame);
   }
 
   resize();
@@ -2704,21 +2722,6 @@
   ro.observe(bootScreen);
   window.addEventListener("resize", resize);
 
-  function startBootFx() {
-    if (bootRAF) return;
-    if (prefersReduced) return;
-    bootRAF = requestAnimationFrame(frame);
-  }
-  function stopBootFx() {
-    if (bootRAF) cancelAnimationFrame(bootRAF);
-    bootRAF = null;
-  }
-  function syncBootFx() {
-    if (bootScreen.classList.contains("is-active") && !prefersReduced)
-      startBootFx();
-    else stopBootFx();
-  }
-
   const mo = new MutationObserver(() => {
     if (bootScreen.classList.contains("is-leaving")) {
       canvas.style.transition = "opacity 420ms ease-in";
@@ -2727,12 +2730,10 @@
       canvas.style.transition = "";
       canvas.style.opacity = prefersReduced ? "0" : "0.95";
     }
-    syncBootFx();
   });
   mo.observe(bootScreen, { attributes: true, attributeFilter: ["class"] });
 
-  // initial state
-  syncBootFx();
+  requestAnimationFrame(frame);
 })();
 
 /* --- Patch: Gamepad bridge (maps controller to existing keyboard handlers) --- */
@@ -2775,7 +2776,6 @@
 
   const tick = () => {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-    const hasPad = Array.from(pads).some(Boolean);
     for (const gp of pads) {
       if (!gp) continue;
       const p = prev.get(gp.index) || [];
@@ -2798,28 +2798,22 @@
 
       prev.set(gp.index, b);
     }
-    if (hasPad) {
-      requestAnimationFrame(tick);
-    } else {
-      // idle polling (keeps support for controllers that connect without firing the event)
-      setTimeout(() => requestAnimationFrame(tick), 300);
-    }
-  };
-
-  const startLoop = () => {
-    if (window.__nexora_gp_loop_started) return;
-    window.__nexora_gp_loop_started = true;
     requestAnimationFrame(tick);
   };
 
-  window.addEventListener("gamepadconnected", startLoop);
-  window.addEventListener("load", startLoop);
+  window.addEventListener("gamepadconnected", () => {
+    if (!window.__nexora_gp_loop_started) {
+      window.__nexora_gp_loop_started = true;
+      requestAnimationFrame(tick);
+    }
+  });
 
-  // If a controller is already connected when the page loads, start immediately.
-  try {
-    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-    if (Array.from(pads).some(Boolean)) startLoop();
-  } catch (_) {}
+  window.addEventListener("load", () => {
+    if (!window.__nexora_gp_loop_started) {
+      window.__nexora_gp_loop_started = true;
+      requestAnimationFrame(tick);
+    }
+  });
 })();
 function pulseAt(el, clientX, clientY) {
   const r = el.getBoundingClientRect();
@@ -2841,6 +2835,24 @@ document.addEventListener("pointerdown", (e) => {
   if (!target) return;
   pulseAt(target, e.clientX, e.clientY);
 });
+
+let audioCtx;
+function beep(freq = 420, dur = 0.035, vol = 0.03) {
+  if (document.body.classList.contains("reduce-motion")) return;
+  if (!audioCtx)
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = "sine";
+  o.frequency.value = freq;
+  g.gain.value = vol;
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.start();
+  setTimeout(() => {
+    o.stop();
+  }, dur * 1000);
+}
 
 // =========================
 // Window Manager (NEW)
