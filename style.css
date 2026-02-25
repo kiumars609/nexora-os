@@ -4,15 +4,16 @@
   box-sizing: border-box;
 }
 :root {
-  --font-sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --font-sans:
+    Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   --radius-xl: 18px;
   --radius-lg: 14px;
-  --shadow-soft: 0 10px 30px rgba(0,0,0,.35);
-  --shadow-card: 0 14px 40px rgba(0,0,0,.42);
-  --outline: 0 0 0 2px rgba(255,255,255,.12);
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 14px 40px rgba(0, 0, 0, 0.42);
+  --outline: 0 0 0 2px rgba(255, 255, 255, 0.12);
   --t-fast: 140ms;
   --t-med: 200ms;
-  --ease-smooth: cubic-bezier(.2,.9,.2,1);
+  --ease-smooth: cubic-bezier(0.2, 0.9, 0.2, 1);
 
   --hero-bg: url("assets/images/games/tlou2/cover.jpg");
 }
@@ -1704,15 +1705,16 @@ body.reduce-motion .off-overlay {
 
 /* ---------- Base tokens ---------- */
 :root {
-  --font-sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --font-sans:
+    Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   --radius-xl: 18px;
   --radius-lg: 14px;
-  --shadow-soft: 0 10px 30px rgba(0,0,0,.35);
-  --shadow-card: 0 14px 40px rgba(0,0,0,.42);
-  --outline: 0 0 0 2px rgba(255,255,255,.12);
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 14px 40px rgba(0, 0, 0, 0.42);
+  --outline: 0 0 0 2px rgba(255, 255, 255, 0.12);
   --t-fast: 140ms;
   --t-med: 200ms;
-  --ease-smooth: cubic-bezier(.2,.9,.2,1);
+  --ease-smooth: cubic-bezier(0.2, 0.9, 0.2, 1);
 
   /* layout */
   --radius-xl: 26px;
@@ -2329,15 +2331,16 @@ body.reduce-motion .game-card .gc-cover {
    Themes (next-gen)
    ========================= */
 :root {
-  --font-sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --font-sans:
+    Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   --radius-xl: 18px;
   --radius-lg: 14px;
-  --shadow-soft: 0 10px 30px rgba(0,0,0,.35);
-  --shadow-card: 0 14px 40px rgba(0,0,0,.42);
-  --outline: 0 0 0 2px rgba(255,255,255,.12);
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 14px 40px rgba(0, 0, 0, 0.42);
+  --outline: 0 0 0 2px rgba(255, 255, 255, 0.12);
   --t-fast: 140ms;
   --t-med: 200ms;
-  --ease-smooth: cubic-bezier(.2,.9,.2,1);
+  --ease-smooth: cubic-bezier(0.2, 0.9, 0.2, 1);
 
   --bg0: #050607;
   --panel: rgba(255, 255, 255, 0.03);
@@ -3815,15 +3818,16 @@ body.reduce-motion .game-card .gc-cover {
 
 /* نرم‌تر شدن تغییر بک‌گراند */
 :root {
-  --font-sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --font-sans:
+    Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   --radius-xl: 18px;
   --radius-lg: 14px;
-  --shadow-soft: 0 10px 30px rgba(0,0,0,.35);
-  --shadow-card: 0 14px 40px rgba(0,0,0,.42);
-  --outline: 0 0 0 2px rgba(255,255,255,.12);
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 14px 40px rgba(0, 0, 0, 0.42);
+  --outline: 0 0 0 2px rgba(255, 255, 255, 0.12);
   --t-fast: 140ms;
   --t-med: 200ms;
-  --ease-smooth: cubic-bezier(.2,.9,.2,1);
+  --ease-smooth: cubic-bezier(0.2, 0.9, 0.2, 1);
 
   /* فقط برای خوانایی، لازم نیست چیزی اضافه کنی */
 }
@@ -4260,142 +4264,146 @@ body.reduce-motion .dock-item {
   transition: none !important;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* -------------------- Status Bar -------------------- */
-.statusbar{
-  position:absolute;
-  top:10px;
-  left:12px;
-  right:12px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:10px 12px;
+.statusbar {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
   border-radius: var(--radius-xl);
   /* Dark glass by default (PS-like) */
-  background: linear-gradient(180deg, rgba(12,16,22,.55), rgba(12,16,22,.28));
-  border: 1px solid rgba(255,255,255,.14);
+  background: linear-gradient(
+    180deg,
+    rgba(12, 16, 22, 0.55),
+    rgba(12, 16, 22, 0.28)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.14);
   backdrop-filter: blur(12px);
   box-shadow: var(--shadow-soft);
   z-index: 50;
 }
 
-.status-left,.status-center,.status-right{display:flex;align-items:center;gap:10px;}
-.status-title{font-weight:700;letter-spacing:.6px;opacity:.92;}
-.status-time{font-variant-numeric: tabular-nums; opacity:.9;}
+.status-left,
+.status-center,
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.status-title {
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  opacity: 0.92;
+}
+.status-time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
 
-.status-pill{
-  padding:6px 10px;
+.status-pill {
+  padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(255,255,255,.10);
-  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   font-size: 12px;
-  opacity:.92;
+  opacity: 0.92;
 }
 
 /* Cream-light: still glassy, not a solid white stripe */
-body.theme-cream-light .statusbar{
-  background: linear-gradient(180deg, rgba(18,22,28,.36), rgba(18,22,28,.18));
-  border-color: rgba(255,255,255,.16);
+body.theme-cream-light .statusbar {
+  background: linear-gradient(
+    180deg,
+    rgba(18, 22, 28, 0.36),
+    rgba(18, 22, 28, 0.18)
+  );
+  border-color: rgba(255, 255, 255, 0.16);
 }
-body.theme-cream-light .status-pill{
-  background: rgba(255,255,255,.14);
-  border-color: rgba(255,255,255,.16);
+body.theme-cream-light .status-pill {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.16);
 }
-
 
 /* -------------------- Micro Interactions -------------------- */
-.hero-btn, button, .btn{
-  transition: transform var(--t-fast) var(--ease-smooth),
-              box-shadow var(--t-fast) var(--ease-smooth),
-              background var(--t-fast) var(--ease-smooth),
-              border-color var(--t-fast) var(--ease-smooth),
-              color var(--t-fast) var(--ease-smooth),
-              opacity var(--t-fast) var(--ease-smooth);
+.hero-btn,
+button,
+.btn {
+  transition:
+    transform var(--t-fast) var(--ease-smooth),
+    box-shadow var(--t-fast) var(--ease-smooth),
+    background var(--t-fast) var(--ease-smooth),
+    border-color var(--t-fast) var(--ease-smooth),
+    color var(--t-fast) var(--ease-smooth),
+    opacity var(--t-fast) var(--ease-smooth);
 }
-.hero-btn:hover, button:hover{
+.hero-btn:hover,
+button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 28px rgba(0,0,0,.28);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
-.hero-btn:active, button:active{
-  transform: translateY(0) scale(.985);
+.hero-btn:active,
+button:active {
+  transform: translateY(0) scale(0.985);
 }
-.hero-btn:focus-visible, button:focus-visible, [tabindex]:focus-visible{
+.hero-btn:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
   outline: none;
-  box-shadow: var(--outline), 0 18px 44px rgba(0,0,0,.35);
+  box-shadow:
+    var(--outline),
+    0 18px 44px rgba(0, 0, 0, 0.35);
 }
 
 /* Cards depth (safe generic) */
-.card, .tile, .game-card, .app-card, .panel, .glass{
+.card,
+.tile,
+.game-card,
+.app-card,
+.panel,
+.glass {
   border-radius: var(--radius-xl);
 }
-.card:hover, .tile:hover, .game-card:hover, .app-card:hover{
+.card:hover,
+.tile:hover,
+.game-card:hover,
+.app-card:hover {
   transform: translateY(-2px);
 }
 
 /* -------------------- New Themes -------------------- */
-body.theme-neo-dark{
+body.theme-neo-dark {
   --bg-0: #050607;
-  --bg-1: rgba(255,255,255,.06);
-  --stroke: rgba(255,255,255,.12);
+  --bg-1: rgba(255, 255, 255, 0.06);
+  --stroke: rgba(255, 255, 255, 0.12);
   --text-0: #ffffff;
-  --text-1: rgba(255,255,255,.82);
+  --text-1: rgba(255, 255, 255, 0.82);
   --accent: #7c5cff;
 }
-body.theme-cream-light{
+body.theme-cream-light {
   --bg-0: #f6f1e8;
-  --bg-1: rgba(255,255,255,.75);
-  --stroke: rgba(0,0,0,.08);
+  --bg-1: rgba(255, 255, 255, 0.75);
+  --stroke: rgba(0, 0, 0, 0.08);
   --text-0: #141414;
-  --text-1: rgba(20,20,20,.78);
+  --text-1: rgba(20, 20, 20, 0.78);
   --accent: #ff7a45;
   color: var(--text-0);
 }
-body.theme-cyber-purple{
+body.theme-cyber-purple {
   --bg-0: #07061a;
-  --bg-1: rgba(124,92,255,.10);
-  --stroke: rgba(124,92,255,.22);
+  --bg-1: rgba(124, 92, 255, 0.1);
+  --stroke: rgba(124, 92, 255, 0.22);
   --text-0: #ffffff;
-  --text-1: rgba(255,255,255,.82);
+  --text-1: rgba(255, 255, 255, 0.82);
   --accent: #7c5cff;
 }
 
-.nexora-press{ transform: translateY(0) scale(.985) !important; }
-
+.nexora-press {
+  transform: translateY(0) scale(0.985) !important;
+}
 
 /* =========================
    Theme grid (fix overflow)
@@ -4417,7 +4425,7 @@ body.theme-cyber-purple{
   width: 100%;
   height: 52px;
   padding: 0 16px;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.1em;
   justify-content: center;
   white-space: nowrap;
   overflow: hidden;
@@ -4434,37 +4442,41 @@ body.theme-cyber-purple{
   width: min(370px, 92%);
 }
 
-
-
 /* =========================
    Status Bar layout fixes
    ========================= */
-main-os{ position: relative; } /* ensure absolute statusbar is scoped */
+main-os {
+  position: relative;
+} /* ensure absolute statusbar is scoped */
 
-.statusbar{
-  color: rgba(255,255,255,.92);
+.statusbar {
+  color: rgba(255, 255, 255, 0.92);
 }
 
 /* Reserve space so statusbar doesn't cover header icons */
-.header-os{
+.header-os {
   position: relative;
   padding-top: 64px; /* statusbar( ~44 ) + gap */
-  height: 164px;     /* keep room so layout doesn't squash */
+  height: 164px; /* keep room so layout doesn't squash */
   box-sizing: border-box;
 }
 
 /* Make sure top-left avatar bubble etc stay below statusbar */
 .header-os .left-side,
-.header-os .right-side{
+.header-os .right-side {
   height: auto;
 }
 
 /* Improve readability for title/time */
-.status-title{ color: rgba(255,255,255,.92); }
-.status-time{ color: rgba(255,255,255,.92); opacity: .95; }
-
-/* Cream-light: keep same readable foreground */
-body.theme-cream-light .statusbar{
-  color: rgba(255,255,255,.92);
+.status-title {
+  color: rgba(255, 255, 255, 0.92);
+}
+.status-time {
+  color: rgba(255, 255, 255, 0.92);
+  opacity: 0.95;
 }
 
+/* Cream-light: keep same readable foreground */
+body.theme-cream-light .statusbar {
+  color: rgba(255, 255, 255, 0.92);
+}
