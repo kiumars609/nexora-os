@@ -16,7 +16,7 @@
   --ease-smooth: cubic-bezier(0.2, 0.9, 0.2, 1);
 
   --hero-bg: url("assets/images/games/tlou2/cover.jpg");
-}
+} 
      
 body {
   background: #050607;
