@@ -28,7 +28,7 @@ body {
   height: 100vh;
   margin: 0;
   overflow: hidden; /* prevent accidental page scrollbars */
-}
+} 
 /* Optional theme hooks */
 body.theme-dark {
   /* deflt */
